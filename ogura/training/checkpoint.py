@@ -48,7 +48,7 @@ class Checkpoints:
         self.previous = self.directory / 'previous.pt'
         self.latest_valid = False
 
-    def load(self, identity):
+    def load(self, identity, compatible_code_hashes=()):
         errors = []
         for path in (self.latest, self.previous):
             if not path.exists():
@@ -60,7 +60,11 @@ class Checkpoints:
             except (OSError, RuntimeError, EOFError, ValueError, pickle.UnpicklingError) as exc:
                 errors.append(f'{path.name}: {exc}')
                 continue
-            if state['identity'] != identity:
+            saved_identity = dict(state['identity'])
+            if saved_identity.get('training_code_sha256') in compatible_code_hashes:
+                saved_identity['training_code_sha256'] = identity['training_code_sha256']
+            if saved_identity != identity:
+
                 raise IdentityMismatch('Dataset, vocabulary, font, code, runtime, or training configuration changed')
             self.latest_valid = path == self.latest
             if path == self.previous:

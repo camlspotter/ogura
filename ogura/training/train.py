@@ -54,6 +54,7 @@ class TrainConfig:
     limit: int | None = None
     threads: int = 4
     log_every: int = 10
+    log_samples: int = 3
 
 
 def sha256(path):
@@ -149,7 +150,7 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'device', 'resume', 'max_steps',
-                'workers', 'save_every', 'log_every', 'epochs'):
+                'workers', 'save_every', 'log_every', 'log_samples', 'epochs'):
         settings.pop(key)
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
@@ -168,7 +169,7 @@ def train(config: TrainConfig, on_step=None):
     """on_step is an optional observer called only after a complete update."""
     positive = (config.batch_size, config.epochs, config.channels, config.save_every,
                 config.threads, config.log_every)
-    if min(positive) < 1 or config.workers < 0 or not config.learning_rate > 0:
+    if min(positive) < 1 or config.log_samples < 0 or config.workers < 0 or not config.learning_rate > 0:
         raise ValueError('Invalid training configuration')
     if not 0 < config.lr_decay <= 1 or not 1 <= config.font_size_min <= config.font_size_max:
         raise ValueError('Invalid learning-rate decay or rendering range')
@@ -194,7 +195,10 @@ def train(config: TrainConfig, on_step=None):
         if not config.resume and (checkpoints.latest.exists() or checkpoints.previous.exists()):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
-        saved = checkpoints.load(identity) if config.resume else None
+        saved = checkpoints.load(identity, compatible_code_hashes=(
+            # Version before sample printing: identical training and checkpoint semantics.
+            '3f297d0e0e09cb103d90d19d3a5544b975763a2f1b85190b7c81c6bec3e5312c',
+        )) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary)
         records, report = prepare_data(config, vocabulary)
         atomic_json(config.run_dir / 'font_coverage.json', report)
@@ -299,6 +303,8 @@ def train(config: TrainConfig, on_step=None):
                     save()
                 if updated and (position['step'] == 1 or position['step'] % config.log_every == 0):
                     print(f"step={position['step']} epoch={epoch + 1} loss={loss_value:.6f} accuracy={summary(totals)['exact_accuracy']:.2%} CER={summary(totals)['cer']:.2%} seconds={batch_seconds:.3f}", flush=True)
+                    for reference, prediction in list(zip(batch.texts, predictions))[:config.log_samples]:
+                        print(f'  正解: {reference!r}\n  予測: {prediction!r}', flush=True)
                 if on_step is not None:
                     on_step(dict(position), batch.sample_ids)
                 if stop:
@@ -313,7 +319,7 @@ def main():
     for name in ('text', 'vocabulary', 'font', 'run_dir'):
         parser.add_argument('--' + name.replace('_', '-'), type=Path, default=getattr(defaults, name))
     for name in ('batch_size', 'epochs', 'channels', 'seed', 'save_every', 'workers',
-                 'font_size_min', 'font_size_max', 'threads', 'log_every', 'max_steps', 'limit'):
+                 'font_size_min', 'font_size_max', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))

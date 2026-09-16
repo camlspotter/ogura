@@ -1,5 +1,7 @@
 """CPU integration tests for rendering, actual CTC updates and crash recovery."""
 from dataclasses import replace
+from contextlib import redirect_stdout
+import io
 import json
 from pathlib import Path
 import random
@@ -47,6 +49,17 @@ class CheckpointTests(unittest.TestCase):
             with self.assertRaises(IdentityMismatch):
                 manager.load({'test': 2})
             self.assertFalse(list(Path(tmp).glob('*.tmp')))
+
+    def test_only_known_logging_revision_is_compatible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manager = Checkpoints(tmp)
+            state = minimal_state(1)
+            state['identity']['training_code_sha256'] = 'old'
+            manager.save(state)
+            current = {'test': 1, 'training_code_sha256': 'new'}
+            with self.assertRaises(IdentityMismatch):manager.load(current)
+            self.assertEqual(manager.load(current, ('old',))['position']['step'], 1)
+            with self.assertRaises(IdentityMismatch):manager.load({**current, 'test': 2}, ('old',))
 
     def test_interruption_between_checkpoint_renames(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -148,9 +161,13 @@ class TrainingTests(unittest.TestCase):
             config = TrainConfig(text=root/'text.txt', vocabulary=root/'targets.jsonl', font=FONT,
                                  run_dir=root/'full', device='cpu', batch_size=2, epochs=2,
                                  save_every=2, channels=2, threads=1, log_every=99,
-                                 deterministic=True, font_size_min=32, font_size_max=40)
+                                 deterministic=True, font_size_min=32, font_size_max=40, log_samples=1)
             full_ids = []
-            train(config, lambda pos,ids: full_ids.append(ids))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                train(config, lambda pos,ids: full_ids.append(ids))
+            self.assertEqual(output.getvalue().count('  正解:'), 1)
+            self.assertEqual(output.getvalue().count('  予測:'), 1)
             broken = replace(config, run_dir=root/'broken')
             def crash(pos, ids):
                 if pos['step'] == 3:raise RuntimeError('simulated crash after unsaved update')
@@ -163,7 +180,11 @@ class TrainingTests(unittest.TestCase):
                 stream.write(b'{partial event after crash')
             resumed_ids = []
             # Prefetch workers differ from the original run; batch position still replays exactly.
-            train(replace(broken, resume=True, workers=2), lambda pos,ids: resumed_ids.append(ids))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                train(replace(broken, resume=True, workers=2, log_samples=0, log_every=1), lambda pos,ids: resumed_ids.append(ids))
+            self.assertNotIn('  正解:', output.getvalue())
+            self.assertIn('step=3', output.getvalue())
             self.assertEqual(resumed_ids, full_ids[2:])
             full = torch.load(config.run_dir/'latest.pt', weights_only=True)
             resumed = torch.load(broken.run_dir/'latest.pt', weights_only=True)
