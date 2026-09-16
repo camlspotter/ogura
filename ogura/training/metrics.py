@@ -17,6 +17,15 @@ def edit_distance(reference, prediction):
     return previous[-1]
 
 
+def worst_samples(references, predictions, count):
+    """Rank this batch by per-sample CER descending; ties keep batch order."""
+    if count <= 0:
+        return []
+    rows = [(reference, prediction, edit_distance(reference, prediction) / len(reference))
+            for reference, prediction in zip(references, predictions)]
+    return sorted(rows, key=lambda row: row[2], reverse=True)[:count]
+
+
 def decode(logits, lengths, vocabulary):
     paths = logits.detach().argmax(dim=2).cpu().transpose(0, 1).tolist()
     texts = []

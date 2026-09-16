@@ -57,3 +57,16 @@ class MetricsTests(unittest.TestCase):
             resumed.append([{'step':2}])
             self.assertEqual([json.loads(line)['step'] for line in path.read_text().splitlines()],[1,2])
             with self.assertRaises(ValueError):MetricsLog(path,path.stat().st_size+1)
+
+
+class WorstSamplesTests(unittest.TestCase):
+    def test_rank_by_rate_not_raw_errors_and_limit(self):
+        from ogura.training.metrics import worst_samples
+        references = ['日本語の文章です', '日', '本', '正解']
+        predictions = ['日本語の文', '月火', '月', '正解']
+        rows = worst_samples(references, predictions, 3)
+        self.assertEqual([row[0] for row in rows], ['日', '本', '日本語の文章です'])
+        self.assertEqual(rows[0][2], 2.0)
+        self.assertEqual(worst_samples(references, predictions, 0), [])
+        self.assertEqual(len(worst_samples(references, predictions, 99)), 4)
+        self.assertEqual([r[0] for r in worst_samples(['日', '本'], ['月', '火'], 2)], ['日', '本'])

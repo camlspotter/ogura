@@ -27,7 +27,7 @@ from ogura.text_common import ROOT
 from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
 from .evaluate import evaluate
 from .model import LineCNN, ctc_loss
-from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, epoch_eta, format_duration, local_finish_time
+from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, epoch_eta, format_duration, local_finish_time
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
 
 
@@ -230,7 +230,10 @@ def train(config: TrainConfig, on_step=None):
         if not config.resume and (checkpoints.latest.exists() or checkpoints.previous.exists()):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
-        saved = checkpoints.load(identity) if config.resume else None
+        saved = checkpoints.load(identity, compatible_code_hashes=(
+            # Only sample logging changed from the augmentation release.
+            'e9956d6bc8c4b393adb9a770635a61f2f2c7ae7f38763067d5fe9aaa6bf347ca',
+        )) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary)
         records, report = prepare_data(config, vocabulary)
         validation_dataset = None
@@ -403,8 +406,8 @@ def train(config: TrainConfig, on_step=None):
                         elapsed = segment_elapsed + time.perf_counter() - segment_started
                         eta = epoch_eta(epoch_totals, total_batches, elapsed)
                     print(f"step={position['step']} epoch={epoch + 1} loss={loss_value:.6f} accuracy={summary(totals)['exact_accuracy']:.2%} CER={summary(totals)['cer']:.2%} seconds={batch_seconds:.3f} batch={batch_index + 1}/{total_batches} ({(batch_index + 1) / total_batches:.1%}) elapsed={format_duration(elapsed)} remaining={format_duration(eta)} finish_local={local_finish_time(eta)}", flush=True)
-                    for reference, prediction in list(zip(batch.texts, predictions))[:config.log_samples]:
-                        print(f'  正解: {reference!r}\n  予測: {prediction!r}', flush=True)
+                    for reference, prediction, sample_cer in worst_samples(batch.texts, predictions, config.log_samples):
+                        print(f'  CER: {sample_cer:.2%}\n  正解: {reference!r}\n  予測: {prediction!r}', flush=True)
                 if on_step is not None:
                     on_step(dict(position), batch.sample_ids)
                 if stop:

@@ -45,6 +45,28 @@ class ExtractionTests(unittest.TestCase):
             self.assertEqual(original[row['start']:row['end']],row['text'])
         with self.assertRaises(ValueError):extract([],vocab,set(),1,7)
 
+    def test_short_and_long_lengths_exclude_articles_and_keep_source_offsets(self):
+        rng = random.Random(91)
+        alphabet = '東京大阪北海道日本世界歴史文化美術科学研究'
+        articles = []
+        for i in range(400):
+            text = ''.join(''.join(rng.choices(alphabet, k=12))+'について説明しています。' for _ in range(8))
+            articles.append(dict(id=str(i), text=text, title='本文', url='example'))
+        vocab = set(''.join(a['text'] for a in articles))
+        excluded = {a['id'] for a in articles[:100]}
+        for length in (5, 80):
+            kwargs = dict(min_length=length, max_length=length, excluded_articles=excluded)
+            rows, _ = extract(iter(articles), vocab, set(), 5, 7, **kwargs)
+            self.assertEqual(rows, extract(iter(articles), vocab, set(), 5, 7, **kwargs)[0])
+            self.assertEqual(len({r['text'] for r in rows}), 5)
+            for row in rows:
+                self.assertEqual(len(row['text']), length)
+                self.assertNotIn(row['article_id'], excluded)
+                self.assertEqual(split_article(row['article_id'], 20260915), 'validation')
+                source = articles[int(row['article_id'])]['text']
+                self.assertEqual(source[row['start']:row['end']], row['text'])
+            excluded.update(row['article_id'] for row in rows)
+
 
 @unittest.skipUnless(FONT.exists(), 'Noto font required')
 class EvaluationTests(unittest.TestCase):

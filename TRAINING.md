@@ -77,7 +77,7 @@ uv run --frozen --extra train python -m ogura.training.train \
 
 主なオプション：
 
-- --log-samples 3：ログ出力時にバッチ先頭3件の正解・予測を引用符付きで表示。0で無効。追加推論はしない。
+- --log-samples 3：ログ出力対象のバッチ内で、各行のCER（編集距離÷正解文字数）が高い順に3件のCER・正解・予測を表示。同率ならバッチ内の順序を維持。0で無効。追加推論はしない。
 - --save-every 500：成功したパラメータ更新500回ごとに保存。開始時とエポック終了時も保存。
 - --batch-size 32：初期値。GPUメモリに応じて新しい実行で調整する。
 - --learning-rate 0.001、--lr-decay 0.95：AdamW、エポックごとの指数減衰。
@@ -325,3 +325,31 @@ uv run --frozen --extra train python -m ogura.training.preview \
 `--vertical-jitter` を使わない。元の条件を選ぶclean分岐と基準条件の検証は中央配置。
 比較画像も既定で28〜40px・全範囲の上下配置を使う。`Y range` は可動範囲内の位置
 （0%=上端、100%=下端）。従来の±移動を確認する場合は `--vertical-mode jitter` を指定する。
+
+
+## 5文字・80文字の長さ別検証テキスト
+
+既存の20〜25文字セットを残して、各1,000件を別ディレクトリに作る。
+長さはUnicodeコードポイント数。自然文の本文行から連続した部分を切り出すため、
+5文字は単語・文として完結するとは限らない。短い抜粋には自然文判定を適用せず、
+切り出し元の記事と本文行に適用する。文字表などはそこで除外する。
+
+```sh
+uv run --frozen python -m ogura.build_validation \
+  --min-length 5 --max-length 5 --output datasets/validation_short5 \
+  --exclude-validation datasets/validation/validation.jsonl
+
+uv run --frozen python -m ogura.build_validation \
+  --min-length 80 --max-length 80 --output datasets/validation_long80 \
+  --exclude-validation datasets/validation/validation.jsonl \
+  --exclude-validation datasets/validation_short5/validation.jsonl
+```
+
+両方とも予約済みのvalidation記事から1記事1件を採り、3セット間の記事も重複させない。
+学習データとの共通16文字断片を除外する。5文字では一般的な語句が学習本文内にも
+現れ得るが、学習記事からの切り出しではない。短い文字列の完全重複はセット内で除外する。
+各ディレクトリの `validation.txt` は1行1件、`validation.jsonl` は記事ID・原文位置などの出典、
+`manifest.json` は文字数・シード・入力ハッシュを記録する。
+GPUマシンでは、そのマシンで作成した学習データを使って上記コマンドを実行する。
+この手順はテキスト作成のみ。進行中の実行の `--validation-text` を差し替えると
+再開の同一性チェックで拒否されるため、既存の検証設定は変更しない。
