@@ -1,11 +1,12 @@
 import json
+from datetime import datetime
 from pathlib import Path
 import tempfile
 import unittest
 
 import torch
 
-from ogura.training.metrics import MetricsLog, add_totals, batch_totals, decode, edit_distance, empty_totals, summary
+from ogura.training.metrics import MetricsLog, add_totals, batch_totals, decode, edit_distance, empty_totals, summary, epoch_eta, format_duration, local_finish_time
 from ogura.training.render import Vocabulary
 
 
@@ -26,6 +27,24 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result['seconds'], 4)
         self.assertEqual(result['samples_per_second'], 1)
         self.assertEqual(edit_distance('a','aaaa'),3)  # CER may exceed 100%.
+
+    def test_eta_uses_completed_epoch_totals_including_resumed_work(self):
+        totals = empty_totals()
+        self.assertIsNone(epoch_eta(totals, 10))
+        totals.update(batches=4, seconds=8)
+        self.assertEqual(epoch_eta(totals, 10), 12)
+        self.assertEqual(epoch_eta(totals, 10, elapsed_seconds=20), 30)
+        restored = json.loads(json.dumps(totals))
+        add_totals(restored, batch_totals(['a'], ['a'], 1, 2))
+        self.assertEqual(epoch_eta(restored, 10), 10)
+        self.assertEqual(epoch_eta(restored, 5), 0)
+        self.assertEqual(format_duration(3661.1), '01:01:02')
+        self.assertEqual(format_duration(0), '00:00:00')
+        self.assertEqual(format_duration(None), '--:--:--')
+        finish = datetime.fromisoformat(local_finish_time(120, now=1700000000))
+        self.assertIsNotNone(finish.utcoffset())
+        self.assertEqual(finish.timestamp(), 1700000120)
+        self.assertEqual(local_finish_time(None), '--')
 
     def test_log_rolls_back_partial_uncommitted_tail(self):
         with tempfile.TemporaryDirectory() as tmp:

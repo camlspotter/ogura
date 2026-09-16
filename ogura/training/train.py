@@ -27,7 +27,7 @@ from ogura.text_common import ROOT
 from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
 from .evaluate import evaluate
 from .model import LineCNN, ctc_loss
-from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary
+from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, epoch_eta, format_duration, local_finish_time
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
 
 
@@ -199,7 +199,10 @@ def train(config: TrainConfig, on_step=None):
         if not config.resume and (checkpoints.latest.exists() or checkpoints.previous.exists()):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
-        saved = checkpoints.load(identity) if config.resume else None
+        saved = checkpoints.load(identity, compatible_code_hashes=(
+            # ETA adds console output only; all training and checkpoint semantics are unchanged.
+            '666d6fe424dceca062ba97ef90aa39f49b1eac0fa58f1fe25588eaeafafec07e',
+        )) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary)
         records, report = prepare_data(config, vocabulary)
         validation_dataset = None
@@ -234,6 +237,9 @@ def train(config: TrainConfig, on_step=None):
         position = {'epoch': 0, 'next_batch': 0, 'step': 0}
         epoch_totals = empty_totals()
         log_offset = 0
+        epoch_elapsed = 0.0
+        segment_started = None
+        segment_elapsed = 0.0
         best = None
         if saved:
             model.load_state_dict(saved['model'])
@@ -243,6 +249,7 @@ def train(config: TrainConfig, on_step=None):
             position = dict(saved['position'])
             epoch_totals = dict(saved['metrics']['epoch_totals'])
             log_offset = saved['metrics']['log_offset']
+            epoch_elapsed = saved['metrics'].get('epoch_elapsed_seconds', epoch_totals['seconds'])
             best = saved['best']
             restore_rng(saved['rng'])
             del saved
@@ -252,11 +259,14 @@ def train(config: TrainConfig, on_step=None):
         model.train()
 
         def save():
+            elapsed_at_save = (segment_elapsed + time.perf_counter() - segment_started
+                               if segment_started is not None else epoch_elapsed)
             checkpoints.save({
                 'identity': identity, 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(),
                 'scaler': scaler.state_dict(), 'position': dict(position), 'rng': rng_state(),
-                'metrics': {'epoch_totals': dict(epoch_totals), 'log_offset': metrics_log.offset},
+                'metrics': {'epoch_totals': dict(epoch_totals), 'log_offset': metrics_log.offset,
+                            'epoch_elapsed_seconds': elapsed_at_save},
                 'best': best,
             })
 
@@ -270,6 +280,8 @@ def train(config: TrainConfig, on_step=None):
         if config.max_steps is not None and position['step'] >= config.max_steps:
             return position
         for epoch in range(position['epoch'], config.epochs):
+            segment_elapsed = epoch_elapsed
+            segment_started = time.perf_counter()
             order = list(range(len(records)))
             random.Random(f'{config.seed}:order:{epoch}').shuffle(order)
             start = position['next_batch']
@@ -309,6 +321,8 @@ def train(config: TrainConfig, on_step=None):
                 if updated:
                     position['step'] += 1
                 position['next_batch'] = batch_index + 1
+                elapsed = segment_elapsed + time.perf_counter() - segment_started
+                eta = epoch_eta(epoch_totals, total_batches, elapsed)
                 end_epoch = position['next_batch'] == total_batches
                 if end_epoch:
                     if updated or position['step'] > 0:
@@ -321,8 +335,10 @@ def train(config: TrainConfig, on_step=None):
                     epoch_summary = summary(epoch_totals)
                     events.append(dict(kind='epoch', epoch=epoch + 1, step=position['step'], **epoch_summary))
                     print(f"epoch={epoch + 1} accuracy={epoch_summary['exact_accuracy']:.2%} "
-                          f"CER={epoch_summary['cer']:.2%} seconds={epoch_summary['seconds']:.3f}", flush=True)
+                          f"CER={epoch_summary['cer']:.2%} seconds={epoch_summary['seconds']:.3f} elapsed={format_duration(elapsed)}", flush=True)
                     epoch_totals = empty_totals()
+                    epoch_elapsed = 0.0
+                    segment_started = None
                 if end_epoch and validation_dataset is not None:
                     validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
                     improved = best is None or validation['cer'] < best['metrics']['cer']
@@ -340,7 +356,10 @@ def train(config: TrainConfig, on_step=None):
                 if end_epoch or stop or (updated and position['step'] % config.save_every == 0):
                     save()
                 if updated and (position['step'] == 1 or position['step'] % config.log_every == 0):
-                    print(f"step={position['step']} epoch={epoch + 1} loss={loss_value:.6f} accuracy={summary(totals)['exact_accuracy']:.2%} CER={summary(totals)['cer']:.2%} seconds={batch_seconds:.3f}", flush=True)
+                    if not end_epoch:
+                        elapsed = segment_elapsed + time.perf_counter() - segment_started
+                        eta = epoch_eta(epoch_totals, total_batches, elapsed)
+                    print(f"step={position['step']} epoch={epoch + 1} loss={loss_value:.6f} accuracy={summary(totals)['exact_accuracy']:.2%} CER={summary(totals)['cer']:.2%} seconds={batch_seconds:.3f} batch={batch_index + 1}/{total_batches} ({(batch_index + 1) / total_batches:.1%}) elapsed={format_duration(elapsed)} remaining={format_duration(eta)} finish_local={local_finish_time(eta)}", flush=True)
                     for reference, prediction in list(zip(batch.texts, predictions))[:config.log_samples]:
                         print(f'  正解: {reference!r}\n  予測: {prediction!r}', flush=True)
                 if on_step is not None:

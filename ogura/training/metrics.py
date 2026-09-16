@@ -1,5 +1,8 @@
 """Greedy CTC accuracy, sample-weighted epoch totals and rollback-safe JSONL."""
 import json
+import math
+from datetime import datetime
+import time
 import os
 from pathlib import Path
 
@@ -74,3 +77,29 @@ class MetricsLog:
             stream.flush()
             os.fsync(stream.fileno())
             self.offset = stream.tell()
+
+
+def epoch_eta(totals, total_batches, elapsed_seconds=None):
+    """Estimate remaining training time from completed work and elapsed time."""
+    completed = totals['batches']
+    if completed == 0:
+        return None
+    if not 0 < completed <= total_batches:
+        raise ValueError('Invalid epoch progress')
+    elapsed = totals['seconds'] if elapsed_seconds is None else elapsed_seconds
+    return elapsed / completed * (total_batches - completed)
+
+
+def format_duration(seconds):
+    if seconds is None:
+        return '--:--:--'
+    hours, remainder = divmod(math.ceil(max(0, seconds)), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
+
+
+def local_finish_time(remaining_seconds, now=None):
+    if remaining_seconds is None:
+        return '--'
+    timestamp = time.time() if now is None else now
+    return datetime.fromtimestamp(timestamp + max(0, remaining_seconds)).astimezone().isoformat(timespec='seconds')

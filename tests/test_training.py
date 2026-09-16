@@ -176,6 +176,7 @@ class TrainingTests(unittest.TestCase):
             saved = torch.load(broken.run_dir/'latest.pt', weights_only=True)
             self.assertEqual(saved['position'], {'step':2,'epoch':0,'next_batch':2})
             self.assertEqual(saved['metrics']['epoch_totals']['samples'], 4)
+            self.assertGreater(saved['metrics']['epoch_elapsed_seconds'], 0)
             with (broken.run_dir/'metrics.jsonl').open('ab') as stream:
                 stream.write(b'{partial event after crash')
             resumed_ids = []
@@ -185,6 +186,9 @@ class TrainingTests(unittest.TestCase):
                 train(replace(broken, resume=True, workers=2, log_samples=0, log_every=1), lambda pos,ids: resumed_ids.append(ids))
             self.assertNotIn('  正解:', output.getvalue())
             self.assertIn('step=3', output.getvalue())
+            self.assertIn('batch=3/4 (75.0%) elapsed=', output.getvalue())
+            self.assertIn('batch=4/4 (100.0%) elapsed=', output.getvalue())
+            self.assertIn('remaining=00:00:00 finish_local=', output.getvalue())
             self.assertEqual(resumed_ids, full_ids[2:])
             full = torch.load(config.run_dir/'latest.pt', weights_only=True)
             resumed = torch.load(broken.run_dir/'latest.pt', weights_only=True)
