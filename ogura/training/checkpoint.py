@@ -57,14 +57,13 @@ class Checkpoints:
                 state = torch.load(path, map_location='cpu', weights_only=True)
                 if not isinstance(state, dict) or not {'identity', 'model', 'optimizer', 'scheduler', 'scaler', 'position', 'rng'} <= state.keys():
                     raise ValueError('Incomplete checkpoint')
-            except (OSError, RuntimeError, EOFError, ValueError, pickle.UnpicklingError) as exc:
+            except (OSError, RuntimeError, EOFError, ValueError, IndexError, pickle.UnpicklingError) as exc:
                 errors.append(f'{path.name}: {exc}')
                 continue
             saved_identity = dict(state['identity'])
             if saved_identity.get('training_code_sha256') in compatible_code_hashes:
                 saved_identity['training_code_sha256'] = identity['training_code_sha256']
             if saved_identity != identity:
-
                 raise IdentityMismatch('Dataset, vocabulary, font, code, runtime, or training configuration changed')
             self.latest_valid = path == self.latest
             if path == self.previous:
@@ -87,3 +86,21 @@ class Checkpoints:
             self.latest_valid = True
         finally:
             temporary.unlink(missing_ok=True)
+
+
+def write_best(directory, best):
+    """Materialize the best snapshot committed inside the restart checkpoint."""
+    path = Path(directory) / 'best.pt'
+    if best is None:
+        path.unlink(missing_ok=True)
+        return
+    fd, name = tempfile.mkstemp(prefix='.best-', suffix='.tmp', dir=directory)
+    temporary = Path(name)
+    try:
+        with os.fdopen(fd,'wb') as stream:
+            torch.save(best,stream)
+            stream.flush(); os.fsync(stream.fileno())
+        os.replace(temporary,path)
+        sync_directory(directory)
+    finally:
+        temporary.unlink(missing_ok=True)

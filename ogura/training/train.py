@@ -5,7 +5,7 @@ Run: python -m ogura.training.train --help
 import argparse
 from collections import Counter
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import fcntl
 import hashlib
 import json
@@ -24,7 +24,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from ogura.text_common import ROOT
-from .checkpoint import Checkpoints, restore_rng, rng_state
+from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
+from .evaluate import evaluate
 from .model import LineCNN, ctc_loss
 from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
@@ -36,6 +37,8 @@ class TrainConfig:
     vocabulary: Path = ROOT / 'datasets/final_50_len20_25_hiragana_mix5/targets.jsonl'
     font: Path = ROOT / 'corpus/fonts/NotoSansCJKjp-Regular.otf'
     run_dir: Path = ROOT / 'runs/noto48'
+    validation_text: Path | None = None
+    validation_font_size: int = 40
     device: str = 'auto'
     batch_size: int = 32
     epochs: int = 10
@@ -149,14 +152,15 @@ class EpochDataset(Dataset):
 def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
-    for key in ('text', 'vocabulary', 'font', 'run_dir', 'device', 'resume', 'max_steps',
+    for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
                 'workers', 'save_every', 'log_every', 'log_samples', 'epochs'):
         settings.pop(key)
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
         code.update(path.name.encode()); code.update(path.read_bytes())
     return {
-        'format': 1, 'text_sha256': sha256(config.text),
+        'format': 2, 'text_sha256': sha256(config.text),
+        'validation_sha256': sha256(config.validation_text) if config.validation_text else None,
         'vocabulary_sha256': sha256(config.vocabulary), 'font_sha256': sha256(config.font),
         'training_code_sha256': code.hexdigest(), 'settings': settings,
         'runtime': {'python': platform.python_version(), 'torch': str(torch.__version__),
@@ -168,7 +172,7 @@ def identity_for(config, device):
 def train(config: TrainConfig, on_step=None):
     """on_step is an optional observer called only after a complete update."""
     positive = (config.batch_size, config.epochs, config.channels, config.save_every,
-                config.threads, config.log_every)
+                config.threads, config.log_every, config.validation_font_size)
     if min(positive) < 1 or config.log_samples < 0 or config.workers < 0 or not config.learning_rate > 0:
         raise ValueError('Invalid training configuration')
     if not 0 < config.lr_decay <= 1 or not 1 <= config.font_size_min <= config.font_size_max:
@@ -195,12 +199,28 @@ def train(config: TrainConfig, on_step=None):
         if not config.resume and (checkpoints.latest.exists() or checkpoints.previous.exists()):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
-        saved = checkpoints.load(identity, compatible_code_hashes=(
-            # Version before sample printing: identical training and checkpoint semantics.
-            '3f297d0e0e09cb103d90d19d3a5544b975763a2f1b85190b7c81c6bec3e5312c',
-        )) if config.resume else None
+        saved = checkpoints.load(identity) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary)
         records, report = prepare_data(config, vocabulary)
+        validation_dataset = None
+        if config.validation_text:
+            validation_config = replace(config, text=config.validation_text, limit=None,
+                                        font_size_min=config.validation_font_size,
+                                        font_size_max=config.validation_font_size)
+            validation_records, validation_report = prepare_data(validation_config, vocabulary)
+            if {text for text,_ in records} & {text for text,_ in validation_records}:
+                raise ValueError('Validation text overlaps training text after font replacement')
+            manifest_path = config.validation_text.parent / 'manifest.json'
+            if manifest_path.exists():
+                manifest = json.loads(manifest_path.read_text())
+                expected = {'training_text_sha256': identity['text_sha256'],
+                            'targets_sha256': identity['vocabulary_sha256'],
+                            'validation_text_sha256': identity['validation_sha256'], 'split': 'validation'}
+                if any(manifest.get(k) != value for k,value in expected.items()):
+                    raise ValueError('Validation manifest does not match this training dataset')
+            validation_dataset = EpochDataset(validation_records, list(range(len(validation_records))),
+                                              validation_config, epoch=0)
+            atomic_json(config.run_dir / 'validation_font_coverage.json', validation_report)
         atomic_json(config.run_dir / 'font_coverage.json', report)
         atomic_json(config.run_dir / 'run_config.json', {
             'arguments': {k: str(v) if isinstance(v, Path) else v for k,v in asdict(config).items()},
@@ -214,6 +234,7 @@ def train(config: TrainConfig, on_step=None):
         position = {'epoch': 0, 'next_batch': 0, 'step': 0}
         epoch_totals = empty_totals()
         log_offset = 0
+        best = None
         if saved:
             model.load_state_dict(saved['model'])
             optimizer.load_state_dict(saved['optimizer'])
@@ -222,10 +243,12 @@ def train(config: TrainConfig, on_step=None):
             position = dict(saved['position'])
             epoch_totals = dict(saved['metrics']['epoch_totals'])
             log_offset = saved['metrics']['log_offset']
+            best = saved['best']
             restore_rng(saved['rng'])
             del saved
             print(f'Resuming: {position}', flush=True)
         metrics_log = MetricsLog(config.run_dir / 'metrics.jsonl', log_offset)
+        write_best(config.run_dir, best)
         model.train()
 
         def save():
@@ -234,7 +257,10 @@ def train(config: TrainConfig, on_step=None):
                 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(),
                 'scaler': scaler.state_dict(), 'position': dict(position), 'rng': rng_state(),
                 'metrics': {'epoch_totals': dict(epoch_totals), 'log_offset': metrics_log.offset},
+                'best': best,
             })
+
+            write_best(config.run_dir, best)
 
         if not config.resume:
             save()  # Even interruption before the first periodic save has a restart point.
@@ -297,6 +323,18 @@ def train(config: TrainConfig, on_step=None):
                     print(f"epoch={epoch + 1} accuracy={epoch_summary['exact_accuracy']:.2%} "
                           f"CER={epoch_summary['cer']:.2%} seconds={epoch_summary['seconds']:.3f}", flush=True)
                     epoch_totals = empty_totals()
+                if end_epoch and validation_dataset is not None:
+                    validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
+                    improved = best is None or validation['cer'] < best['metrics']['cer']
+                    if improved:
+                        best = dict(identity=identity, epoch=epoch+1, step=position['step'],
+                                    metrics=validation, characters=list(vocabulary.characters),
+                                    channels=config.channels,
+                                    model={k:v.detach().cpu().clone() for k,v in model.state_dict().items()})
+                    events.append(dict(kind='validation', epoch=epoch+1, step=position['step'],
+                                       is_best=improved, **validation))
+                    print(f"validation epoch={epoch+1} accuracy={validation['exact_accuracy']:.2%} "
+                          f"CER={validation['cer']:.2%} seconds={validation['seconds']:.3f} best={improved}", flush=True)
                 metrics_log.append(events)
                 stop = config.max_steps is not None and position['step'] >= config.max_steps
                 if end_epoch or stop or (updated and position['step'] % config.save_every == 0):
@@ -316,10 +354,10 @@ def train(config: TrainConfig, on_step=None):
 def main():
     defaults = TrainConfig()
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('text', 'vocabulary', 'font', 'run_dir'):
+    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text'):
         parser.add_argument('--' + name.replace('_', '-'), type=Path, default=getattr(defaults, name))
     for name in ('batch_size', 'epochs', 'channels', 'seed', 'save_every', 'workers',
-                 'font_size_min', 'font_size_max', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
+                 'font_size_min', 'font_size_max', 'validation_font_size', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
