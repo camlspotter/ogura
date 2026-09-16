@@ -51,6 +51,7 @@ class TrainConfig:
     device: str = 'auto'
     batch_size: int = 32
     epochs: int = 10
+    early_stopping_patience: int = 0
     learning_rate: float = 0.001
     lr_decay: float = 0.95
     channels: int = 32
@@ -169,7 +170,7 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
-                'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from', 'monitor_validation'):
+                'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
         settings.pop(key)
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
@@ -206,6 +207,10 @@ def train(config: TrainConfig, on_step=None):
         raise ValueError('Limits must be positive')
     if config.validation_augmented and not config.validation_text:
         raise ValueError('--validation-augmented requires --validation-text')
+    if config.early_stopping_patience < 0:
+        raise ValueError('Early stopping patience must be nonnegative')
+    if config.early_stopping_patience and not config.validation_text:
+        raise ValueError('Early stopping requires --validation-text')
     if config.resume and config.init_from:
         raise ValueError('--resume and --init-from are mutually exclusive')
     parameters_for_sample(config.font, config.seed, 0, 'check', config.font_size_min,
@@ -232,7 +237,8 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
-            # Logging/monitoring changes preserve training updates and the best-model criterion.
+            # Logging, monitoring and stopping preserve updates and the best-model criterion.
+            '6be33a35ce25e831be7544cc45f0e4f632eab9438c2be3185bc6f9c804af3041',
             '74af5387661339582ec621527686e1a14ad01cdc67a2f7b4a3948ec236c751df',
             'e9956d6bc8c4b393adb9a770635a61f2f2c7ae7f38763067d5fe9aaa6bf347ca',
         )) if config.resume else None
@@ -318,12 +324,32 @@ def train(config: TrainConfig, on_step=None):
 
             write_best(config.run_dir, best)
 
+        def early_stop_event():
+            # Reconstruct from committed epochs, including checkpoints predating early stopping.
+            if not config.early_stopping_patience or best is None:
+                return None
+            stale_epochs = position['epoch'] - best['epoch']
+            if stale_epochs < config.early_stopping_patience:
+                return None
+            return dict(kind='early_stop', epoch=position['epoch'], step=position['step'],
+                        patience=config.early_stopping_patience, stale_epochs=stale_epochs,
+                        best_epoch=best['epoch'], best_cer=best['metrics']['cer'])
+
+        def announce_early_stop(event):
+            print(f"Early stopping: no validation CER improvement for {event['stale_epochs']} epochs "
+                  f"(patience={event['patience']}); best epoch={event['best_epoch']} "
+                  f"CER={event['best_cer']:.4%}", flush=True)
+
         if not config.resume:
             save()  # Even interruption before the first periodic save has a restart point.
         total_batches = math.ceil(len(records) / config.batch_size)
         if not 0 <= position['next_batch'] < total_batches:
             raise ValueError('Invalid checkpoint batch position')
         if config.max_steps is not None and position['step'] >= config.max_steps:
+            return position
+        already_stopped = early_stop_event()
+        if already_stopped:
+            announce_early_stop(already_stopped)
             return position
         for epoch in range(position['epoch'], config.epochs):
             segment_elapsed = epoch_elapsed
@@ -404,8 +430,11 @@ def train(config: TrainConfig, on_step=None):
                 if end_epoch and monitor_datasets:
                     for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device):
                         events.append(dict(kind='validation_length', epoch=epoch+1, step=position['step'], **result))
+                stopping_event = early_stop_event() if end_epoch else None
+                if stopping_event:
+                    events.append(stopping_event)
                 metrics_log.append(events)
-                stop = config.max_steps is not None and position['step'] >= config.max_steps
+                stop = bool(stopping_event) or config.max_steps is not None and position['step'] >= config.max_steps
                 if end_epoch or stop or (updated and position['step'] % config.save_every == 0):
                     save()
                 if updated and (position['step'] == 1 or position['step'] % config.log_every == 0):
@@ -418,6 +447,8 @@ def train(config: TrainConfig, on_step=None):
                 if on_step is not None:
                     on_step(dict(position), batch.sample_ids)
                 if stop:
+                    if stopping_event:
+                        announce_early_stop(stopping_event)
                     return position
                 batch_started = time.perf_counter()
         return position
@@ -428,7 +459,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'init_from'):
         parser.add_argument('--' + name.replace('_', '-'), type=Path, default=getattr(defaults, name))
-    for name in ('batch_size', 'epochs', 'channels', 'seed', 'save_every', 'workers',
+    for name in ('batch_size', 'epochs', 'early_stopping_patience', 'channels', 'seed', 'save_every', 'workers',
                  'font_size_min', 'font_size_max', 'padding_min', 'padding_max', 'vertical_jitter', 'validation_font_size', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay', 'clean_probability'):
