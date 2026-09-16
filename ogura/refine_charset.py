@@ -5,16 +5,16 @@ import json
 from pathlib import Path
 import unicodedata as ud
 
-from classify_characters import dump_lines
+from ogura.classify_characters import dump_lines
 
-ROOT = Path(__file__).resolve().parent
-OUT = ROOT / "results/charset_refined"
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "charset/selected"
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    initial = [json.loads(line) for line in (ROOT / "results/charset/candidates.jsonl").open()]
-    observed = {r["character"]: r for r in map(json.loads, (ROOT / "results/character_counts.jsonl").open())}
+    initial = [json.loads(line) for line in (ROOT / "charset/candidates/candidates.jsonl").open()]
+    observed = {r["character"]: r for r in map(json.loads, (ROOT / "cache/character_counts.jsonl").open())}
     latin = {chr(cp) for cp in range(256) if "LATIN" in ud.name(chr(cp), "") and ud.category(chr(cp)).startswith("L")} | set("ªº")
     greek = set("ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρστυφχψως")
     cyrillic = {chr(cp) for cp in range(0x410,0x450)} | set("Ёё")

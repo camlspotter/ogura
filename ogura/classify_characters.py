@@ -9,11 +9,11 @@ import unicodedata as ud
 
 import pyarrow.parquet as pq
 
-ROOT = Path(__file__).resolve().parent
-OUT = ROOT / "results" / "charset"
-IVD = ROOT / "data/charset_sources/IVD_Sequences-2026-08-03.txt"
-SCRIPTS = ROOT / "data/charset_sources/Scripts-15.0.0.txt"
-SCRIPT_EXTENSIONS = ROOT / "data/charset_sources/ScriptExtensions-15.0.0.txt"
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "charset/candidates"
+IVD = ROOT / "corpus/unicode/IVD_Sequences-2026-08-03.txt"
+SCRIPTS = ROOT / "corpus/unicode/Scripts-15.0.0.txt"
+SCRIPT_EXTENSIONS = ROOT / "corpus/unicode/ScriptExtensions-15.0.0.txt"
 VS = re.compile("[\U000e0100-\U000e01ef]")
 
 
@@ -83,7 +83,7 @@ def classify(c):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    with (ROOT / "results/character_counts.jsonl").open() as stream:
+    with (ROOT / "cache/character_counts.jsonl").open() as stream:
         rows = [json.loads(line) for line in stream]
     for row in rows:
         row["group"], row["status"] = classify(row["character"])
@@ -114,7 +114,7 @@ def main():
         registry[sequence].append({"collection": collection, "identifier": identifier})
     counts, docs, invalid = Counter(), Counter(), Counter()
     scanned = 0
-    for path in sorted((ROOT / "data/20231101.ja").glob("*.parquet")):
+    for path in sorted((ROOT / "corpus/wikipedia/20231101.ja").glob("*.parquet")):
         for batch in pq.ParquetFile(path).iter_batches(batch_size=512, columns=["text"]):
             for text in batch.column(0).to_pylist():
                 seen = set()
@@ -180,7 +180,7 @@ def main():
                "note": "Provisional candidates, not a finalized dictionary. Han characters are not classified by language."}
     assert sum(counts.values()) + sum(invalid.values()) == sum(
         r["occurrences"] for r in rows if 0xE0100 <= ord(r["character"]) <= 0xE01EF)
-    expected = json.loads((ROOT / "results/summary.json").read_text())["articles"]
+    expected = json.loads((ROOT / "cache/summary.json").read_text())["articles"]
     assert scanned == expected
     (OUT / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(summary, ensure_ascii=False, indent=2))

@@ -8,16 +8,18 @@ import re
 
 import pyarrow.parquet as pq
 
-from extract_training_text import digest, split_article, strip_han_ivs
-from synthesize_shortfalls import apply_replacements
+from ogura.text_common import digest, split_article, strip_han_ivs
+from ogura.synthesize_shortfalls import apply_replacements
+from ogura.diversity import DiversityFilter
+from ogura.prose_filter import is_prose
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "data/training_text")
-    parser.add_argument("--report-dir", type=Path, default=ROOT / "results/training_text")
+    parser.add_argument("--output", type=Path, default=ROOT / "datasets/final_100_len20_25_diverse")
+    parser.add_argument("--report-dir", type=Path, default=ROOT / "datasets/final_100_len20_25_diverse/reports")
     args = parser.parse_args()
     out = args.output
     manifest = json.loads((out / "manifest.json").read_text())
@@ -26,6 +28,8 @@ def main():
     hashes, counts, lengths = set(), Counter(), Counter()
     source_checks = defaultdict(list)
     samples = 0
+    donor_ids=set();synthetic_donor_ids=set()
+    diversity = DiversityFilter() if manifest.get("diversity_version") else None
     previous_article = None
     intervals = []
     per_article_anchors = Counter()
@@ -42,6 +46,15 @@ def main():
     for line in (out / "train.jsonl").open():
         row = json.loads(line)
         text = row["text"]
+        if diversity is not None:
+            donor=row.get("base_text",text)
+            donor_id=digest(donor)
+            assert donor_id not in donor_ids, 'Donor text reused'
+            donor_ids.add(donor_id)
+            if row.get('synthetic',False):synthetic_donor_ids.add(donor_id)
+            assert diversity.allows(row['article_id'],row['start'],row['end'],donor)
+            diversity.add(row['article_id'],row['start'],row['end'],donor)
+            assert is_prose(donor,row['title'])
         if row.get("synthetic", False):
             assert digest(row["base_text"]) == row["base_sample_id"]
             assert apply_replacements(row["base_text"], row["replacements"]) == text
@@ -79,6 +92,8 @@ def main():
         if row.get("synthetic", False) or int(row["sample_id"][:8],16) % 1000 == 0 or len(text) != row["end"] - row["start"]:
             source_checks[row["article_id"]].append(row)
     check_article()
+    if diversity is not None:
+        assert synthetic_donor_ids.isdisjoint(hashes), "Synthetic donor also present as an output sample"
     assert samples == summary["samples"]
     assert dict(lengths) == {int(k):v for k,v in summary["length_counts"].items()}
     for line in (out / "coverage.jsonl").open():
@@ -95,7 +110,7 @@ def main():
     assert dict(split_counts) == summary["article_splits"]
     assert len(seen_articles) == summary["articles"]
     source_verified = 0
-    for path in sorted((ROOT / "data/20231101.ja").glob("*.parquet")):
+    for path in sorted((ROOT / "corpus/wikipedia/20231101.ja").glob("*.parquet")):
         for batch in pq.ParquetFile(path).iter_batches(batch_size=512,columns=["id","text"]):
             for article in batch.to_pylist():
                 if article["id"] not in source_checks:
@@ -118,8 +133,13 @@ def main():
               "checks": [f"{manifest.get('min_tokens', 1)}..25 tokens", "atomic variation sequences", "target vocabulary",
                          "no line crossing", "unique text hashes", "train-only article split",
                          "source overlap and anchor cap according to manifest", "complete article split manifest",
-                         "exact coverage and length counts", "sampled source equality", "all synthetic replacements and source equality"]}
+                         "global source nonoverlap and unique 16-character donor fragments when enabled", "Japanese prose heuristic when enabled", "exact coverage and length counts", "sampled source equality", "all synthetic replacements and source equality"]}
     args.report_dir.mkdir(parents=True, exist_ok=True)
+    if diversity is not None:
+        report['unique_donor_texts']=len(donor_ids)
+        report['unique_synthetic_donor_texts']=len(synthetic_donor_ids)
+        report['reused_donor_texts']=samples-len(donor_ids)
+        report['synthetic_donors_present_as_output']=len(synthetic_donor_ids & hashes)
     result = args.report_dir / "verification.json"
     result.write_text(json.dumps(report,indent=2) + "\n")
     print(json.dumps(report,indent=2))

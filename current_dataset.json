@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "samples": 339839,
+  "shuffle_seed": 20260915,
+  "python_version": "3.12.7",
+  "inputs": [
+    {
+      "path": "datasets/direct_100_len20_25_diverse/train.jsonl",
+      "sha256": "03320290d0e81e0c1f7d22fb252444c4b70cb915ea1044005e8bb8577c92e4de"
+    },
+    {
+      "path": "datasets/final_50_len20_25_hiragana_mix5/synthetic.jsonl",
+      "sha256": "11e0bab84aeee7dc003a90ff866c756b1eed1e0bf0ef9a140386bb50c6202f49"
+    }
+  ],
+  "outputs": {
+    "train.jsonl": "437bf9c41f138ffa60ed068c53740e8396aec00e87181b052e106b5016f9aff5",
+    "train.txt": "8979dd3ad9dd412d15dbe8dee958f423b3da1935574d50b98cebc75016661625"
+  },
+  "metadata": [
+    {
+      "path": "datasets/final_50_len20_25_hiragana_mix5/targets.jsonl",
+      "sha256": "a458fbcf987e5b1f7f9b7956bcd9a1f76c4f13d7df137e282d120df8b2481c96"
+    },
+    {
+      "path": "datasets/final_50_len20_25_hiragana_mix5/manifest.json",
+      "sha256": "da101cda111fe7cb96fce29de3e2e65a17e0334ce880f558aae0785ee43b2af4"
+    },
+    {
+      "path": "datasets/final_50_len20_25_hiragana_mix5/summary.json",
+      "sha256": "93736a91d5ad3dc0687ea2d682d4fcc0c6a3764a3eced6c3aa474344e1b6e335"
+    },
+    {
+      "path": "datasets/final_50_len20_25_hiragana_mix5/coverage.jsonl",
+      "sha256": "e36f4f1f6432786657f4a2a0ac199d655c10c92b206123cd6530a33173d24896"
+    }
+  ]
+}

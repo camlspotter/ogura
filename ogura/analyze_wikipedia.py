@@ -15,7 +15,7 @@ import pyarrow.parquet as pq
 REVISION = "b04c8d1ceb2f5cd4588862100d08de323dccfbaa"
 REPO = "wikimedia/wikipedia"
 CONFIG = "20231101.ja"
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def write_json(path, value):
@@ -28,16 +28,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workers", type=int, default=3)
     args = parser.parse_args()
-    raw = ROOT / "data" / CONFIG
-    cache = ROOT / "data" / "counts"
-    output = ROOT / "results"
+    raw = ROOT / "corpus/wikipedia" / CONFIG
+    cache = ROOT / "cache/counts"
+    output = ROOT / "cache"
     for directory in (raw, cache, output):
         directory.mkdir(parents=True, exist_ok=True)
     api = f"https://huggingface.co/api/datasets/{REPO}/tree/{REVISION}/{CONFIG}"
     with urlopen(api) as response:
         files = [item for item in json.load(response) if item["path"].endswith(".parquet")]
     assert len(files) == 15, "Unexpected snapshot inventory"
-    write_json(output / "source.json", {
+    write_json(raw.parent / "source.json", {
         "repository": REPO, "revision": REVISION, "config": CONFIG,
         "api": api, "files": files,
         "counting": "Raw Unicode code points in text only; no normalization or filtering",
