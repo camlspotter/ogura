@@ -353,3 +353,39 @@ uv run --frozen python -m ogura.build_validation \
 GPUマシンでは、そのマシンで作成した学習データを使って上記コマンドを実行する。
 この手順はテキスト作成のみ。進行中の実行の `--validation-text` を差し替えると
 再開の同一性チェックで拒否されるため、既存の検証設定は変更しない。
+
+## 保存済みbest.ptの長さ別評価
+
+```sh
+uv run --frozen --extra train python -m ogura.evaluate_lengths \
+  --checkpoint runs/noto48-augment1/best.pt --device cuda \
+  --output runs/noto48-augment1/length-evaluation.json
+```
+
+既定で `datasets/validation_short5`、`datasets/validation`、`datasets/validation_long80` の
+`validation.txt` を各々baseline（基準フォント・固定サイズ）とaugmented（固定した揺らぎ）で
+評価し、6組の完全一致率・CER・時間を表示する。学習・重み更新はしない。
+描画設定とシードはチェックポイントから読み、各セットともepoch=0固定。
+フォントのパスは隣の `run_config.json` から読む。ファイル内容のハッシュも照合する。
+移動後の実行では `--font-dir corpus/fonts` でフォントのディレクトリを変更できる。
+`--run-config` で設定ファイルを明示することも可能。
+各検証セットのmanifestと字種一覧も照合し、別の学習データから作ったセットは拒否する。
+`--validation-text PATH` を繰り返せば評価対象を明示できる。
+出力JSONは上書きしないので、再評価時は新しい `--output` を指定する。
+
+## 毎エポックの追加監視
+
+現在の追加学習コマンド（再開なら `--init-from` を外し `--resume`）に次を追加する。
+
+```sh
+--monitor-validation datasets/validation_short5/validation.txt \
+--monitor-validation datasets/validation_long80/validation.txt
+```
+
+従来の `--validation-text` と `--validation-augmented` はそのままにする。
+追加セットはbaseline/augmentedの両方を毎エポック評価し、`validation_length` として
+コンソールと `metrics.jsonl` に記録する。JSONLにはepoch・step・セット名・描画条件名・
+テキストのハッシュが入る。`best.pt` は従来の主検証セットのCERだけで選ぶ。
+追加監視は乱数状態とモデルのtrain/eval状態を元に戻し、重み更新には影響しない。
+このため監視セットは再開時に追加・削除できる（その後のエポックから計測）。
+過去のエポックの追加評価は補完しない。監視対象を指定しなければ従来の評価のみ。

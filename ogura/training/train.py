@@ -47,6 +47,7 @@ class TrainConfig:
     run_dir: Path = ROOT / 'runs/noto48'
     validation_text: Path | None = None
     validation_font_size: int = 40
+    monitor_validation: tuple[Path, ...] = ()
     device: str = 'auto'
     batch_size: int = 32
     epochs: int = 10
@@ -168,7 +169,7 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
-                'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from'):
+                'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from', 'monitor_validation'):
         settings.pop(key)
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
@@ -231,7 +232,8 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
-            # Only sample logging changed from the augmentation release.
+            # Logging/monitoring changes preserve training updates and the best-model criterion.
+            '74af5387661339582ec621527686e1a14ad01cdc67a2f7b4a3948ec236c751df',
             'e9956d6bc8c4b393adb9a770635a61f2f2c7ae7f38763067d5fe9aaa6bf347ca',
         )) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary)
@@ -263,9 +265,11 @@ def train(config: TrainConfig, on_step=None):
                 augmented_validation_dataset = EpochDataset(augmented_records, list(range(len(augmented_records))),
                                                             augmented_config, epoch=0)
             atomic_json(config.run_dir / 'validation_font_coverage.json', validation_report)
+        from ogura.evaluate_lengths import validation_sets, evaluate_sets
+        monitor_datasets = validation_sets(config, vocabulary, config.monitor_validation, identity)
         atomic_json(config.run_dir / 'font_coverage.json', report)
         atomic_json(config.run_dir / 'run_config.json', {
-            'arguments': {k: str(v) if isinstance(v, Path) else [str(p) for p in v] if k == 'extra_fonts' else v for k,v in asdict(config).items()},
+            'arguments': {k: str(v) if isinstance(v, Path) else [str(p) for p in v] if k in ('extra_fonts', 'monitor_validation') else v for k,v in asdict(config).items()},
             'identity': identity, 'classes_including_blank': len(vocabulary),
         })
         print(f"Rows: {len(records):,}; rows potentially needing space replacements: {report['replaced_rows']:,}; device: {device}", flush=True)
@@ -397,6 +401,9 @@ def train(config: TrainConfig, on_step=None):
                                        is_best=improved, **validation))
                     print(f"validation epoch={epoch+1} accuracy={validation['exact_accuracy']:.2%} "
                           f"CER={validation['cer']:.2%} seconds={validation['seconds']:.3f} best={improved}", flush=True)
+                if end_epoch and monitor_datasets:
+                    for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device):
+                        events.append(dict(kind='validation_length', epoch=epoch+1, step=position['step'], **result))
                 metrics_log.append(events)
                 stop = config.max_steps is not None and position['step'] >= config.max_steps
                 if end_epoch or stop or (updated and position['step'] % config.save_every == 0):
@@ -427,11 +434,13 @@ def main():
     for name in ('learning_rate', 'lr_decay', 'clean_probability'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
+    parser.add_argument('--monitor-validation', type=Path, action='append', default=[])
     parser.add_argument('--extra-font', dest='extra_fonts', type=Path, action='append', default=[])
     for name in ('amp', 'deterministic', 'resume', 'validation-augmented', 'vertical-full-range'):
         parser.add_argument('--' + name, action='store_true')
     args = vars(parser.parse_args())
     args['extra_fonts'] = tuple(args['extra_fonts'])
+    args['monitor_validation'] = tuple(args['monitor_validation'])
     config = TrainConfig(**args)
     try:
         train(config)
