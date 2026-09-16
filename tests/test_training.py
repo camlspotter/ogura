@@ -229,7 +229,7 @@ class TrainingTests(unittest.TestCase):
             (root/'targets.jsonl').write_text(''.join(json.dumps({'character':c},ensure_ascii=False)+'\n' for c in sorted(set(''.join(texts)))))
             config = TrainConfig(text=root/'text.txt', vocabulary=root/'targets.jsonl', font=FONT,
                                  run_dir=root/'full', device='cpu', batch_size=2, epochs=2,
-                                 save_every=2, channels=2, threads=1, log_every=99,
+                                 save_every=2, channels=2, model_type='residual', threads=1, log_every=99,
                                  deterministic=True, font_size_min=32, font_size_max=40, log_samples=1,
                                  extra_fonts=(FONT,), padding_min=2, padding_max=6, vertical_jitter=3, clean_probability=0.25, vertical_full_range=True)
             full_ids = []

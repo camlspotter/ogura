@@ -42,6 +42,7 @@ class EarlyStoppingTests(unittest.TestCase):
             checkpoint=root/'interrupted/latest.pt'
             state=torch.load(checkpoint,weights_only=True)
             state['identity']['training_code_sha256']='6be33a35ce25e831be7544cc45f0e4f632eab9438c2be3185bc6f9c804af3041'
+            state['identity']['settings'].pop('model_type', None)
             torch.save(state,checkpoint)
             resumed=replace(interrupted,resume=True,epochs=10,early_stopping_patience=2)
             self.assertEqual(run(resumed,[.6]),result)

@@ -63,6 +63,9 @@ class Checkpoints:
             saved_identity = dict(state['identity'])
             if saved_identity.get('training_code_sha256') in compatible_code_hashes:
                 saved_identity['training_code_sha256'] = identity['training_code_sha256']
+                if 'settings' in saved_identity:
+                    saved_identity['settings'] = dict(saved_identity['settings'])
+                    saved_identity['settings'].setdefault('model_type', 'small')
             if saved_identity != identity:
                 raise IdentityMismatch('Dataset, vocabulary, font, code, runtime, or training configuration changed')
             self.latest_valid = path == self.latest

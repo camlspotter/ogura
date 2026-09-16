@@ -26,7 +26,7 @@ from torch.utils.data import DataLoader, Dataset
 from ogura.text_common import ROOT
 from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
 from .evaluate import evaluate
-from .model import LineCNN, ctc_loss
+from .model import LineCNN, ctc_loss, make_model
 from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, epoch_eta, format_duration, local_finish_time
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
 
@@ -55,6 +55,7 @@ class TrainConfig:
     learning_rate: float = 0.001
     lr_decay: float = 0.95
     channels: int = 32
+    model_type: str = "small"
     seed: int = 20260915
     save_every: int = 500
     workers: int = 0
@@ -187,11 +188,13 @@ def identity_for(config, device):
     }
 
 
-def load_initial_weights(model, path, vocabulary, channels):
+def load_initial_weights(model, path, vocabulary, channels, model_type="small"):
     """Warm start only from an exported best.pt with an identical label mapping."""
     state = torch.load(path, map_location='cpu', weights_only=True)
     if state.get('characters') != list(vocabulary.characters) or state.get('channels') != channels:
         raise ValueError('Initial model vocabulary/order or channels differ from this run')
+    if state.get('model_type', 'small') != model_type:
+        raise ValueError('Initial model architecture differs from this run')
     model.load_state_dict(state['model'], strict=True)
 
 
@@ -237,7 +240,8 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
-            # Logging, monitoring and stopping preserve updates and the best-model criterion.
+            # The original small model is unchanged by the optional residual architecture.
+            '7707918703b7974d4497433b68e6253d37f75bafb005a2e98ca690a164c44a1a',
             '6be33a35ce25e831be7544cc45f0e4f632eab9438c2be3185bc6f9c804af3041',
             '74af5387661339582ec621527686e1a14ad01cdc67a2f7b4a3948ec236c751df',
             'e9956d6bc8c4b393adb9a770635a61f2f2c7ae7f38763067d5fe9aaa6bf347ca',
@@ -279,9 +283,9 @@ def train(config: TrainConfig, on_step=None):
             'identity': identity, 'classes_including_blank': len(vocabulary),
         })
         print(f"Rows: {len(records):,}; rows potentially needing space replacements: {report['replaced_rows']:,}; device: {device}", flush=True)
-        model = LineCNN(len(vocabulary), config.channels).to(device)
+        model = make_model(len(vocabulary), config.channels, config.model_type).to(device)
         if config.init_from:
-            load_initial_weights(model, config.init_from, vocabulary, config.channels)
+            load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type)
             print(f'Initialized weights from: {config.init_from}; optimizer and epoch start fresh', flush=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=config.lr_decay)
@@ -421,7 +425,7 @@ def train(config: TrainConfig, on_step=None):
                     if improved:
                         best = dict(identity=identity, epoch=epoch+1, step=position['step'],
                                     metrics=validation, characters=list(vocabulary.characters),
-                                    channels=config.channels,
+                                    channels=config.channels, model_type=config.model_type,
                                     model={k:v.detach().cpu().clone() for k,v in model.state_dict().items()})
                     events.append(dict(kind='validation', epoch=epoch+1, step=position['step'],
                                        is_best=improved, **validation))
@@ -464,6 +468,7 @@ def main():
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay', 'clean_probability'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
+    parser.add_argument('--model-type', choices=('small', 'residual'), default='small')
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
     parser.add_argument('--monitor-validation', type=Path, action='append', default=[])
     parser.add_argument('--extra-font', dest='extra_fonts', type=Path, action='append', default=[])

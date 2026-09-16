@@ -29,7 +29,7 @@ class LengthEvaluationTests(unittest.TestCase):
                 training_text_sha256=sha256(text), targets_sha256=sha256(vocab), validation_text_sha256=sha256(val/'validation.txt'))))
             cfg = TrainConfig(text=text,vocabulary=vocab,font=FONT,run_dir=root/'plain',
                 validation_text=val/'validation.txt',channels=2,threads=1,batch_size=2,epochs=1,log_samples=0,
-                device='cpu',font_size_min=28,font_size_max=40,vertical_full_range=True,validation_augmented=True)
+                device='cpu',model_type='residual',font_size_min=28,font_size_max=40,vertical_full_range=True,validation_augmented=True)
             with redirect_stdout(io.StringIO()):
                 train(cfg)
                 train(replace(cfg,run_dir=root/'monitored',monitor_validation=(val/'validation.txt',)))

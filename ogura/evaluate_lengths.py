@@ -8,7 +8,7 @@ import torch
 
 from ogura.text_common import ROOT
 from ogura.training.evaluate import evaluate
-from ogura.training.model import LineCNN
+from ogura.training.model import make_model
 from ogura.training.render import Vocabulary
 
 
@@ -84,7 +84,7 @@ def main():
     paths = args.validation_text or [ROOT/'datasets'/name/'validation.txt'
                                     for name in ('validation_short5','validation','validation_long80')]
     datasets = validation_sets(config, vocabulary, paths, identity)
-    model = LineCNN(len(vocabulary), state['channels']).to(device)
+    model = make_model(len(vocabulary), state['channels'], state.get('model_type', 'small')).to(device)
     model.load_state_dict(state['model'])
     rows = evaluate_sets(model, datasets, vocabulary, args.batch_size, device)
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -414,3 +414,40 @@ baselineや5文字・80文字の監視用評価は停止判定に使わない。
 旧版からの再開でもそれまでの非改善エポックを数える。再開時点で既に条件を
 満たしていれば追加学習せず終了する。停止後さらに続けたい場合は、patienceを
 増やすか0にして再開できる。patienceの変更は再開時に許可する。
+
+## 深く・広くした残差CNN
+
+`--model-type residual --channels 64` で新モデルを選ぶ。既定の `small` は従来の4層CNN。
+新モデルの各段階は64/128/256/256チャネルで、縮小畳み込みの後に残差ブロックを
+1/1/2/2個置く。各ブロックは3×3畳み込み→ReLU→3×3畳み込み→入力との加算→ReLU。
+ブロック内では縮小せず、BatchNormやDropoutは加えない。
+最後に1×1畳み込みで128チャネルへ変換してから、高さ平均・1次元CNN・文字分類を行う。
+横方向の縮小率は従来と同じ1/8。16,058クラス時は8,235,834パラメータ、
+FP32の重みは約32.94MB（メタデータ別）。実際のGPU速度は要計測。
+
+モデル構造が変わるため、旧モデルの `--resume` や `--init-from` ではなく、
+別のrun-dirで最初から学習する。以下は開始例。既存モデルを残して同じ検証条件で比較する。
+
+```sh
+uv run --frozen --extra train python -m ogura.training.train \
+  --device cuda --run-dir runs/noto48-residual64 \
+  --model-type residual --channels 64 \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --font-size-min 28 --font-size-max 40 \
+  --padding-min 2 --padding-max 6 --vertical-full-range \
+  --clean-probability 0.25 --learning-rate 0.001 \
+  --batch-size 32 --epochs 60 --workers 4 \
+  --validation-text datasets/validation/validation.txt --validation-augmented \
+  --monitor-validation datasets/validation_short5/validation.txt \
+  --monitor-validation datasets/validation_long80/validation.txt \
+  --early-stopping-patience 5 \
+  --save-every 500 --log-every 100 --log-samples 3
+```
+
+最初は別run-dirで `--limit 8 --max-steps 2` を追加した動作確認もできる。
+その制限付き実行から全件学習へresumeはできないので、本学習は上記の新規run-dirで開始する。
+新モデルの中断再開は同じ設定に `--resume` を追加する。
+`best.pt` にはモデル種別も保存され、長さ別評価コマンドが対応するモデルを構築する。
+旧版のsmallモデルは、更新後も従来の設定で再開・評価できる。
