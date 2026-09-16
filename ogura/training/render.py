@@ -30,6 +30,10 @@ class RenderParams:
     font_size: int = 40
     height: int = 48
     padding: int = 4
+    vertical_offset: int = 0
+    padding_left: int | None = None
+    padding_right: int | None = None
+    vertical_position: float | None = None
 
 
 @dataclass(frozen=True)
@@ -71,13 +75,28 @@ class Vocabulary:
         return len(self.characters) + 1
 
 
-def parameters_for_sample(font_path, seed, epoch, sample_id, size_min=40, size_max=40):
+def parameters_for_sample(font_path, seed, epoch, sample_id, size_min=40, size_max=40,
+                          extra_fonts=(), padding_min=4, padding_max=4, vertical_jitter=0,
+                          clean_probability=0.0, vertical_full_range=False):
     """No worker/global RNG dependency; replay gives the same render parameters."""
     if not 1 <= size_min <= size_max:
         raise ValueError('Invalid font size range')
     digest = hashlib.sha256(f'{seed}:{epoch}:{sample_id}'.encode()).digest()
     rng = random.Random(int.from_bytes(digest, 'big'))
-    return RenderParams(str(font_path), rng.randint(size_min, size_max))
+    if not 0 <= padding_min <= padding_max < 24 or vertical_jitter < 0:
+        raise ValueError('Invalid padding or vertical jitter')
+    if not 0 <= clean_probability <= 1:
+        raise ValueError('Invalid clean probability')
+    if clean_probability and rng.random() < clean_probability:
+        return RenderParams(str(font_path))
+    size = rng.randint(size_min, size_max)
+    chosen = rng.choice((str(font_path), *(str(p) for p in extra_fonts))) if extra_fonts else str(font_path)
+    padding = rng.randint(padding_min, padding_max)
+    offset = rng.randint(-vertical_jitter, vertical_jitter)
+    return RenderParams(chosen, size, padding=padding, vertical_offset=offset,
+                        padding_left=rng.randint(padding_min, padding_max),
+                        padding_right=rng.randint(padding_min, padding_max),
+                        vertical_position=rng.random() if vertical_full_range else None)
 
 
 def replace_unsupported(text: str, font_path: str) -> str:
@@ -96,6 +115,10 @@ def render_sample(sample: Sample) -> Image.Image:
         raise ValueError('Expected a nonempty single-line text')
     if p.height < 1 or p.padding < 0 or 2 * p.padding >= p.height or p.font_size < 1:
         raise ValueError('Invalid rendering dimensions')
+    pad_left = p.padding if p.padding_left is None else p.padding_left
+    pad_right = p.padding if p.padding_right is None else p.padding_right
+    if pad_left < 0 or pad_right < 0:
+        raise ValueError('Horizontal padding must be nonnegative')
     sample = replace(sample, text=replace_unsupported(sample.text, p.font_path))
     for size in range(p.font_size, 0, -1):
         font = load_font(p.font_path, size)
@@ -104,10 +127,17 @@ def render_sample(sample: Sample) -> Image.Image:
             break
     else:
         raise ValueError('Text cannot fit the requested height')
-    width = math.ceil(max(right, font.getlength(sample.text)) - min(0, left)) + 2 * p.padding
+    width = math.ceil(max(right, font.getlength(sample.text)) - min(0, left)) + pad_left + pad_right
     image = Image.new('L', (max(1, width), p.height), 255)
+    ink_top = (p.height - (bottom - top)) // 2
+    ink_top = max(p.padding, min(p.height - p.padding - (bottom - top), ink_top + p.vertical_offset))
+    if p.vertical_position is not None:
+        if not 0 <= p.vertical_position <= 1:
+            raise ValueError('Vertical position must be in [0, 1]')
+        available = p.height - 2 * p.padding - (bottom - top)
+        ink_top = p.padding + min(available, int(p.vertical_position * (available + 1)))
     ImageDraw.Draw(image).text(
-        (p.padding - min(0, left), (p.height - (bottom - top)) // 2 - top),
+        (pad_left - min(0, left), ink_top - top),
         sample.text, font=font, fill=0,
     )
     return image

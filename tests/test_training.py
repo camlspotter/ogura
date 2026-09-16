@@ -16,7 +16,7 @@ from ogura.text_common import ROOT
 from ogura.training.checkpoint import Checkpoints, IdentityMismatch
 from ogura.training.model import LineCNN, ctc_loss
 from ogura.training.render import BatchRenderer, RenderParams, Sample, Vocabulary, parameters_for_sample, render_sample
-from ogura.training.train import TrainConfig, train, prepare_data
+from ogura.training.train import TrainConfig, train, prepare_data, load_initial_weights
 
 FONT = ROOT / 'corpus/fonts/NotoSansCJKjp-Regular.otf'
 
@@ -129,6 +129,75 @@ class TrainingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'space'):
                 prepare_data(TrainConfig(text=path, font=FONT), Vocabulary('日本' + missing))
 
+    def test_augmentation_replay_and_font_specific_labels(self):
+        params = [parameters_for_sample(FONT, 7, 2, str(i), 32, 40,
+                  ('second-font',), 2, 6, 3, 0.25) for i in range(100)]
+        self.assertEqual(params, [parameters_for_sample(FONT, 7, 2, str(i), 32, 40,
+                         ('second-font',), 2, 6, 3, 0.25) for i in range(100)])
+        self.assertGreater(len(set(params)), 10)
+        self.assertIn(RenderParams(str(FONT)), params)
+        self.assertEqual({p.font_path for p in params}, {str(FONT), 'second-font'})
+        self.assertNotEqual(params[0:10], [parameters_for_sample(FONT, 7, 3, str(i), 32, 40,
+                            ('second-font',), 2, 6, 3, 0.25) for i in range(10)])
+        for p in params:
+            if p.font_path != str(FONT): continue
+            im = render_sample(Sample('日本語', p))
+            from PIL import ImageChops
+            box = ImageChops.invert(im).getbbox()
+            self.assertGreaterEqual(box[1], p.padding)
+            self.assertLessEqual(box[3], 48-p.padding)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'text.txt'
+            path.write_text('日本\n')
+            config = TrainConfig(text=path, font=FONT, extra_fonts=(Path('second-font'),))
+            def coverage(font):
+                return frozenset(map(ord, ' 日本' if font == str(FONT) else ' 日'))
+            with patch('ogura.training.train.font_characters', side_effect=coverage):
+                records, _ = prepare_data(config, Vocabulary(' 日本'))
+            self.assertEqual(records[0][0], '日本')
+            with patch('ogura.training.render.font_characters', side_effect=coverage), \
+                 patch('ogura.training.render.load_font', return_value=__import__('ogura.training.render', fromlist=['load_font']).load_font(str(FONT),40)):
+                batch = BatchRenderer(Vocabulary(' 日本'))([
+                    Sample(records[0][0], RenderParams(str(FONT))),
+                    Sample(records[0][0], RenderParams('second-font'))])
+            self.assertEqual(batch.texts, ['日本', '日 '])
+
+    def test_warm_start_checks_label_order_and_loads_exact_weights(self):
+        vocab = Vocabulary(' 日本')
+        original = LineCNN(len(vocab), channels=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'best.pt'
+            torch.save(dict(characters=list(vocab.characters), channels=2, model=original.state_dict()), path)
+            target = LineCNN(len(vocab), channels=2)
+            load_initial_weights(target, path, vocab, 2)
+            self.assert_nested_equal(original.state_dict(), target.state_dict())
+            with self.assertRaises(ValueError):
+                load_initial_weights(target, path, Vocabulary(' 本日'), 2)
+
+    def test_independent_horizontal_padding_preserves_pixels(self):
+        p = RenderParams(str(FONT), padding=4, padding_left=2, padding_right=6)
+        a = render_sample(Sample('日本語', p))
+        b = render_sample(Sample('日本語', replace(p, padding_left=6, padding_right=2)))
+        self.assertEqual(a.size, b.size)
+        self.assertEqual(a.crop((2,0,a.width-6,48)).tobytes(),
+                         b.crop((6,0,b.width-2,48)).tobytes())
+        self.assertEqual(a.crop((0,0,2,48)).getextrema(), (255,255))
+        self.assertEqual(b.crop((b.width-2,0,b.width,48)).getextrema(), (255,255))
+        with self.assertRaises(ValueError):
+            render_sample(Sample('日本語', replace(p, padding_left=-1)))
+
+    def test_full_vertical_range_preserves_ink_and_reaches_both_edges(self):
+        from PIL import ImageChops
+        p = RenderParams(str(FONT), font_size=28, padding=2, vertical_position=0)
+        top = render_sample(Sample('日本語', p))
+        bottom = render_sample(Sample('日本語', replace(p, vertical_position=1)))
+        a = ImageChops.invert(top).getbbox()
+        b = ImageChops.invert(bottom).getbbox()
+        self.assertEqual(a[1], 2)
+        self.assertEqual(b[3], 46)
+        self.assertGreater(b[1]-a[1], 6)
+        self.assertEqual(top.crop(a).tobytes(), bottom.crop(b).tobytes())
+
     def test_ctc_lengths_and_finite_gradients(self):
         batch = BatchRenderer(Vocabulary('日本'))([Sample('日日本', RenderParams(str(FONT)))])
         model = LineCNN(3, channels=2)
@@ -161,7 +230,8 @@ class TrainingTests(unittest.TestCase):
             config = TrainConfig(text=root/'text.txt', vocabulary=root/'targets.jsonl', font=FONT,
                                  run_dir=root/'full', device='cpu', batch_size=2, epochs=2,
                                  save_every=2, channels=2, threads=1, log_every=99,
-                                 deterministic=True, font_size_min=32, font_size_max=40, log_samples=1)
+                                 deterministic=True, font_size_min=32, font_size_max=40, log_samples=1,
+                                 extra_fonts=(FONT,), padding_min=2, padding_max=6, vertical_jitter=3, clean_probability=0.25, vertical_full_range=True)
             full_ids = []
             output = io.StringIO()
             with redirect_stdout(output):

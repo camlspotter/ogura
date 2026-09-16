@@ -237,3 +237,91 @@ best.ptの書き込み中断やprevious.ptへの巻き戻しでも、評価ロ�
 保存の直前までの時間を記録するため、その保存処理自体の時間は巻き戻し時に失われる。
 ETA表示追加直前の版のチェックポイントも再開可能。その場合、中断前の経過時間は
 保存済みのバッチ処理時間合計から近似する（過去のログ・保存時間は含まれない）。
+
+## 第1段階の描画拡張と追加学習
+
+ゴシック・明朝のRegular/Bold、文字サイズ、余白、上下位置をサンプルごとに抽選する。
+画像の高さは48pxのまま。文字が収まらない場合はサイズを下げ、上下移動は文字が
+欠けない範囲に制限する。左右余白と上下の最低余白を、それぞれpaddingの範囲から独立に抽選する。
+ノイズや傾きはこの段階では加えない。
+
+まず固定リビジョンのNotoフォント4本とライセンスを取得する（約60〜70MB）。
+既存ファイルが配布元と異なる場合は上書きせず停止する。
+
+```sh
+uv run --frozen python -m ogura.download_training_fonts
+```
+
+追加学習の開始例：
+
+```sh
+uv run --frozen --extra train python -m ogura.training.train \
+  --device cuda --run-dir runs/noto48-augment1 \
+  --init-from runs/noto48-validation/best.pt \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --font-size-min 28 --font-size-max 40 \
+  --padding-min 2 --padding-max 6 --vertical-full-range \
+  --clean-probability 0.25 \
+  --learning-rate 0.0001 --batch-size 32 --epochs 10 --workers 4 \
+  --validation-text datasets/validation/validation.txt --validation-augmented \
+  --save-every 500 --log-every 100 --log-samples 1
+```
+
+これらの範囲・確率・学習率は初回実験の設定で、最適値として検証したものではない。
+`--font`（既定はNoto Sans Regular）と各`--extra-font`を等確率で選ぶ。
+ただし25%は元の条件（基準フォント、40px、余白4px、上下移動なし）に戻す。
+次のエポックでは再抽選する。同じシード・エポック・サンプルID・設定なら
+ワーカー数や中断にかかわらず同じ画像になる。
+
+複数フォント時は元のテキストを保持し、選ばれたフォントで描けない文字だけを
+バッチ作成時に空白へ置換する。正解も同じ空白にする。元のデータファイルは変更しない。
+`font_coverage.json` の置換数は「いずれかのフォントで置換が必要な文字」の件数であり、
+実際に各エポックで置換した件数ではない。
+
+`--init-from` は旧版を含む `best.pt` の重みだけを読み込む。字種の順序とモデルの
+channelsは一致必須。optimizer・学習率スケジューラ・エポック数・最良値の履歴は
+新しく開始する。元の実行とは別の `--run-dir` を使う。
+再開時は上のコマンドから `--init-from ...` を外して `--resume` を付ける。
+新しい実行のフォント・描画条件・学習率は再開時にも同じ値にする。
+この変更より前の `latest.pt` の厳密な再開には旧版コードが必要。
+新しい描画条件への移行には `--init-from` を使う。
+
+`--validation-augmented` 指定時は同じ検証テキストを2通りで評価する。
+
+- `validation_baseline`：基準フォント、固定40px（`--validation-font-size`で変更可能）、余白4px。
+- `validation`：学習と同じ範囲から固定シード・epoch=0で抽選。cleanへの分岐は使わず、
+  毎回同じフォント・サイズ・余白の画像を評価する。こちらのCERで新しい `best.pt` を選ぶ。
+
+元の実行のCERと比べるときは `validation_baseline` を見る。
+揺らぎ付きの値は別の評価条件なので、元のCERと直接比較しない。
+`--validation-augmented` を省略すると、従来と同じ基準条件の検証のみを行う。
+
+
+## 同じ文字列の描画比較画像
+
+学習用の描画関数を使い、基準1行と4フォント×3条件の計13行を1枚のPNGにまとめる。
+白い矩形がモデルへの入力画像（高さ48px、拡大縮小なし）。ラベルと外側の灰色背景は比較用で、
+学習画像には含まれない。左右余白は独立に抽選する。
+各フォントが必ず載るようフォント別にサンプルを作り、サイズ・余白・上下位置は
+学習時と同じ乱数生成関数で選ぶ。通常学習でのフォント出現比率を示す図ではない。
+
+```sh
+uv run --frozen --extra train python -m ogura.training.preview \
+  --text '春の図書館で、日本語の文字をゆっくり読む。' \
+  --output previews/augmentation.png
+```
+
+`--variants` はフォントごとの例数、`--seed` は乱数シード。
+`--font` を繰り返してフォントを指定できる。`--size-min/max`、`--padding-min/max`、
+`--vertical-jitter` で範囲も変更可能。同名のJSONには元テキストと各行の描画条件・画像幅・
+空白置換後の正解を保存する。ラベルのsize/dyは要求値で、文字が欠けないよう実際には
+サイズを下げたり上下移動を制限する場合がある。
+
+
+描画拡張の設定例は28〜40px。`--vertical-full-range` は、上下に最低余白を
+確保した上で、残る可動範囲全体から上位置を一様に選ぶ。この指定時は
+`--vertical-jitter` を使わない。元の条件を選ぶclean分岐と基準条件の検証は中央配置。
+比較画像も既定で28〜40px・全範囲の上下配置を使う。`Y range` は可動範囲内の位置
+（0%=上端、100%=下端）。従来の±移動を確認する場合は `--vertical-mode jitter` を指定する。

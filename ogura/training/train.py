@@ -36,6 +36,14 @@ class TrainConfig:
     text: Path = ROOT / 'datasets/final_50_len20_25_hiragana_mix5/train.txt'
     vocabulary: Path = ROOT / 'datasets/final_50_len20_25_hiragana_mix5/targets.jsonl'
     font: Path = ROOT / 'corpus/fonts/NotoSansCJKjp-Regular.otf'
+    extra_fonts: tuple[Path, ...] = ()
+    init_from: Path | None = None
+    padding_min: int = 4
+    padding_max: int = 4
+    vertical_jitter: int = 0
+    vertical_full_range: bool = False
+    clean_probability: float = 0.0
+    validation_augmented: bool = False
     run_dir: Path = ROOT / 'runs/noto48'
     validation_text: Path | None = None
     validation_font_size: int = 40
@@ -90,7 +98,10 @@ def run_lock(directory):
 
 
 def prepare_data(config, vocabulary):
-    supported = font_characters(str(config.font.resolve()))
+    fonts = (config.font, *config.extra_fonts)
+    supported = set.intersection(*(set(font_characters(str(p.resolve()))) for p in fonts))
+    if any(ord(' ') not in font_characters(str(p.resolve())) for p in fonts):
+        raise ValueError('Every font must support replacement space U+0020')
     vocabulary_set = set(vocabulary.characters)
     records = []
     replaced_lines = []
@@ -114,12 +125,14 @@ def prepare_data(config, vocabulary):
                 if ' ' not in vocabulary.ids:
                     raise ValueError('Vocabulary must contain replacement space U+0020')
             sample_id = hashlib.sha256(text.encode()).hexdigest()
-            records.append((replace_unsupported(text, str(config.font.resolve())), sample_id))
+            records.append((text if config.extra_fonts else replace_unsupported(text, str(config.font.resolve())), sample_id))
     if not records:
         raise ValueError('Text dataset is empty')
     report = {
         'total_rows': total, 'unchanged_rows': total - len(replaced_lines), 'excluded_rows': 0,
-        'replacement': 'U+0020', 'replaced_rows': len(replaced_lines),
+        'replacement': 'U+0020',
+        'coverage_scope': 'unsupported in at least one font; actual replacements depend on sampled font',
+        'replaced_rows': len(replaced_lines),
         'replaced_characters': sum(replaced_occurrences.values()),
         'replaced_line_numbers': replaced_lines,
         'unsupported_characters': [
@@ -146,6 +159,8 @@ class EpochDataset(Dataset):
         return Sample(text, parameters_for_sample(
             self.config.font.resolve(), self.config.seed, self.epoch, sample_id,
             self.config.font_size_min, self.config.font_size_max,
+            tuple(p.resolve() for p in self.config.extra_fonts), self.config.padding_min,
+            self.config.padding_max, self.config.vertical_jitter, self.config.clean_probability, self.config.vertical_full_range,
         ), sample_id)
 
 
@@ -153,20 +168,29 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
-                'workers', 'save_every', 'log_every', 'log_samples', 'epochs'):
+                'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from'):
         settings.pop(key)
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
         code.update(path.name.encode()); code.update(path.read_bytes())
     return {
-        'format': 2, 'text_sha256': sha256(config.text),
+        'format': 3, 'text_sha256': sha256(config.text),
         'validation_sha256': sha256(config.validation_text) if config.validation_text else None,
         'vocabulary_sha256': sha256(config.vocabulary), 'font_sha256': sha256(config.font),
+        'extra_font_sha256': [sha256(p) for p in config.extra_fonts],
         'training_code_sha256': code.hexdigest(), 'settings': settings,
         'runtime': {'python': platform.python_version(), 'torch': str(torch.__version__),
                     'numpy': np.__version__, 'pillow': PIL.__version__, 'fonttools': fontTools.__version__,
                     'freetype': features.version('freetype2'), 'device_type': device.type},
     }
+
+
+def load_initial_weights(model, path, vocabulary, channels):
+    """Warm start only from an exported best.pt with an identical label mapping."""
+    state = torch.load(path, map_location='cpu', weights_only=True)
+    if state.get('characters') != list(vocabulary.characters) or state.get('channels') != channels:
+        raise ValueError('Initial model vocabulary/order or channels differ from this run')
+    model.load_state_dict(state['model'], strict=True)
 
 
 def train(config: TrainConfig, on_step=None):
@@ -179,6 +203,13 @@ def train(config: TrainConfig, on_step=None):
         raise ValueError('Invalid learning-rate decay or rendering range')
     if any(n is not None and n < 1 for n in (config.max_steps, config.limit)):
         raise ValueError('Limits must be positive')
+    if config.validation_augmented and not config.validation_text:
+        raise ValueError('--validation-augmented requires --validation-text')
+    if config.resume and config.init_from:
+        raise ValueError('--resume and --init-from are mutually exclusive')
+    parameters_for_sample(config.font, config.seed, 0, 'check', config.font_size_min,
+                          config.font_size_max, config.extra_fonts, config.padding_min,
+                          config.padding_max, config.vertical_jitter, config.clean_probability, config.vertical_full_range)
     device = torch.device(('cuda' if torch.cuda.is_available() else 'cpu')
                           if config.device == 'auto' else config.device)
     if device.type not in ('cpu', 'cuda'):
@@ -199,19 +230,19 @@ def train(config: TrainConfig, on_step=None):
         if not config.resume and (checkpoints.latest.exists() or checkpoints.previous.exists()):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
-        saved = checkpoints.load(identity, compatible_code_hashes=(
-            # ETA adds console output only; all training and checkpoint semantics are unchanged.
-            '666d6fe424dceca062ba97ef90aa39f49b1eac0fa58f1fe25588eaeafafec07e',
-        )) if config.resume else None
+        saved = checkpoints.load(identity) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary)
         records, report = prepare_data(config, vocabulary)
         validation_dataset = None
+        augmented_validation_dataset = None
         if config.validation_text:
             validation_config = replace(config, text=config.validation_text, limit=None,
                                         font_size_min=config.validation_font_size,
-                                        font_size_max=config.validation_font_size)
+                                        font_size_max=config.validation_font_size, extra_fonts=(),
+                                        padding_min=4, padding_max=4, vertical_jitter=0, clean_probability=0, vertical_full_range=False)
             validation_records, validation_report = prepare_data(validation_config, vocabulary)
-            if {text for text,_ in records} & {text for text,_ in validation_records}:
+            normalized_training = {replace_unsupported(text, str(config.font.resolve())) for text,_ in records}
+            if normalized_training & {text for text,_ in validation_records}:
                 raise ValueError('Validation text overlaps training text after font replacement')
             manifest_path = config.validation_text.parent / 'manifest.json'
             if manifest_path.exists():
@@ -223,14 +254,22 @@ def train(config: TrainConfig, on_step=None):
                     raise ValueError('Validation manifest does not match this training dataset')
             validation_dataset = EpochDataset(validation_records, list(range(len(validation_records))),
                                               validation_config, epoch=0)
+            if config.validation_augmented:
+                augmented_config = replace(config, text=config.validation_text, limit=None, clean_probability=0)
+                augmented_records, _ = prepare_data(augmented_config, vocabulary)
+                augmented_validation_dataset = EpochDataset(augmented_records, list(range(len(augmented_records))),
+                                                            augmented_config, epoch=0)
             atomic_json(config.run_dir / 'validation_font_coverage.json', validation_report)
         atomic_json(config.run_dir / 'font_coverage.json', report)
         atomic_json(config.run_dir / 'run_config.json', {
-            'arguments': {k: str(v) if isinstance(v, Path) else v for k,v in asdict(config).items()},
+            'arguments': {k: str(v) if isinstance(v, Path) else [str(p) for p in v] if k == 'extra_fonts' else v for k,v in asdict(config).items()},
             'identity': identity, 'classes_including_blank': len(vocabulary),
         })
-        print(f"Rows: {len(records):,}; rows with space replacements: {report['replaced_rows']:,}; device: {device}", flush=True)
+        print(f"Rows: {len(records):,}; rows potentially needing space replacements: {report['replaced_rows']:,}; device: {device}", flush=True)
         model = LineCNN(len(vocabulary), config.channels).to(device)
+        if config.init_from:
+            load_initial_weights(model, config.init_from, vocabulary, config.channels)
+            print(f'Initialized weights from: {config.init_from}; optimizer and epoch start fresh', flush=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=config.lr_decay)
         scaler = torch.amp.GradScaler('cuda', enabled=config.amp)
@@ -341,6 +380,10 @@ def train(config: TrainConfig, on_step=None):
                     segment_started = None
                 if end_epoch and validation_dataset is not None:
                     validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
+                    if augmented_validation_dataset is not None:
+                        events.append(dict(kind='validation_baseline', epoch=epoch+1, step=position['step'], **validation))
+                        print(f"validation_baseline epoch={epoch+1} accuracy={validation['exact_accuracy']:.2%} CER={validation['cer']:.2%}", flush=True)
+                        validation = evaluate(model, augmented_validation_dataset, vocabulary, config.batch_size, device)
                     improved = best is None or validation['cer'] < best['metrics']['cer']
                     if improved:
                         best = dict(identity=identity, epoch=epoch+1, step=position['step'],
@@ -373,17 +416,20 @@ def train(config: TrainConfig, on_step=None):
 def main():
     defaults = TrainConfig()
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text'):
+    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'init_from'):
         parser.add_argument('--' + name.replace('_', '-'), type=Path, default=getattr(defaults, name))
     for name in ('batch_size', 'epochs', 'channels', 'seed', 'save_every', 'workers',
-                 'font_size_min', 'font_size_max', 'validation_font_size', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
+                 'font_size_min', 'font_size_max', 'padding_min', 'padding_max', 'vertical_jitter', 'validation_font_size', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
-    for name in ('learning_rate', 'lr_decay'):
+    for name in ('learning_rate', 'lr_decay', 'clean_probability'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
-    for name in ('amp', 'deterministic', 'resume'):
+    parser.add_argument('--extra-font', dest='extra_fonts', type=Path, action='append', default=[])
+    for name in ('amp', 'deterministic', 'resume', 'validation-augmented', 'vertical-full-range'):
         parser.add_argument('--' + name, action='store_true')
-    config = TrainConfig(**vars(parser.parse_args()))
+    args = vars(parser.parse_args())
+    args['extra_fonts'] = tuple(args['extra_fonts'])
+    config = TrainConfig(**args)
     try:
         train(config)
     except KeyboardInterrupt:

@@ -1,0 +1,214 @@
+{
+  "text": "春の図書館で、日本語の文字をゆっくり読む。",
+  "seed": 20260926,
+  "rows": [
+    {
+      "name": "Baseline",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Regular.otf",
+        "font_size": 40,
+        "height": 48,
+        "padding": 4,
+        "vertical_offset": 0,
+        "padding_left": null,
+        "padding_right": null,
+        "vertical_position": null
+      },
+      "width": 848,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSansCJKjp-Regular",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Regular.otf",
+        "font_size": 38,
+        "height": 48,
+        "padding": 3,
+        "vertical_offset": 2,
+        "padding_left": 4,
+        "padding_right": 4,
+        "vertical_position": 0.7980748740050003
+      },
+      "width": 806,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSansCJKjp-Regular",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Regular.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 2,
+        "vertical_offset": 1,
+        "padding_left": 6,
+        "padding_right": 3,
+        "vertical_position": 0.9183664354523681
+      },
+      "width": 597,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSansCJKjp-Regular",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Regular.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 5,
+        "vertical_offset": 2,
+        "padding_left": 3,
+        "padding_right": 2,
+        "vertical_position": 0.10220925606495546
+      },
+      "width": 593,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSansCJKjp-Bold",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Bold.otf",
+        "font_size": 38,
+        "height": 48,
+        "padding": 3,
+        "vertical_offset": 2,
+        "padding_left": 4,
+        "padding_right": 4,
+        "vertical_position": 0.7980748740050003
+      },
+      "width": 806,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSansCJKjp-Bold",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Bold.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 2,
+        "vertical_offset": 1,
+        "padding_left": 6,
+        "padding_right": 3,
+        "vertical_position": 0.9183664354523681
+      },
+      "width": 597,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSansCJKjp-Bold",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSansCJKjp-Bold.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 5,
+        "vertical_offset": 2,
+        "padding_left": 3,
+        "padding_right": 2,
+        "vertical_position": 0.10220925606495546
+      },
+      "width": 593,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSerifCJKjp-Regular",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSerifCJKjp-Regular.otf",
+        "font_size": 38,
+        "height": 48,
+        "padding": 3,
+        "vertical_offset": 2,
+        "padding_left": 4,
+        "padding_right": 4,
+        "vertical_position": 0.7980748740050003
+      },
+      "width": 806,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSerifCJKjp-Regular",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSerifCJKjp-Regular.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 2,
+        "vertical_offset": 1,
+        "padding_left": 6,
+        "padding_right": 3,
+        "vertical_position": 0.9183664354523681
+      },
+      "width": 597,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSerifCJKjp-Regular",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSerifCJKjp-Regular.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 5,
+        "vertical_offset": 2,
+        "padding_left": 3,
+        "padding_right": 2,
+        "vertical_position": 0.10220925606495546
+      },
+      "width": 593,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSerifCJKjp-Bold",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSerifCJKjp-Bold.otf",
+        "font_size": 38,
+        "height": 48,
+        "padding": 3,
+        "vertical_offset": 2,
+        "padding_left": 4,
+        "padding_right": 4,
+        "vertical_position": 0.7980748740050003
+      },
+      "width": 806,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSerifCJKjp-Bold",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSerifCJKjp-Bold.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 2,
+        "vertical_offset": 1,
+        "padding_left": 6,
+        "padding_right": 3,
+        "vertical_position": 0.9183664354523681
+      },
+      "width": 597,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    },
+    {
+      "name": "NotoSerifCJKjp-Bold",
+      "parameters": {
+        "font_path": "/Users/jun/ogura/corpus/fonts/NotoSerifCJKjp-Bold.otf",
+        "font_size": 28,
+        "height": 48,
+        "padding": 5,
+        "vertical_offset": 2,
+        "padding_left": 3,
+        "padding_right": 2,
+        "vertical_position": 0.10220925606495546
+      },
+      "width": 593,
+      "height": 48,
+      "rendered_text": "春の図書館で、日本語の文字をゆっくり読む。"
+    }
+  ]
+}

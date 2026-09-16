@@ -78,7 +78,8 @@ class EvaluationTests(unittest.TestCase):
             config=TrainConfig(text=root/'train.txt',validation_text=root/'val.txt',
                                vocabulary=root/'targets.jsonl',font=FONT,run_dir=root/'full',
                                device='cpu',batch_size=1,epochs=2,channels=2,threads=1,
-                               save_every=1,deterministic=True,log_samples=0)
+                               save_every=1,deterministic=True,log_samples=0, validation_augmented=True,
+                               font_size_min=32, font_size_max=40, padding_min=2, padding_max=6)
             with redirect_stdout(io.StringIO()):train(config)
             interrupted=replace(config,run_dir=root/'interrupted',max_steps=2)
             with redirect_stdout(io.StringIO()):train(interrupted)
