@@ -69,7 +69,8 @@ def main():
     torch.set_num_threads(args.threads)
     device = torch.device(('cuda' if torch.cuda.is_available() else 'cpu') if args.device=='auto' else args.device)
     if device.type not in ('cpu','cuda'):raise ValueError('Use CPU or CUDA')
-    if device.type=='cuda':torch.cuda.set_device(device)
+    if device.type=='cuda':
+        torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
     state = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
     identity = state['identity']
     vocabulary = Vocabulary(state['characters'])

@@ -53,3 +53,27 @@ class LengthEvaluationTests(unittest.TestCase):
             (val/'validation.txt').write_text('文字\n')
             with self.assertRaisesRegex(ValueError,'manifest'):
                 validation_sets(cfg,Vocabulary(' 日本語文字'),[val/'validation.txt'],identity_for(cfg,torch.device('cpu')))
+
+
+class EvaluationDeviceTests(unittest.TestCase):
+    def test_cli_selects_cuda_index_before_loading_checkpoint(self):
+        class StopAfterDeviceSelection(Exception):
+            pass
+        with tempfile.TemporaryDirectory() as tmp:
+            for argument, available, expected in [('cuda', True, 2), ('cuda:1', True, 1),
+                                                   ('auto', True, 2), ('auto', False, None),
+                                                   ('cpu', True, None)]:
+                with self.subTest(device=argument, available=available):
+                    args = ['evaluate_lengths', '--checkpoint', 'unused.pt', '--device', argument,
+                            '--output', str(Path(tmp)/'report.json')]
+                    with patch('sys.argv', args), \
+                         patch('torch.cuda.is_available', return_value=available), \
+                         patch('torch.cuda.current_device', return_value=2) as current, \
+                         patch('torch.cuda.set_device') as select, \
+                         patch('torch.load', side_effect=StopAfterDeviceSelection):
+                        with self.assertRaises(StopAfterDeviceSelection):main()
+                        if expected is None:select.assert_not_called()
+                        else:select.assert_called_once_with(expected)
+                        if argument in ('cuda','auto') and expected is not None:
+                            current.assert_called_once_with()
+                        else:current.assert_not_called()
