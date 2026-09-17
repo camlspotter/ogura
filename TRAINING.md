@@ -503,3 +503,32 @@ uv run --frozen --extra train python -m ogura.training.train \
 best.ptには `selection_metric`、`selection_score`（0–1の率）と
 `validation_results` を保存します。`metrics` は従来通り通常長の評価です。
 早期終了時には、best時点の判定値と各検証データの成績を表示します。
+
+### 実文書の行画像を認識する
+
+手元のPDFから初回確認用の12行を切り出す例（Popplerが必要）：
+
+```sh
+uv run --frozen --extra train python scripts/prepare_real_samples.py \
+  --source-dir ~/mocrdown/tests/data --output datasets/real_samples
+```
+
+画像はPDFの1ページ目を300dpiでレンダリングしたものから切り出す。
+manifest.jsonlには元PDFのハッシュ、ページ、切り出し座標とPDFから抽出した
+参照用テキストを保存する。参照用テキストは空白等の照合が必要であり、
+そのまま確定正解やCER計算には使わない。contact-sheet.pngで一覧を確認できる。
+出力先が既にある場合は上書きしない。
+
+画像ディレクトリをGPUマシンにも置いてから：
+
+```sh
+uv run --frozen --extra train python -m ogura.recognize \
+  --checkpoint runs/noto48-residual64-mean/best.pt --device cuda \
+  --output runs/noto48-residual64-mean/real-predictions.jsonl \
+  datasets/real_samples/line-*.png
+```
+
+入力は切り出し済みの横書き1行画像。縦横比を保って高さ48pxにリサイズし、
+右を白で8の倍数幅まで補う。背景色はグレースケール化し、二値化はしない。
+CTC greedy decodeによる認識文字列を表示・保存する。
+これはPDFを画像化した資料での確認であり、スキャン由来の傾き・汚れ等は別途検証する。
