@@ -182,6 +182,7 @@ def identity_for(config, device):
     return {
         **({'selection_validation_sha256': sorted(sha256(p) for p in config.monitor_validation)}
            if config.selection_metric == 'mean-augmented-cer' else {}),
+        'target_normalization': 'unsupported-to-space-collapse-ascii-v1',
         'format': 3, 'text_sha256': sha256(config.text),
         'validation_sha256': sha256(config.validation_text) if config.validation_text else None,
         'vocabulary_sha256': sha256(config.vocabulary), 'font_sha256': sha256(config.font),
@@ -310,7 +311,7 @@ def train(config: TrainConfig, on_step=None):
                             if info['mode'] == 'augmented')
             if ranges != [(5, 5), (80, 80)]:
                 raise ValueError('Mean selection requires exactly 5-character and 80-character monitors')
-            if not all(20 <= len(text) <= 25 for text, _ in augmented_records):
+            if not all(20 <= len(text) <= 25 for text in config.validation_text.read_text(encoding='utf-8').splitlines()):
                 raise ValueError('Mean selection requires main validation lengths of 20 to 25')
         atomic_json(config.run_dir / 'font_coverage.json', report)
         atomic_json(config.run_dir / 'run_config.json', {

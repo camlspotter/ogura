@@ -25,6 +25,8 @@ def validation_sets(config, vocabulary, paths, identity):
             raise ValueError(f'Validation manifest does not match checkpoint: {path}')
         if Vocabulary.read(path.parent/'targets.jsonl').characters != vocabulary.characters:
             raise ValueError(f'Validation vocabulary differs: {path}')
+        # Length groups describe source text, before font-dependent normalization.
+        lengths = [len(line) for line in path.read_text(encoding='utf-8').splitlines()]
         for mode in ('baseline', 'augmented'):
             cfg = replace(config, text=path, limit=None, clean_probability=0)
             if mode == 'baseline':
@@ -32,7 +34,6 @@ def validation_sets(config, vocabulary, paths, identity):
                               font_size_max=config.validation_font_size, padding_min=4,
                               padding_max=4, vertical_jitter=0, vertical_full_range=False)
             records, report = prepare_data(cfg, vocabulary)
-            lengths = [len(text) for text,_ in records]
             if len(records) != manifest['samples'] or not all(manifest['min_length'] <= n <= manifest['max_length'] for n in lengths):
                 raise ValueError(f'Validation length/count mismatch: {path}')
             result.append((dict(dataset=path.parent.name, mode=mode,

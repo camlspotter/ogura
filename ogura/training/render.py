@@ -4,6 +4,7 @@ from functools import lru_cache
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 import random
 
@@ -100,13 +101,13 @@ def parameters_for_sample(font_path, seed, epoch, sample_id, size_min=40, size_m
 
 
 def replace_unsupported(text: str, font_path: str) -> str:
-    """One unsupported code point becomes one ordinary space, without stripping."""
+    """Replace missing glyphs, then collapse U+0020 runs without stripping edges."""
     supported = font_characters(font_path)
     if any(ord(c) not in supported for c in text):
         if ord(' ') not in supported:
             raise ValueError('Font must support the replacement space U+0020')
-        return ''.join(c if ord(c) in supported else ' ' for c in text)
-    return text
+        text = ''.join(c if ord(c) in supported else ' ' for c in text)
+    return re.sub(' +', ' ', text)
 
 
 def render_sample(sample: Sample) -> Image.Image:

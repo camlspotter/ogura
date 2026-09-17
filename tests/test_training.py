@@ -106,7 +106,7 @@ class TrainingTests(unittest.TestCase):
     def test_missing_glyph_replaces_image_and_label_without_dropping_rows(self):
         missing = '\U0010ffff'
         original = missing + '日' + missing * 2 + '本' + missing
-        expected = ' 日  本 '
+        expected = ' 日 本 '
         vocabulary = Vocabulary(' 日本' + missing)
         renderer = BatchRenderer(vocabulary)
         batch = renderer([Sample(original, RenderParams(str(FONT)), 'original-id')])
@@ -114,7 +114,7 @@ class TrainingTests(unittest.TestCase):
         self.assertEqual(batch.texts, [expected])
         self.assertEqual(batch.sample_ids, ['original-id'])
         self.assertEqual(batch.targets.tolist(), vocabulary.encode(expected))
-        self.assertEqual(batch.target_lengths.tolist(), [len(original)])
+        self.assertEqual(batch.target_lengths.tolist(), [len(expected)])
         self.assertTrue(torch.equal(batch.images, reference.images))
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / 'text.txt'
