@@ -532,3 +532,22 @@ uv run --frozen --extra train python -m ogura.recognize \
 右を白で8の倍数幅まで補う。背景色はグレースケール化し、二値化はしない。
 CTC greedy decodeによる認識文字列を表示・保存する。
 これはPDFを画像化した資料での確認であり、スキャン由来の傾き・汚れ等は別途検証する。
+
+二値化の効果を同じモデルで比較するには、次を実行する：
+
+```sh
+uv run --frozen --extra train python -m ogura.recognize \
+  --checkpoint runs/noto48-residual64-mean/best.pt --device cuda \
+  --compare-preprocessing \
+  --save-inputs runs/noto48-residual64-mean/real-inputs-comparison \
+  --output runs/noto48-residual64-mean/real-predictions-comparison.jsonl \
+  datasets/real_samples/line-*.png
+```
+
+各画像について `preprocessing=none` と `otsu` の結果を並べて出力する。
+otsuは元解像度のグレースケール画像を大津法で二値化してから48pxに縮小する。
+縮小時にはアンチエイリアスが入る。二値化は背景とともに文字の輪郭にも
+影響するため、結果だけで字体と背景の影響を完全には分離できない。
+`--save-inputs` でモデルに渡す画像（右余白を含む）も保存する。
+単独で二値化する場合は `--preprocessing otsu` を使う。既存の出力ファイル・
+画像保存ディレクトリは上書きしない。これらの画像もGitに追加しない。
