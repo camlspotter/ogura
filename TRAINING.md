@@ -551,3 +551,58 @@ otsuは元解像度のグレースケール画像を大津法で二値化して�
 `--save-inputs` でモデルに渡す画像（右余白を含む）も保存する。
 単独で二値化する場合は `--preprocessing otsu` を使う。既存の出力ファイル・
 画像保存ディレクトリは上書きしない。これらの画像もGitに追加しない。
+
+### 細い書体・丸ゴシックを追加する
+
+取得元のコミットとSHA-256を `ogura/training_fonts.json` に固定した。
+次のコマンドで既存のNoto 4書体と、Noto Sans CJK JP Light、
+Zen Maru Gothic Light・Regularの合計7書体およびライセンスを取得する。
+M PLUS Roundedは今回の採用対象に含めない。
+
+```sh
+uv run --frozen python -m ogura.download_training_fonts --include-rounded
+uv run --frozen --extra train python scripts/preview_font_candidates.py
+```
+
+取得先は `corpus/fonts/`。検証済みの既存ファイルは再取得せず、不一致なら
+上書きせずエラーにする。ダウンロードした内容も固定ハッシュと照合する。
+引数なしの取得コマンドは従来通り4書体のみ。
+比較画像は `datasets/font_candidates/training-preview.png`、
+描画パラメータと実際の正解文字列は同名のJSON、字種カバー数は
+`training-preview.coverage.json` に保存する。
+比較には実際の学習用レンダラーと高さ48px・サイズ28〜40pxの揺らぎを使う。
+`--text`、`--variants`、`--font-dir`、`--vocabulary`、`--output` で変更可能。
+
+追加書体を混ぜる学習例：
+
+```sh
+uv run --frozen --extra train python -m ogura.training.train \
+  --device cuda --run-dir runs/noto48-residual64-rounded \
+  --init-from runs/noto48-residual64-mean/best.pt \
+  --model-type residual --channels 64 \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSansCJKjp-Light.otf \
+  --extra-font corpus/fonts/ZenMaruGothic-Light.ttf \
+  --extra-font corpus/fonts/ZenMaruGothic-Regular.ttf \
+  --font-size-min 28 --font-size-max 40 \
+  --padding-min 2 --padding-max 6 --vertical-full-range \
+  --clean-probability 0.25 --learning-rate 0.0001 \
+  --batch-size 32 --epochs 20 --workers 4 \
+  --validation-text datasets/validation/validation.txt --validation-augmented \
+  --monitor-validation datasets/validation_short5/validation.txt \
+  --monitor-validation datasets/validation_long80/validation.txt \
+  --selection-metric mean-augmented-cer --early-stopping-patience 5 \
+  --save-every 500 --log-every 100 --log-samples 3
+```
+
+既存の学習コードが `--extra-font` を扱うため、モデル・学習処理の変更は不要。
+cleanの25%は従来のNoto Sans Regular、残り75%は全7書体から一様に選ぶ。
+新書体が描けない文字は、従来通りそのサンプルの画像と正解の両方で空白にする。
+元のテキストは変更しない。Zenのカバー数は対象16,057字中7,277字のため、
+希少字を学ぶ機会を残すためにも既存Noto書体を外さない。
+
+別runとして初期評価から新しいbest判定を開始する。検証時のフォント集合も
+増えるので、旧runのCERとの単純比較はしない。実文書の画像は学習に投入しない。
+取得フォント・比較画像・実文書画像はGitに追加しない。
