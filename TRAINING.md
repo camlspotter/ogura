@@ -451,3 +451,55 @@ uv run --frozen --extra train python -m ogura.training.train \
 新モデルの中断再開は同じ設定に `--resume` を追加する。
 `best.pt` にはモデル種別も保存され、長さ別評価コマンドが対応するモデルを構築する。
 旧版のsmallモデルは、更新後も従来の設定で再開・評価できる。
+
+早期終了時は `Best checkpoint: epoch=... step=...` に続けて、最良モデルを得た
+エポックの主検証・baseline・長さ別検証のaccuracyとCERを再表示する。
+最終エポックの値ではなく、best更新時に保存した成績を使う。追加の推論は行わない。
+旧版のチェックポイントの場合は、同じ実行の `metrics.jsonl` からbestのepoch/stepに
+一致する記録を読み出す。その時点で未実施の監視セットは表示しない。
+対応するログがなければ、チェックポイント内に残る主検証成績だけを表示する。
+既に早期終了した実行でも、元と同じ設定とpatienceで `--resume` すれば、
+追加学習せずに最良時点の成績を表示できる。
+
+### 3種類の長さの平均CERで選ぶ
+
+`--selection-metric mean-augmented-cer` は、揺らぎ付きの通常長
+（20–25文字）、短文（5文字）、長文（80文字）のCERを等重みで平均し、
+best更新とearly stoppingに使います。文字数を合算したCERではありません。
+通常長には `--validation-augmented`、短文・長文にはそれぞれ
+`--monitor-validation` が必要です。不足や異なる長さはエラーになります。
+比較には丸める前の数値を使い、baselineは参考値として記録します。
+
+判定基準を変更する場合は別のrun-dirを使います。`--init-from` は
+`best.pt` に加えて `latest.pt` / `previous.pt` の重みにも対応します。
+辞書・モデル構造が一致することを確認し、optimizerとepochは新しく開始します。
+この平均基準でwarm startすると、更新前にも評価を行い、epoch=0の初期bestを
+保存します。以降に改善しなければ、このモデルがbestとして残ります。
+resume時には評価データのハッシュと判定基準も検証します。
+
+例：旧runのepoch 16のlatest.ptから、学習率0.0001で追加学習します。
+epoch数は新runでの上限です。途中再開は同じ指定から `--init-from ...` を外し、
+`--resume` を追加してください。
+
+```sh
+uv run --frozen --extra train python -m ogura.training.train \
+  --device cuda --run-dir runs/noto48-residual64-mean \
+  --init-from runs/noto48-residual64/latest.pt \
+  --model-type residual --channels 64 \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --font-size-min 28 --font-size-max 40 \
+  --padding-min 2 --padding-max 6 --vertical-full-range \
+  --clean-probability 0.25 --learning-rate 0.0001 \
+  --batch-size 32 --epochs 20 --workers 4 \
+  --validation-text datasets/validation/validation.txt --validation-augmented \
+  --monitor-validation datasets/validation_short5/validation.txt \
+  --monitor-validation datasets/validation_long80/validation.txt \
+  --selection-metric mean-augmented-cer --early-stopping-patience 5 \
+  --save-every 500 --log-every 100 --log-samples 3
+```
+
+best.ptには `selection_metric`、`selection_score`（0–1の率）と
+`validation_results` を保存します。`metrics` は従来通り通常長の評価です。
+早期終了時には、best時点の判定値と各検証データの成績を表示します。

@@ -27,7 +27,7 @@ from ogura.text_common import ROOT
 from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
 from .evaluate import evaluate
 from .model import LineCNN, ctc_loss, make_model
-from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, epoch_eta, format_duration, local_finish_time
+from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, print_best_validation, epoch_eta, format_duration, local_finish_time
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
 
 
@@ -43,6 +43,7 @@ class TrainConfig:
     vertical_jitter: int = 0
     vertical_full_range: bool = False
     clean_probability: float = 0.0
+    selection_metric: str = "validation-cer"
     validation_augmented: bool = False
     run_dir: Path = ROOT / 'runs/noto48'
     validation_text: Path | None = None
@@ -173,10 +174,14 @@ def identity_for(config, device):
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
                 'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
         settings.pop(key)
+    if config.selection_metric == "validation-cer":
+        settings.pop("selection_metric")  # Preserve legacy resume identities.
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
         code.update(path.name.encode()); code.update(path.read_bytes())
     return {
+        **({'selection_validation_sha256': sorted(sha256(p) for p in config.monitor_validation)}
+           if config.selection_metric == 'mean-augmented-cer' else {}),
         'format': 3, 'text_sha256': sha256(config.text),
         'validation_sha256': sha256(config.validation_text) if config.validation_text else None,
         'vocabulary_sha256': sha256(config.vocabulary), 'font_sha256': sha256(config.font),
@@ -188,18 +193,39 @@ def identity_for(config, device):
     }
 
 
-def load_initial_weights(model, path, vocabulary, channels, model_type="small"):
-    """Warm start only from an exported best.pt with an identical label mapping."""
+def load_initial_weights(model, path, vocabulary, channels, model_type="small", vocabulary_path=None):
+    """Load weights only; verify labels and architecture for either export format."""
     state = torch.load(path, map_location='cpu', weights_only=True)
-    if state.get('characters') != list(vocabulary.characters) or state.get('channels') != channels:
+    if 'characters' in state:
+        labels_match = state['characters'] == list(vocabulary.characters)
+        settings = state
+    else:
+        settings = state.get('identity', {}).get('settings', {})
+        labels_match = (vocabulary_path is not None and
+                        state.get('identity', {}).get('vocabulary_sha256') == sha256(vocabulary_path))
+    if not labels_match or settings.get('channels') != channels:
         raise ValueError('Initial model vocabulary/order or channels differ from this run')
-    if state.get('model_type', 'small') != model_type:
+    if settings.get('model_type', 'small') != model_type:
         raise ValueError('Initial model architecture differs from this run')
     model.load_state_dict(state['model'], strict=True)
 
 
+def selection_score(metric, validation, events):
+    if metric == 'validation-cer':
+        return validation['cer']
+    rows = [e for e in events if e['kind'] == 'validation_length' and e['mode'] == 'augmented']
+    if sorted((e['min_length'], e['max_length']) for e in rows) != [(5, 5), (80, 80)]:
+        raise ValueError('Mean selection requires augmented results for both 5 and 80 characters')
+    return math.fsum([validation['cer']] + [e['cer'] for e in rows]) / 3
+
+
 def train(config: TrainConfig, on_step=None):
     """on_step is an optional observer called only after a complete update."""
+    if config.selection_metric not in ('validation-cer', 'mean-augmented-cer'):
+        raise ValueError('Unknown selection metric')
+    if config.selection_metric == 'mean-augmented-cer' and (
+            not config.validation_augmented or not config.validation_text or len(config.monitor_validation) != 2):
+        raise ValueError('mean-augmented-cer requires augmented main validation and two monitors (5 and 80 characters)')
     positive = (config.batch_size, config.epochs, config.channels, config.save_every,
                 config.threads, config.log_every, config.validation_font_size)
     if min(positive) < 1 or config.log_samples < 0 or config.workers < 0 or not config.learning_rate > 0:
@@ -240,6 +266,8 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
+            # Best-score reporting does not change training or validation.
+            '35d5408dcd10838a5cb7e0d95a188a4fd46c14cd2c098a38abf460987ea96121',
             # The original small model is unchanged by the optional residual architecture.
             '7707918703b7974d4497433b68e6253d37f75bafb005a2e98ca690a164c44a1a',
             '6be33a35ce25e831be7544cc45f0e4f632eab9438c2be3185bc6f9c804af3041',
@@ -277,6 +305,13 @@ def train(config: TrainConfig, on_step=None):
             atomic_json(config.run_dir / 'validation_font_coverage.json', validation_report)
         from ogura.evaluate_lengths import validation_sets, evaluate_sets
         monitor_datasets = validation_sets(config, vocabulary, config.monitor_validation, identity)
+        if config.selection_metric == 'mean-augmented-cer':
+            ranges = sorted((info['min_length'], info['max_length']) for info, _ in monitor_datasets
+                            if info['mode'] == 'augmented')
+            if ranges != [(5, 5), (80, 80)]:
+                raise ValueError('Mean selection requires exactly 5-character and 80-character monitors')
+            if not all(20 <= len(text) <= 25 for text, _ in augmented_records):
+                raise ValueError('Mean selection requires main validation lengths of 20 to 25')
         atomic_json(config.run_dir / 'font_coverage.json', report)
         atomic_json(config.run_dir / 'run_config.json', {
             'arguments': {k: str(v) if isinstance(v, Path) else [str(p) for p in v] if k in ('extra_fonts', 'monitor_validation') else v for k,v in asdict(config).items()},
@@ -285,7 +320,7 @@ def train(config: TrainConfig, on_step=None):
         print(f"Rows: {len(records):,}; rows potentially needing space replacements: {report['replaced_rows']:,}; device: {device}", flush=True)
         model = make_model(len(vocabulary), config.channels, config.model_type).to(device)
         if config.init_from:
-            load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type)
+            load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type, config.vocabulary)
             print(f'Initialized weights from: {config.init_from}; optimizer and epoch start fresh', flush=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=config.lr_decay)
@@ -328,6 +363,40 @@ def train(config: TrainConfig, on_step=None):
 
             write_best(config.run_dir, best)
 
+        def validate_and_select(epoch_number):
+            nonlocal best
+            events = []
+            validation = None
+            if validation_dataset is not None:
+                validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
+                if augmented_validation_dataset is not None:
+                    events.append(dict(kind='validation_baseline', epoch=epoch_number,
+                                       step=position['step'], **validation))
+                    print(f"validation_baseline epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} CER={validation['cer']:.2%}", flush=True)
+                    validation = evaluate(model, augmented_validation_dataset, vocabulary, config.batch_size, device)
+                events.append(dict(kind='validation', epoch=epoch_number, step=position['step'], **validation))
+            if monitor_datasets:
+                for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device):
+                    events.append(dict(kind='validation_length', epoch=epoch_number, step=position['step'], **result))
+            if validation is not None:
+                score = selection_score(config.selection_metric, validation, events)
+                improved = best is None or score < best.get('selection_score', best['metrics']['cer'])
+                next(e for e in events if e['kind'] == 'validation')['is_best'] = improved
+                if improved:
+                    best = dict(identity=identity, epoch=epoch_number, step=position['step'],
+                                metrics=validation, characters=list(vocabulary.characters),
+                                channels=config.channels, model_type=config.model_type,
+                                selection_metric=config.selection_metric, selection_score=score,
+                                validation_results=[dict(e) for e in events],
+                                model={k:v.detach().cpu().clone() for k,v in model.state_dict().items()})
+                print(f"validation epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} "
+                      f"CER={validation['cer']:.2%} seconds={validation['seconds']:.3f} best={improved}", flush=True)
+                if config.selection_metric == 'mean-augmented-cer':
+                    events.append(dict(kind='selection', epoch=epoch_number, step=position['step'],
+                                       metric=config.selection_metric, cer=score, is_best=improved))
+                    print(f"selection epoch={epoch_number} mean_augmented_CER={score:.4%} best={improved}", flush=True)
+            return events
+
         def early_stop_event():
             # Reconstruct from committed epochs, including checkpoints predating early stopping.
             if not config.early_stopping_patience or best is None:
@@ -337,14 +406,18 @@ def train(config: TrainConfig, on_step=None):
                 return None
             return dict(kind='early_stop', epoch=position['epoch'], step=position['step'],
                         patience=config.early_stopping_patience, stale_epochs=stale_epochs,
-                        best_epoch=best['epoch'], best_cer=best['metrics']['cer'])
+                        best_epoch=best['epoch'], best_cer=best.get('selection_score', best['metrics']['cer']),
+                        selection_metric=config.selection_metric)
 
         def announce_early_stop(event):
-            print(f"Early stopping: no validation CER improvement for {event['stale_epochs']} epochs "
+            print(f"Early stopping: no {config.selection_metric} improvement for {event['stale_epochs']} epochs "
                   f"(patience={event['patience']}); best epoch={event['best_epoch']} "
                   f"CER={event['best_cer']:.4%}", flush=True)
+            print_best_validation(best, config.run_dir / 'metrics.jsonl')
 
         if not config.resume:
+            if config.init_from and config.selection_metric == 'mean-augmented-cer':
+                metrics_log.append(validate_and_select(0))
             save()  # Even interruption before the first periodic save has a restart point.
         total_batches = math.ceil(len(records) / config.batch_size)
         if not 0 <= position['next_batch'] < total_batches:
@@ -415,25 +488,8 @@ def train(config: TrainConfig, on_step=None):
                     epoch_totals = empty_totals()
                     epoch_elapsed = 0.0
                     segment_started = None
-                if end_epoch and validation_dataset is not None:
-                    validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
-                    if augmented_validation_dataset is not None:
-                        events.append(dict(kind='validation_baseline', epoch=epoch+1, step=position['step'], **validation))
-                        print(f"validation_baseline epoch={epoch+1} accuracy={validation['exact_accuracy']:.2%} CER={validation['cer']:.2%}", flush=True)
-                        validation = evaluate(model, augmented_validation_dataset, vocabulary, config.batch_size, device)
-                    improved = best is None or validation['cer'] < best['metrics']['cer']
-                    if improved:
-                        best = dict(identity=identity, epoch=epoch+1, step=position['step'],
-                                    metrics=validation, characters=list(vocabulary.characters),
-                                    channels=config.channels, model_type=config.model_type,
-                                    model={k:v.detach().cpu().clone() for k,v in model.state_dict().items()})
-                    events.append(dict(kind='validation', epoch=epoch+1, step=position['step'],
-                                       is_best=improved, **validation))
-                    print(f"validation epoch={epoch+1} accuracy={validation['exact_accuracy']:.2%} "
-                          f"CER={validation['cer']:.2%} seconds={validation['seconds']:.3f} best={improved}", flush=True)
-                if end_epoch and monitor_datasets:
-                    for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device):
-                        events.append(dict(kind='validation_length', epoch=epoch+1, step=position['step'], **result))
+                if end_epoch:
+                    events.extend(validate_and_select(epoch + 1))
                 stopping_event = early_stop_event() if end_epoch else None
                 if stopping_event:
                     events.append(stopping_event)
@@ -468,6 +524,7 @@ def main():
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay', 'clean_probability'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
+    parser.add_argument('--selection-metric', choices=('validation-cer', 'mean-augmented-cer'), default='validation-cer')
     parser.add_argument('--model-type', choices=('small', 'residual'), default='small')
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
     parser.add_argument('--monitor-validation', type=Path, action='append', default=[])

@@ -34,6 +34,8 @@ class EarlyStoppingTests(unittest.TestCase):
             self.assertEqual(result['epoch'],5)
             full=torch.load(root/'full/latest.pt',weights_only=True)
             self.assertEqual(full['best']['epoch'],3)
+            self.assertEqual(full['best']['validation_results'][0]['cer'], .4)
+            self.assertEqual(full['best']['validation_results'][0]['epoch'], 3)
             events=[json.loads(s) for s in (root/'full/metrics.jsonl').read_text().splitlines()]
             self.assertEqual(events[-1]['kind'],'early_stop')
             self.assertEqual(events[-1]['stale_epochs'],2)
@@ -60,3 +62,28 @@ class EarlyStoppingTests(unittest.TestCase):
             train(TrainConfig(early_stopping_patience=5))
         with self.assertRaisesRegex(ValueError,'nonnegative'):
             train(TrainConfig(early_stopping_patience=-1))
+
+
+class BestSummaryTests(unittest.TestCase):
+    def test_saved_and_legacy_metrics_use_best_epoch_only(self):
+        from ogura.training.metrics import best_validation_results, print_best_validation
+        best = dict(epoch=11, step=100, metrics=dict(cer=.001, exact_accuracy=.98))
+        rows = [dict(kind='validation', epoch=11, step=100, **best['metrics']),
+                dict(kind='validation_baseline', epoch=11, step=100, cer=.0005, exact_accuracy=.99),
+                dict(kind='validation_length', epoch=11, step=100, dataset='short5', mode='augmented',
+                     cer=.002, exact_accuracy=.97)]
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'metrics.jsonl'
+            path.write_text(''.join(json.dumps(r)+'\n' for r in rows +
+                            [dict(kind='validation',epoch=16,step=200,cer=.02,exact_accuracy=.90)]))
+            self.assertEqual(best_validation_results(best,path),rows)
+            output=io.StringIO()
+            with redirect_stdout(output):print_best_validation(best,path)
+            self.assertIn('epoch=11 step=100',output.getvalue())
+            self.assertIn('dataset=short5 mode=augmented accuracy=97.00% CER=0.2000%',output.getvalue())
+            self.assertNotIn('90.00%',output.getvalue())
+            path.unlink()
+            self.assertEqual(best_validation_results(dict(best,validation_results=rows),path),rows)
+            fallback=best_validation_results(best,path)
+            self.assertEqual(len(fallback),1)
+            self.assertEqual(fallback[0]['cer'],.001)

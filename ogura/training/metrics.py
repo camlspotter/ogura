@@ -112,3 +112,32 @@ def local_finish_time(remaining_seconds, now=None):
         return '--'
     timestamp = time.time() if now is None else now
     return datetime.fromtimestamp(timestamp + max(0, remaining_seconds)).astimezone().isoformat(timespec='seconds')
+
+
+def best_validation_results(best, log_path):
+    """Return only metrics measured at the best checkpoint, never the last epoch."""
+    if 'validation_results' in best:
+        return best['validation_results']
+    rows = []
+    path = Path(log_path)
+    if path.exists():
+        with path.open(encoding='utf-8') as stream:
+            for line in stream:
+                event = json.loads(line)
+                if (event.get('epoch') == best['epoch'] and event.get('step') == best['step']
+                        and event.get('kind') in ('validation', 'validation_baseline', 'validation_length')):
+                    rows.append(event)
+    if not any(row['kind'] == 'validation' for row in rows):
+        rows.insert(0, dict(kind='validation', epoch=best['epoch'], step=best['step'], **best['metrics']))
+    return rows
+
+
+def print_best_validation(best, log_path):
+    print(f"Best checkpoint: epoch={best['epoch']} step={best['step']}", flush=True)
+    if "selection_score" in best:
+        print(f"  selection={best['selection_metric']} CER={best['selection_score']:.4%}", flush=True)
+    for row in best_validation_results(best, log_path):
+        label = row['kind']
+        if label == 'validation_length':
+            label += f" dataset={row['dataset']} mode={row['mode']}"
+        print(f"  {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}", flush=True)
