@@ -140,4 +140,10 @@ def print_best_validation(best, log_path):
         label = row['kind']
         if label == 'validation_length':
             label += f" dataset={row['dataset']} mode={row['mode']}"
+        if 'font' in row:
+            label += f" font={row['font']}"
+        if 'length' in row:
+            label += f" length={row['length']}"
+        if 'exact_accuracy' not in row:
+            continue
         print(f"  {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}", flush=True)

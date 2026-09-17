@@ -2,6 +2,7 @@
 import argparse
 from dataclasses import replace
 import json
+import math
 from pathlib import Path
 
 import torch
@@ -12,7 +13,7 @@ from ogura.training.model import make_model
 from ogura.training.render import Vocabulary
 
 
-def validation_sets(config, vocabulary, paths, identity):
+def validation_sets(config, vocabulary, paths, identity, all_fonts=False):
     from ogura.training.train import EpochDataset, prepare_data, sha256
     result = []
     for path in paths:
@@ -27,8 +28,12 @@ def validation_sets(config, vocabulary, paths, identity):
             raise ValueError(f'Validation vocabulary differs: {path}')
         # Length groups describe source text, before font-dependent normalization.
         lengths = [len(line) for line in path.read_text(encoding='utf-8').splitlines()]
-        for mode in ('baseline', 'augmented'):
+        conditions = [('baseline', None)]
+        conditions += [('augmented', font) for font in (config.font, *config.extra_fonts)] if all_fonts else [('augmented', None)]
+        for mode, forced_font in conditions:
             cfg = replace(config, text=path, limit=None, clean_probability=0)
+            if forced_font is not None:
+                cfg = replace(cfg, font=forced_font, extra_fonts=())
             if mode == 'baseline':
                 cfg = replace(cfg, extra_fonts=(), font_size_min=config.validation_font_size,
                               font_size_max=config.validation_font_size, padding_min=4,
@@ -36,7 +41,8 @@ def validation_sets(config, vocabulary, paths, identity):
             records, report = prepare_data(cfg, vocabulary)
             if len(records) != manifest['samples'] or not all(manifest['min_length'] <= n <= manifest['max_length'] for n in lengths):
                 raise ValueError(f'Validation length/count mismatch: {path}')
-            result.append((dict(dataset=path.parent.name, mode=mode,
+            result.append((dict(**(dict(font=forced_font.name, font_sha256=sha256(forced_font)) if forced_font else {}),
+                                dataset=path.parent.name, mode=mode,
                                 text_sha256=expected['validation_text_sha256'],
                                 min_length=min(lengths), max_length=max(lengths)),
                            EpochDataset(records, list(range(len(records))), cfg, epoch=0)))
@@ -48,14 +54,51 @@ def evaluate_sets(model, datasets, vocabulary, batch_size, device):
     for info, dataset in datasets:
         row = dict(**info, **evaluate(model, dataset, vocabulary, batch_size, device))
         print(f"validation_length dataset={row['dataset']} mode={row['mode']} "
-              f"accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.2%} seconds={row['seconds']:.3f}", flush=True)
+              f"{('font=' + row['font'] + ' ') if 'font' in row else ''}accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.2%} seconds={row['seconds']:.3f}", flush=True)
         rows.append(row)
     return rows
+
+
+def font_grid_summary(rows, font_hashes):
+    """Equal-weight mean of every length/font condition; reject incomplete grids."""
+    augmented = [r for r in rows if r.get('mode') == 'augmented' and 'font_sha256' in r]
+    def group(row):
+        lo, hi = row['min_length'], row['max_length']
+        if lo == hi == 5: return 'short5'
+        if 20 <= lo <= hi <= 25: return 'normal'
+        if lo == hi == 80: return 'long80'
+        raise ValueError('Font grid requires lengths 5, 20–25, and 80')
+    expected = {(length, font) for length in ('short5', 'normal', 'long80') for font in font_hashes}
+    actual = [(group(r), r['font_sha256']) for r in augmented]
+    if len(set(font_hashes)) != len(font_hashes) or len(actual) != len(expected) or set(actual) != expected:
+        raise ValueError('Incomplete or duplicate length/font validation grid')
+    def average(subset):
+        return dict(cer=math.fsum(r['cer'] for r in subset)/len(subset),
+                    exact_accuracy=math.fsum(r['exact_accuracy'] for r in subset)/len(subset),
+                    seconds=sum(r['seconds'] for r in subset), conditions=len(subset))
+    summaries = []
+    for length in ('short5', 'normal', 'long80'):
+        summaries.append(dict(kind='validation_length_mean', length=length,
+                              **average([r for r in augmented if group(r) == length])))
+    for font in font_hashes:
+        subset = [r for r in augmented if r['font_sha256'] == font]
+        summaries.append(dict(kind='validation_font_mean', font=subset[0]['font'],
+                              font_sha256=font, **average(subset)))
+    return average(augmented), summaries
+
+
+def print_grid_summary(overall, summaries):
+    for row in summaries:
+        label = f"font={row['font']}" if 'font' in row else f"length={row['length']}"
+        print(f"{row['kind']} {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}", flush=True)
+    print(f"validation_grid conditions={overall['conditions']} CER={overall['cer']:.4%} "
+          f"augmented_seconds={overall['seconds']:.3f}", flush=True)
 
 
 def main():
     from ogura.training.train import TrainConfig, sha256
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--all-fonts', action='store_true', help='Evaluate every text in every configured font')
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--run-config', type=Path)
     parser.add_argument('--font-dir', type=Path, help='Override font directory after moving a run')
@@ -84,16 +127,22 @@ def main():
         raise ValueError('Font files differ from checkpoint')
     paths = args.validation_text or [ROOT/'datasets'/name/'validation.txt'
                                     for name in ('validation_short5','validation','validation_long80')]
-    datasets = validation_sets(config, vocabulary, paths, identity)
+    all_fonts = args.all_fonts or config.selection_metric == 'mean-font-cer'
+    datasets = validation_sets(config, vocabulary, paths, identity, all_fonts=all_fonts)
     model = make_model(len(vocabulary), state['channels'], state.get('model_type', 'small')).to(device)
     model.load_state_dict(state['model'])
     rows = evaluate_sets(model, datasets, vocabulary, args.batch_size, device)
+    grid = None
+    if all_fonts:
+        overall, summaries = font_grid_summary(rows, [identity['font_sha256'], *identity.get('extra_font_sha256', [])])
+        print_grid_summary(overall, summaries)
+        grid = dict(overall=overall, summaries=summaries)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open('x', encoding='utf-8') as stream:
         json.dump(dict(checkpoint_sha256=sha256(args.checkpoint), epoch=state['epoch'],
                        step=state['step'], rendering_settings=identity['settings'],
                        font_sha256=identity['font_sha256'], extra_font_sha256=identity.get('extra_font_sha256', []),
-                       results=rows), stream, ensure_ascii=False, indent=2)
+                       results=rows, grid=grid), stream, ensure_ascii=False, indent=2)
         stream.write('\n')
     print(f'Report: {args.output}')
 

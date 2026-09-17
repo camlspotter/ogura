@@ -181,7 +181,7 @@ def identity_for(config, device):
         code.update(path.name.encode()); code.update(path.read_bytes())
     return {
         **({'selection_validation_sha256': sorted(sha256(p) for p in config.monitor_validation)}
-           if config.selection_metric == 'mean-augmented-cer' else {}),
+           if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer') else {}),
         'target_normalization': 'unsupported-to-space-collapse-ascii-v1',
         'format': 3, 'text_sha256': sha256(config.text),
         'validation_sha256': sha256(config.validation_text) if config.validation_text else None,
@@ -222,11 +222,11 @@ def selection_score(metric, validation, events):
 
 def train(config: TrainConfig, on_step=None):
     """on_step is an optional observer called only after a complete update."""
-    if config.selection_metric not in ('validation-cer', 'mean-augmented-cer'):
+    if config.selection_metric not in ('validation-cer', 'mean-augmented-cer', 'mean-font-cer'):
         raise ValueError('Unknown selection metric')
-    if config.selection_metric == 'mean-augmented-cer' and (
+    if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer') and (
             not config.validation_augmented or not config.validation_text or len(config.monitor_validation) != 2):
-        raise ValueError('mean-augmented-cer requires augmented main validation and two monitors (5 and 80 characters)')
+        raise ValueError('Mean selection requires augmented main validation and two monitors (5 and 80 characters)')
     positive = (config.batch_size, config.epochs, config.channels, config.save_every,
                 config.threads, config.log_every, config.validation_font_size)
     if min(positive) < 1 or config.log_samples < 0 or config.workers < 0 or not config.learning_rate > 0:
@@ -267,6 +267,7 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
+            'd41c87ce959847b0bfa9ca2e5a1b0986e47c6deb07a3e75d854098014046ac6f',
             # Best-score reporting does not change training or validation.
             '35d5408dcd10838a5cb7e0d95a188a4fd46c14cd2c098a38abf460987ea96121',
             # The original small model is unchanged by the optional residual architecture.
@@ -304,8 +305,20 @@ def train(config: TrainConfig, on_step=None):
                 augmented_validation_dataset = EpochDataset(augmented_records, list(range(len(augmented_records))),
                                                             augmented_config, epoch=0)
             atomic_json(config.run_dir / 'validation_font_coverage.json', validation_report)
-        from ogura.evaluate_lengths import validation_sets, evaluate_sets
-        monitor_datasets = validation_sets(config, vocabulary, config.monitor_validation, identity)
+        from ogura.evaluate_lengths import validation_sets, evaluate_sets, font_grid_summary, print_grid_summary
+        grid_datasets = []
+        if config.selection_metric == 'mean-font-cer':
+            hashes = [identity['font_sha256'], *identity['extra_font_sha256']]
+            if len(hashes) != len(set(hashes)):
+                raise ValueError('Duplicate fonts in validation grid')
+            grid_datasets = validation_sets(config, vocabulary,
+                (config.validation_text, *config.monitor_validation), identity, all_fonts=True)
+            # Validate the Cartesian product before any training work.
+            font_grid_summary([dict(info, cer=0., exact_accuracy=0., seconds=0.)
+                               for info, _ in grid_datasets], hashes)
+            monitor_datasets = []
+        else:
+            monitor_datasets = validation_sets(config, vocabulary, config.monitor_validation, identity)
         if config.selection_metric == 'mean-augmented-cer':
             ranges = sorted((info['min_length'], info['max_length']) for info, _ in monitor_datasets
                             if info['mode'] == 'augmented')
@@ -368,7 +381,23 @@ def train(config: TrainConfig, on_step=None):
             nonlocal best
             events = []
             validation = None
-            if validation_dataset is not None:
+            grid_score = None
+            started = time.perf_counter()
+            if grid_datasets:
+                rows = evaluate_sets(model, grid_datasets, vocabulary, config.batch_size, device)
+                overall, summaries = font_grid_summary(rows, hashes)
+                print_grid_summary(overall, summaries)
+                grid_score = overall['cer']
+                validation = next(r for r in summaries if r.get('length') == 'normal')
+                validation = {k: validation[k] for k in ('cer', 'exact_accuracy', 'seconds')}
+                events.extend(dict(row, kind='validation_length', epoch=epoch_number, step=position['step']) for row in rows)
+                events.extend(dict(row, epoch=epoch_number, step=position['step']) for row in summaries)
+                events.append(dict(kind='validation', epoch=epoch_number, step=position['step'], **validation))
+                duration = time.perf_counter() - started
+                events.append(dict(kind='validation_timing', epoch=epoch_number, step=position['step'],
+                                   seconds=duration, conditions=len(rows)))
+                print(f"validation_total epoch={epoch_number} seconds={duration:.3f}", flush=True)
+            elif validation_dataset is not None:
                 validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
                 if augmented_validation_dataset is not None:
                     events.append(dict(kind='validation_baseline', epoch=epoch_number,
@@ -380,7 +409,7 @@ def train(config: TrainConfig, on_step=None):
                 for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device):
                     events.append(dict(kind='validation_length', epoch=epoch_number, step=position['step'], **result))
             if validation is not None:
-                score = selection_score(config.selection_metric, validation, events)
+                score = grid_score if grid_score is not None else selection_score(config.selection_metric, validation, events)
                 improved = best is None or score < best.get('selection_score', best['metrics']['cer'])
                 next(e for e in events if e['kind'] == 'validation')['is_best'] = improved
                 if improved:
@@ -392,10 +421,10 @@ def train(config: TrainConfig, on_step=None):
                                 model={k:v.detach().cpu().clone() for k,v in model.state_dict().items()})
                 print(f"validation epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} "
                       f"CER={validation['cer']:.2%} seconds={validation['seconds']:.3f} best={improved}", flush=True)
-                if config.selection_metric == 'mean-augmented-cer':
+                if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer'):
                     events.append(dict(kind='selection', epoch=epoch_number, step=position['step'],
                                        metric=config.selection_metric, cer=score, is_best=improved))
-                    print(f"selection epoch={epoch_number} mean_augmented_CER={score:.4%} best={improved}", flush=True)
+                    print(f"selection epoch={epoch_number} {config.selection_metric}={score:.4%} best={improved}", flush=True)
             return events
 
         def early_stop_event():
@@ -417,7 +446,7 @@ def train(config: TrainConfig, on_step=None):
             print_best_validation(best, config.run_dir / 'metrics.jsonl')
 
         if not config.resume:
-            if config.init_from and config.selection_metric == 'mean-augmented-cer':
+            if config.init_from and config.selection_metric in ('mean-augmented-cer', 'mean-font-cer'):
                 metrics_log.append(validate_and_select(0))
             save()  # Even interruption before the first periodic save has a restart point.
         total_batches = math.ceil(len(records) / config.batch_size)
@@ -525,7 +554,7 @@ def main():
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay', 'clean_probability'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
-    parser.add_argument('--selection-metric', choices=('validation-cer', 'mean-augmented-cer'), default='validation-cer')
+    parser.add_argument('--selection-metric', choices=('validation-cer', 'mean-augmented-cer', 'mean-font-cer'), default='validation-cer')
     parser.add_argument('--model-type', choices=('small', 'residual'), default='small')
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
     parser.add_argument('--monitor-validation', type=Path, action='append', default=[])

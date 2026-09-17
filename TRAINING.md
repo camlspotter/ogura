@@ -625,3 +625,60 @@ CERの分母とCTCの正解長は正規化後の文字列を使う。
 例えば7書体学習の上記コマンドのrun-dirを
 `runs/noto48-residual64-rounded-space1` に変更する。
 旧版のbest評価値は引き継がず、初期評価から選び直す。
+
+### 全文×全書体による検証とbest選択
+
+`--selection-metric mean-font-cer` を指定すると、各検証文字列を
+全書体で描画する。7書体・各長さ1,000文なら、揺らぎ付きは
+3長さ×7書体×1,000文＝21,000画像。参考のbaselineは従来の
+Noto Sans Regularによる3,000画像を追加で評価する。
+
+各文字列・書体のサイズと位置は固定seed/epoch=0から決まり、毎エポック
+同じ条件を使う。各フォントで欠字を空白に置換し、連続空白も正規化する。
+21条件それぞれのCER（各条件の正規化後の総文字数が分母）を等重みで平均し、
+best・early stoppingを判定する。baselineは平均に含めない。
+書体別CERは3長さの平均、長さ別CERは全書体の平均として表示する。
+`validation` の値は通常長の全書体平均となる。
+
+各条件のaccuracy/CER/時間、書体別・長さ別平均をmetrics.jsonlとbest.ptに
+保存する。`validation_total` はbaselineを含む一回の検証全体の実測秒数。
+フォントの重複、条件の不足・重複や不正な長さはエラーにする。
+
+実行中の旧方式から切り替えるときは、その最新チェックポイントの重みを
+新runに引き継ぐ。optimizer・epoch・best履歴は新しく開始し、更新前の
+epoch=0で全組み合わせを評価する。判定方式を変えてのresumeはできない。
+
+```sh
+uv run --frozen --extra train python -m ogura.training.train \
+  --device cuda --run-dir runs/noto48-residual64-rounded-grid \
+  --init-from runs/noto48-residual64-rounded-space1/latest.pt \
+  --model-type residual --channels 64 \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSansCJKjp-Light.otf \
+  --extra-font corpus/fonts/ZenMaruGothic-Light.ttf \
+  --extra-font corpus/fonts/ZenMaruGothic-Regular.ttf \
+  --font-size-min 28 --font-size-max 40 \
+  --padding-min 2 --padding-max 6 --vertical-full-range \
+  --clean-probability 0.25 --learning-rate 0.0001 \
+  --batch-size 32 --epochs 20 --workers 4 \
+  --validation-text datasets/validation/validation.txt --validation-augmented \
+  --monitor-validation datasets/validation_short5/validation.txt \
+  --monitor-validation datasets/validation_long80/validation.txt \
+  --selection-metric mean-font-cer --early-stopping-patience 5 \
+  --save-every 500 --log-every 100 --log-samples 3
+```
+
+学習を始める前に全組み合わせの評価だけを実行して負荷を測ることもできる：
+
+```sh
+uv run --frozen --extra train python -m ogura.evaluate_lengths \
+  --checkpoint runs/noto48-residual64-rounded-space1/best.pt \
+  --device cuda --all-fonts \
+  --output runs/noto48-residual64-rounded-space1/font-grid-evaluation.json
+```
+
+この単独評価はcheckpointのrun_config.jsonに記録されたフォント集合を使う。
+mean-font-cer方式のbest.ptでは `--all-fonts` を省略しても全組み合わせとなる。
+旧方式の学習は引き続き `mean-augmented-cer` で実行できる。
