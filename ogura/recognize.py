@@ -66,7 +66,8 @@ def main():
     state = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
     if 'characters' not in state:
         raise ValueError('Use an exported best.pt checkpoint')
-    vocabulary = Vocabulary(state['characters'])
+    vocabulary = Vocabulary(state.get('source_characters', state['characters']),
+                            state.get('identity', {}).get('character_aliases'))
     model = make_model(len(vocabulary), state['channels'], state.get('model_type', 'small')).to(device)
     model.load_state_dict(state['model'])
     model.eval()

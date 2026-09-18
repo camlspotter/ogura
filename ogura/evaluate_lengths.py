@@ -24,24 +24,28 @@ def validation_sets(config, vocabulary, paths, identity, all_fonts=False):
                         validation_text_sha256=sha256(path), split='validation')
         if any(manifest.get(k) != value for k,value in expected.items()):
             raise ValueError(f'Validation manifest does not match checkpoint: {path}')
-        if Vocabulary.read(path.parent/'targets.jsonl').characters != vocabulary.characters:
+        if Vocabulary.read(path.parent/'targets.jsonl').characters != vocabulary.source_characters:
             raise ValueError(f'Validation vocabulary differs: {path}')
         # Length groups describe source text, before font-dependent normalization.
         lengths = [len(line) for line in path.read_text(encoding='utf-8').splitlines()]
-        conditions = [('baseline', None)]
-        conditions += [('augmented', font) for font in (config.font, *config.extra_fonts)] if all_fonts else [('augmented', None)]
-        for mode, forced_font in conditions:
+        conditions = [('baseline', None, None)]
+        conditions += ([('augmented', font, western) for font in (config.font, *config.extra_fonts)
+                        for western in (config.western_fonts or (None,))]
+                       if all_fonts else [('augmented', None, None)])
+        for mode, forced_font, forced_western in conditions:
             cfg = replace(config, text=path, limit=None, clean_probability=0)
             if forced_font is not None:
-                cfg = replace(cfg, font=forced_font, extra_fonts=())
+                cfg = replace(cfg, font=forced_font, extra_fonts=(),
+                              western_fonts=(forced_western,) if forced_western else ())
             if mode == 'baseline':
-                cfg = replace(cfg, extra_fonts=(), font_size_min=config.validation_font_size,
+                cfg = replace(cfg, extra_fonts=(), western_fonts=(), font_size_min=config.validation_font_size,
                               font_size_max=config.validation_font_size, padding_min=4,
                               padding_max=4, vertical_jitter=0, vertical_full_range=False)
             records, report = prepare_data(cfg, vocabulary)
             if len(records) != manifest['samples'] or not all(manifest['min_length'] <= n <= manifest['max_length'] for n in lengths):
                 raise ValueError(f'Validation length/count mismatch: {path}')
-            result.append((dict(**(dict(font=forced_font.name, font_sha256=sha256(forced_font)) if forced_font else {}),
+            result.append((dict(**(dict(font=forced_font.name + (' + ' + forced_western.name if forced_western else ''),
+                                           font_sha256=sha256(forced_font) + (':' + sha256(forced_western) if forced_western else '')) if forced_font else {}),
                                 dataset=path.parent.name, mode=mode,
                                 text_sha256=expected['validation_text_sha256'],
                                 min_length=min(lengths), max_length=max(lengths)),
@@ -57,6 +61,12 @@ def evaluate_sets(model, datasets, vocabulary, batch_size, device):
               f"{('font=' + row['font'] + ' ') if 'font' in row else ''}accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.2%} seconds={row['seconds']:.3f}", flush=True)
         rows.append(row)
     return rows
+
+
+def validation_font_keys(identity):
+    japanese = [identity['font_sha256'], *identity.get('extra_font_sha256', [])]
+    western = identity.get('western_font_sha256', [])
+    return [j + ':' + w for j in japanese for w in western] if western else japanese
 
 
 def font_grid_summary(rows, font_hashes):
@@ -117,14 +127,17 @@ def main():
         torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
     state = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
     identity = state['identity']
-    vocabulary = Vocabulary(state['characters'])
+    vocabulary = Vocabulary(state.get('source_characters', state['characters']), identity.get('character_aliases'))
     saved_args = json.loads((args.run_config or args.checkpoint.parent/'run_config.json').read_text())['arguments']
     def font_path(value):
         return args.font_dir/Path(value).name if args.font_dir else Path(value)
     config = TrainConfig(**identity['settings'], font=font_path(saved_args['font']),
-                         extra_fonts=tuple(font_path(p) for p in saved_args.get('extra_fonts', [])))
+                         extra_fonts=tuple(font_path(p) for p in saved_args.get('extra_fonts', [])),
+                         western_fonts=tuple(font_path(p) for p in saved_args.get('western_fonts', [])))
     if sha256(config.font) != identity['font_sha256'] or [sha256(p) for p in config.extra_fonts] != identity.get('extra_font_sha256', []):
         raise ValueError('Font files differ from checkpoint')
+    if [sha256(p) for p in config.western_fonts] != identity.get('western_font_sha256', []):
+        raise ValueError('Western font files differ from checkpoint')
     paths = args.validation_text or [ROOT/'datasets'/name/'validation.txt'
                                     for name in ('validation_short5','validation','validation_long80')]
     all_fonts = args.all_fonts or config.selection_metric == 'mean-font-cer'
@@ -134,15 +147,16 @@ def main():
     rows = evaluate_sets(model, datasets, vocabulary, args.batch_size, device)
     grid = None
     if all_fonts:
-        overall, summaries = font_grid_summary(rows, [identity['font_sha256'], *identity.get('extra_font_sha256', [])])
+        overall, summaries = font_grid_summary(rows, validation_font_keys(identity))
         print_grid_summary(overall, summaries)
         grid = dict(overall=overall, summaries=summaries)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open('x', encoding='utf-8') as stream:
         json.dump(dict(checkpoint_sha256=sha256(args.checkpoint), epoch=state['epoch'],
                        step=state['step'], rendering_settings=identity['settings'],
+                       character_aliases=vocabulary.aliases.config,
                        font_sha256=identity['font_sha256'], extra_font_sha256=identity.get('extra_font_sha256', []),
-                       results=rows, grid=grid), stream, ensure_ascii=False, indent=2)
+                       western_font_sha256=identity.get('western_font_sha256', []), results=rows, grid=grid), stream, ensure_ascii=False, indent=2)
         stream.write('\n')
     print(f'Report: {args.output}')
 

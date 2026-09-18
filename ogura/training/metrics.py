@@ -36,7 +36,7 @@ def decode(logits, lengths, vocabulary):
             if token != last and token != vocabulary.blank:
                 characters.append(vocabulary.characters[token - 1])
             last = token
-        texts.append(''.join(characters))
+        texts.append(vocabulary.aliases.normalize(''.join(characters)))
     return texts
 
 

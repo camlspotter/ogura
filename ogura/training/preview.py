@@ -1,6 +1,6 @@
 """Render one text under varied training conditions into a single contact sheet."""
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import hashlib
 import json
 from pathlib import Path
@@ -8,16 +8,17 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from ogura.text_common import ROOT
-from .render import RenderParams, Sample, load_font, parameters_for_sample, render_sample, replace_unsupported
+from .render import RenderParams, Sample, load_font, parameters_for_sample, render_sample, normalized_text
 
 
 def create_preview(text, fonts, output, seed=20260915, variants=3,
                    size_min=28, size_max=40, padding_min=2, padding_max=6, vertical_jitter=3,
-                   vertical_mode="full"):
+                   vertical_mode="full", western_fonts=()):
     if not fonts or variants < 1:
         raise ValueError('Provide fonts and at least one variant per font')
     fonts = [Path(p).resolve() for p in fonts]
-    for font in fonts:
+    western_fonts = [Path(p).resolve() for p in western_fonts]
+    for font in [*fonts, *western_fonts]:
         if not font.is_file():
             raise FileNotFoundError(f'{font}: run python -m ogura.download_training_fonts first')
     sample_id = hashlib.sha256(text.encode()).hexdigest()
@@ -30,7 +31,9 @@ def create_preview(text, fonts, output, seed=20260915, variants=3,
                                       size_min, size_max, padding_min=padding_min,
                                       padding_max=padding_max, vertical_jitter=vertical_jitter,
                                       vertical_full_range=vertical_mode == "full")
-            rows.append((font.stem, p))
+            for western in western_fonts or [None]:
+                rows.append((font.stem + (f" + {western.stem}" if western else ""),
+                             replace(p, western_font_path=str(western) if western else None)))
     rendered = [render_sample(Sample(text, p, sample_id)) for _, p in rows]
     label_font = load_font(str(fonts[0]), 15)
     title_font = load_font(str(fonts[0]), 22)
@@ -44,7 +47,7 @@ def create_preview(text, fonts, output, seed=20260915, variants=3,
                  f'Y min={p.padding}px  {placement}  |  {im.width} x {im.height}px')
         labels.append(label)
         metadata.append(dict(name=name, parameters=asdict(p), width=im.width, height=im.height,
-                             rendered_text=replace_unsupported(text, p.font_path)))
+                             rendered_text=normalized_text(text, p)))
     margin, row_height, header = 24, 90, 102
     width = max(960, max(im.width for im in rendered)+margin*2,
                 int(max(label_font.getlength(s) for s in labels))+margin*2,
@@ -69,6 +72,7 @@ def create_preview(text, fonts, output, seed=20260915, variants=3,
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--text', default='春の図書館で、日本語の文字をゆっくり読む。')
+    parser.add_argument('--western-font', type=Path, action='append', default=[])
     parser.add_argument('--font', type=Path, action='append', help='Repeat to choose fonts; default: four Noto fonts')
     parser.add_argument('--output', type=Path, default=ROOT/'previews/augmentation.png')
     parser.add_argument('--seed', type=int, default=20260915)
@@ -80,7 +84,7 @@ def main():
     fonts = args.font or [ROOT/'corpus/fonts'/f'Noto{family}CJKjp-{weight}.otf'
                           for family in ('Sans','Serif') for weight in ('Regular','Bold')]
     print(create_preview(args.text, fonts, args.output, args.seed, args.variants,
-                         args.size_min, args.size_max, args.padding_min, args.padding_max, args.vertical_jitter, args.vertical_mode))
+                         args.size_min, args.size_max, args.padding_min, args.padding_max, args.vertical_jitter, args.vertical_mode, args.western_font))
 
 
 if __name__ == '__main__':

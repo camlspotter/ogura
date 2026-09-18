@@ -682,3 +682,137 @@ uv run --frozen --extra train python -m ogura.evaluate_lengths \
 この単独評価はcheckpointのrun_config.jsonに記録されたフォント集合を使う。
 mean-font-cer方式のbest.ptでは `--all-fonts` を省略しても全組み合わせとなる。
 旧方式の学習は引き続き `mean-augmented-cer` で実行できる。
+
+### 欧文と日本語の混植
+
+半角ラテン文字（Latin-1の文字を含む）・ASCII数字・ギリシャ文字・
+キリル文字を欧文フォントで描くオプションを追加した。全角英数字は
+変換せず、日本語フォントで描く。元コーパス・辞書は変更しない。
+
+取得は固定コミットとSHA-256付き。Tinos Regular（セリフ）と
+Arimo（サンセリフ、可変フォントの既定400）をライセンスとともに取得する：
+
+```sh
+uv run --frozen python -m ogura.download_training_fonts --include-rounded --include-western
+uv run --frozen --extra train python -m ogura.training.preview \
+  --font corpus/fonts/NotoSansCJKjp-Regular.otf \
+  --western-font corpus/fonts/Tinos-Regular.ttf \
+  --western-font 'corpus/fonts/Arimo[wght].ttf' \
+  --text '日本語と ISO 15216、Mill 123 “AV” αβγ АБВ ＡＢＣ１２３' \
+  --variants 2 --output datasets/font_candidates/mixed-preview.png
+```
+
+ASCII空白・ASCII記号・欧文引用符などは、欧文文字を含む連続区間で
+欧文書体に合わせる。日本語の句読点・全角記号は日本語書体のまま。
+各区間は共通ベースラインで配置し、欧文にはフォントの文字幅と
+OpenType GPOS kernの横方向ペア調整を使う。合字は作らない。
+これは選んだ左書き欧文の混植用であり、アラビア文字などの複雑な
+シェーピングには対応しない。結合ダイアクリティカルマークは今回の
+欧文振り分けには含めない。
+
+欧文フォントにない文字は日本語フォントへ戻し、そこにもなければ
+空白に置換する。連続半角空白の正規化は画像と正解に同じように適用する。
+細い欧字の連続などでCTCに必要な出力位置数が不足する場合のみ、
+行画像を必要幅まで横に伸ばす（高さ48pxは維持）。
+
+学習では日本語用 `--extra-font` と別に `--western-font` を繰り返し指定する。
+例えば直前の7書体学習コマンドを元に、次を変更・追加する：
+
+```text
+--run-dir runs/noto48-residual64-mixed
+--init-from runs/noto48-residual64-rounded-grid/best.pt
+--western-font corpus/fonts/Tinos-Regular.ttf
+--western-font 'corpus/fonts/Arimo[wght].ttf'
+```
+
+欧文フォントはサンプルごとに1つ選び、その行の欧文区間で共通に使う。
+clean-probabilityで選ばれたclean画像は従来どおりNoto Sans Regular単独。
+欧文フォント未指定なら従来の描画を維持する。
+
+mean-font-cer検証では、3長さ×7日本語書体×2欧文書体＝42条件を固定描画し、
+そのCERを等重みで平均する。各長さ1,000文なら揺らぎ付き42,000画像に
+従来のbaseline 3,000画像が加わる。ラベルには両フォント名を表示する。
+欧文を含まない行も同じ条件集合に含まれるため、これは欧文専用スコアではない。
+検証時間は従来より増える。evaluate_lengthsも保存した欧文フォントを復元する。
+
+描画条件・検証条件が変わるので、新しいrun-dirにinit-fromで移行する。
+欧文フォントの内容・順序をチェックポイントで検証し、異なる設定での
+resumeは拒否する。画像・フォント本体はGitに追加しない。
+この変更は描画方法の追加であり、欧文コーパスの増量は行わない。
+
+### 同一視する文字の設定
+
+`--character-aliases config/character_aliases.json` で代表元を指定できます。
+同梱の設定には英数字・記号・カナ・空白・確認済み漢字の159組を登録しています。
+オプション未指定時は統合しません。設定の形式は次のとおりです。
+
+```json
+{"version": 1, "groups": [{"representative": "A", "members": ["A", "Α", "А"]}]}
+```
+
+各集合は2文字以上で、代表元も集合内に含めます。集合間の重複、複数字からなる要素、改行などの制御文字は拒否します。
+空白はU+0020とU+3000のみ許可し、代表元をU+0020に限定します。
+元の語彙にない要素も設定できますが、使われる集合の代表元は元の語彙に必要です。
+未使用の要素は出力クラスを増やしません。設定外の文字は従来どおり独立したクラスです。
+描画は元の文字で行い、描画不可能文字の空白置換後、正解だけを代表元に変換します。
+CTCの繰り返し文字数、学習・検証のCERと完全一致率も変換後の正解を使用します。
+認識結果は代表元になり、元の文字体系を復元することはできません。コーパスは変更しません。
+
+設定内容はチェックポイントのidentityに保存され、`best.pt`には元の語彙も保存されます。
+単独評価は保存された設定を使用するため、設定ファイルを移動しても評価できます。
+再開時には同じ内容の設定を指定してください。集合・代表元を変更した再開や
+通常の `--init-from` は拒否します。新しいrunで `--init-from` に
+`--migrate-aliases` を併用すれば、分類層を移行して追加学習できます。
+
+代表元はASCII英字 `A–Z` と `a–z`、数字 `0–9`（ISO-8859-1にも含まれる）です。
+全角英字 `Ａ–Ｚ・ａ–ｚ` と全角数字 `０–９` を、それぞれ対応するASCII文字と同一視します。
+うち22組には、対応するギリシャ文字・キリル文字も含みます。英数字部分は156文字・62組です。
+現在の語彙には全角英字がありませんが、全角数字はあります。全設定を適用後の文字クラス数は15,918です。
+将来全角英字をコーパスと元の語彙に追加すれば、全角字形で描画し、ASCII英字を正解とします。
+画素の完全一致を全書体に要求するものではなく、書体による微差は許容する方針です。
+小文字 `o / ο / о` も含めます。`a / α`、`p / ρ`、`Y / У`、`K / К` は
+形状差の判断を保留し、今回は統合しません。数字と英字（`0 / O`、`1 / I / l`）、大小文字、漢字と仮名は統合しません。
+採用集合の正確なコードポイントは `config/character_aliases.json` のUnicode文字で定義しています。
+
+追加した集合は次のとおりです。
+
+- 全角ASCII記号32組：`！→!`、`（→(`、`％→%`、`＼→\` など。
+- 半角カナ・付随記号63組（U+FF61–U+FF9F）：`ｱ→ア`、`｡→。`、`｢→「`、`ﾞ→゛` など。
+- 空白1組：U+3000 → U+0020。
+- CJK互換漢字1組：`淚`（U+F94D）→ `淚`（U+6DDA）。`涙` は別クラス。
+
+同梱設定はversion 2で、`collapse_ascii_spaces: true` と
+`compose_katakana_diacritics: true` を指定しています。集合で変換した後、
+合成可能なカタカナ＋濁点・半濁点だけを `カ゛→ガ`、`ハ゜→パ` のように合成し、
+連続するU+0020を1個にまとめます。先頭・末尾の空白も1個は残します。
+単独の濁点や合成できない組は残し、テキスト全体へのNFKCは行いません。
+合成結果の文字は語彙に必要です。描画は正規化前の字形と空白幅で行います。
+正解・評価時の予測・recognize出力に同じ正規化を適用します。
+version 1の設定は従来どおり文字集合の変換だけを行います。
+
+### 同一視設定を変更して追加学習する
+
+これまでの学習コマンドから `--resume` を外し、別の `--run-dir` にして、次を指定します。
+モデルの種類・channelsは移行元と同じ値にし、フォント・揺らぎ・validationの指定も引き継いでください。
+
+```text
+--run-dir runs/noto48-aliases
+--init-from runs/noto48-residual64-rounded-grid/best.pt
+--character-aliases config/character_aliases.json
+--migrate-aliases
+```
+
+特徴抽出部・横方向CNNの重みはそのままコピーします。分類層はblankと単独クラスを
+そのままコピーし、統合クラスのweight・biasを旧クラスの算術平均で初期化します。
+これは旧確率の和を厳密に再現する変換ではなく、追加学習の初期値です。
+元チェックポイントは変更せず、optimizer・scheduler・epochは新規に開始します。
+validation指定時は学習前のepoch 0も評価し、新しい評価基準でbestを選び直します。
+
+移行元はbest.ptまたはlatest.ptです。クラス一覧を持たない旧latest.ptの場合は、
+元のtargets.jsonlのハッシュ一致を確認して旧クラス順を復元します。
+モデル構造・channels・元の文字集合が異なる移行や、統合済みクラスを再分割する移行は拒否します。
+移行元SHA256、旧新設定、統合した各クラス、初期化方式を
+run-dir/class_migration.jsonとlatest.pt/best.ptのinitializationに保存します。
+
+移行後の中断再開は、同じ同一視設定と学習条件で `--resume` を使用します。
+`--init-from` と `--migrate-aliases` は外してください。再開時に再度重みを統合しません。

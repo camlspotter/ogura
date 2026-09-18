@@ -52,5 +52,27 @@
       "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese/NotoSansCJKjp-Light.otf",
       "sha256": "f29b82874c6e80cef845770b35e111cc3bdff7b8b25d8a41f2285083152ecdfe"
     }
+  ],
+  "western": [
+    {
+      "name": "Tinos-Regular.ttf",
+      "url": "https://raw.githubusercontent.com/google/fonts/a54f7446f84a1125ef6bf08baa46f3639e8905e0/ofl/tinos/Tinos-Regular.ttf",
+      "sha256": "60a0e8ef0c04dd5dd69ffe91025fa2ae5836cbd35600a82ba031977557e2cb61"
+    },
+    {
+      "name": "Arimo[wght].ttf",
+      "url": "https://raw.githubusercontent.com/google/fonts/a54f7446f84a1125ef6bf08baa46f3639e8905e0/ofl/arimo/Arimo%5Bwght%5D.ttf",
+      "sha256": "e43898b143ec826ac8cb4034816458a7047fbe0836558de2a1f8c6223ae3e0ca"
+    },
+    {
+      "name": "LICENSE-Arimo",
+      "url": "https://raw.githubusercontent.com/google/fonts/a54f7446f84a1125ef6bf08baa46f3639e8905e0/ofl/arimo/OFL.txt",
+      "sha256": "11cce536cd2f3864d767003af5dcd739e2e15818cf2279b6175edeadd3960992"
+    },
+    {
+      "name": "LICENSE-Tinos",
+      "url": "https://raw.githubusercontent.com/googlefonts/tinos/3b4482a99b80ea5fc75f187b1be3120a3f5905b3/OFL.txt",
+      "sha256": "cb3382d4643e8b02c12e322c220a3c76a5020d667e4fd4e7c75e744cca6caa6b"
+    }
   ]
 }

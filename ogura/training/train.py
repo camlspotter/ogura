@@ -37,7 +37,10 @@ class TrainConfig:
     vocabulary: Path = ROOT / 'datasets/final_50_len20_25_hiragana_mix5/targets.jsonl'
     font: Path = ROOT / 'corpus/fonts/NotoSansCJKjp-Regular.otf'
     extra_fonts: tuple[Path, ...] = ()
+    western_fonts: tuple[Path, ...] = ()
+    character_aliases: Path | None = None
     init_from: Path | None = None
+    migrate_aliases: bool = False
     padding_min: int = 4
     padding_max: int = 4
     vertical_jitter: int = 0
@@ -103,10 +106,14 @@ def run_lock(directory):
 
 def prepare_data(config, vocabulary):
     fonts = (config.font, *config.extra_fonts)
+    from .render import is_western_character
+    western_supported = (set.intersection(*(set(font_characters(str(p.resolve()))) for p in config.western_fonts))
+                         if config.western_fonts else set())
     supported = set.intersection(*(set(font_characters(str(p.resolve()))) for p in fonts))
-    if any(ord(' ') not in font_characters(str(p.resolve())) for p in fonts):
+    supported |= {cp for cp in western_supported if is_western_character(chr(cp))}
+    if any(ord(' ') not in font_characters(str(p.resolve())) for p in (*fonts, *config.western_fonts)):
         raise ValueError('Every font must support replacement space U+0020')
-    vocabulary_set = set(vocabulary.characters)
+    vocabulary_set = set(vocabulary.source_characters)
     records = []
     replaced_lines = []
     replaced_occurrences = Counter()
@@ -129,7 +136,7 @@ def prepare_data(config, vocabulary):
                 if ' ' not in vocabulary.ids:
                     raise ValueError('Vocabulary must contain replacement space U+0020')
             sample_id = hashlib.sha256(text.encode()).hexdigest()
-            records.append((text if config.extra_fonts else replace_unsupported(text, str(config.font.resolve())), sample_id))
+            records.append((text if config.extra_fonts or config.western_fonts else replace_unsupported(text, str(config.font.resolve())), sample_id))
     if not records:
         raise ValueError('Text dataset is empty')
     report = {
@@ -141,7 +148,7 @@ def prepare_data(config, vocabulary):
         'replaced_line_numbers': replaced_lines,
         'unsupported_characters': [
             {'character': c, 'codepoint': f'U+{ord(c):04X}', 'rows': missing_counts[c], 'occurrences': replaced_occurrences[c]}
-            for c in vocabulary.characters if ord(c) not in supported
+            for c in vocabulary.source_characters if ord(c) not in supported
         ],
     }
     if config.limit is not None:
@@ -165,6 +172,7 @@ class EpochDataset(Dataset):
             self.config.font_size_min, self.config.font_size_max,
             tuple(p.resolve() for p in self.config.extra_fonts), self.config.padding_min,
             self.config.padding_max, self.config.vertical_jitter, self.config.clean_probability, self.config.vertical_full_range,
+            tuple(p.resolve() for p in self.config.western_fonts),
         ), sample_id)
 
 
@@ -172,16 +180,22 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
-                'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
+                'character_aliases', 'migrate_aliases', 'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'western_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
         settings.pop(key)
     if config.selection_metric == "validation-cer":
         settings.pop("selection_metric")  # Preserve legacy resume identities.
     code = hashlib.sha256()
     for path in sorted(Path(__file__).parent.glob('*.py')):
         code.update(path.name.encode()); code.update(path.read_bytes())
+    from .aliases import CharacterAliases
+    aliases = CharacterAliases.read(config.character_aliases)
     return {
+        **({'character_aliases': aliases.config} if aliases.mapping or aliases.collapse_spaces or aliases.compose_katakana else {}),
         **({'selection_validation_sha256': sorted(sha256(p) for p in config.monitor_validation)}
            if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer') else {}),
+        **({'western_font_sha256': [sha256(p) for p in config.western_fonts],
+             'western_rendering': 'script-runs-gpos-kern-v1'}
+           if config.western_fonts else {}),
         'target_normalization': 'unsupported-to-space-collapse-ascii-v1',
         'format': 3, 'text_sha256': sha256(config.text),
         'validation_sha256': sha256(config.validation_text) if config.validation_text else None,
@@ -194,9 +208,14 @@ def identity_for(config, device):
     }
 
 
-def load_initial_weights(model, path, vocabulary, channels, model_type="small", vocabulary_path=None):
+def load_initial_weights(model, path, vocabulary, channels, model_type="small", vocabulary_path=None, migrate_aliases=False):
     """Load weights only; verify labels and architecture for either export format."""
     state = torch.load(path, map_location='cpu', weights_only=True)
+    if migrate_aliases:
+        from .migration import migrate_classifier
+        report = migrate_classifier(model, state, vocabulary, channels, model_type, vocabulary_path)
+        return dict(report, checkpoint_sha256=sha256(path), source_epoch=state.get('epoch', state.get('position', {}).get('epoch')),
+                    source_step=state.get('step', state.get('position', {}).get('step')))
     if 'characters' in state:
         labels_match = state['characters'] == list(vocabulary.characters)
         settings = state
@@ -204,6 +223,8 @@ def load_initial_weights(model, path, vocabulary, channels, model_type="small", 
         settings = state.get('identity', {}).get('settings', {})
         labels_match = (vocabulary_path is not None and
                         state.get('identity', {}).get('vocabulary_sha256') == sha256(vocabulary_path))
+    if state.get('identity', {}).get('character_aliases', {'version': 1, 'groups': []}) != vocabulary.aliases.config:
+        raise ValueError('Character aliases differ; checkpoint class migration is required')
     if not labels_match or settings.get('channels') != channels:
         raise ValueError('Initial model vocabulary/order or channels differ from this run')
     if settings.get('model_type', 'small') != model_type:
@@ -241,6 +262,8 @@ def train(config: TrainConfig, on_step=None):
         raise ValueError('Early stopping patience must be nonnegative')
     if config.early_stopping_patience and not config.validation_text:
         raise ValueError('Early stopping requires --validation-text')
+    if config.migrate_aliases and (not config.init_from or config.resume):
+        raise ValueError('--migrate-aliases requires --init-from and a new run')
     if config.resume and config.init_from:
         raise ValueError('--resume and --init-from are mutually exclusive')
     parameters_for_sample(config.font, config.seed, 0, 'check', config.font_size_min,
@@ -267,7 +290,9 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
+            'e9b466b0eed6f8dea2e4927fcac82973347b89ae78f1840d6ec2539e087c1f17',
             'd41c87ce959847b0bfa9ca2e5a1b0986e47c6deb07a3e75d854098014046ac6f',
+            'e95b3d11d2b01f10b50d9dc2630c240bdf25cadad824de04305da2751912d784',
             # Best-score reporting does not change training or validation.
             '35d5408dcd10838a5cb7e0d95a188a4fd46c14cd2c098a38abf460987ea96121',
             # The original small model is unchanged by the optional residual architecture.
@@ -276,14 +301,14 @@ def train(config: TrainConfig, on_step=None):
             '74af5387661339582ec621527686e1a14ad01cdc67a2f7b4a3948ec236c751df',
             'e9956d6bc8c4b393adb9a770635a61f2f2c7ae7f38763067d5fe9aaa6bf347ca',
         )) if config.resume else None
-        vocabulary = Vocabulary.read(config.vocabulary)
+        vocabulary = Vocabulary.read(config.vocabulary, identity.get('character_aliases'))
         records, report = prepare_data(config, vocabulary)
         validation_dataset = None
         augmented_validation_dataset = None
         if config.validation_text:
             validation_config = replace(config, text=config.validation_text, limit=None,
                                         font_size_min=config.validation_font_size,
-                                        font_size_max=config.validation_font_size, extra_fonts=(),
+                                        font_size_max=config.validation_font_size, extra_fonts=(), western_fonts=(),
                                         padding_min=4, padding_max=4, vertical_jitter=0, clean_probability=0, vertical_full_range=False)
             validation_records, validation_report = prepare_data(validation_config, vocabulary)
             normalized_training = {replace_unsupported(text, str(config.font.resolve())) for text,_ in records}
@@ -305,10 +330,10 @@ def train(config: TrainConfig, on_step=None):
                 augmented_validation_dataset = EpochDataset(augmented_records, list(range(len(augmented_records))),
                                                             augmented_config, epoch=0)
             atomic_json(config.run_dir / 'validation_font_coverage.json', validation_report)
-        from ogura.evaluate_lengths import validation_sets, evaluate_sets, font_grid_summary, print_grid_summary
+        from ogura.evaluate_lengths import validation_sets, evaluate_sets, font_grid_summary, print_grid_summary, validation_font_keys
         grid_datasets = []
         if config.selection_metric == 'mean-font-cer':
-            hashes = [identity['font_sha256'], *identity['extra_font_sha256']]
+            hashes = validation_font_keys(identity)
             if len(hashes) != len(set(hashes)):
                 raise ValueError('Duplicate fonts in validation grid')
             grid_datasets = validation_sets(config, vocabulary,
@@ -328,13 +353,17 @@ def train(config: TrainConfig, on_step=None):
                 raise ValueError('Mean selection requires main validation lengths of 20 to 25')
         atomic_json(config.run_dir / 'font_coverage.json', report)
         atomic_json(config.run_dir / 'run_config.json', {
-            'arguments': {k: str(v) if isinstance(v, Path) else [str(p) for p in v] if k in ('extra_fonts', 'monitor_validation') else v for k,v in asdict(config).items()},
+            'arguments': {k: str(v) if isinstance(v, Path) else [str(p) for p in v] if k in ('extra_fonts', 'western_fonts', 'monitor_validation') else v for k,v in asdict(config).items()},
             'identity': identity, 'classes_including_blank': len(vocabulary),
         })
         print(f"Rows: {len(records):,}; rows potentially needing space replacements: {report['replaced_rows']:,}; device: {device}", flush=True)
         model = make_model(len(vocabulary), config.channels, config.model_type).to(device)
+        initialization = saved.get('initialization') if saved else None
         if config.init_from:
-            load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type, config.vocabulary)
+            initialization = load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type, config.vocabulary, config.migrate_aliases)
+            if initialization:
+                atomic_json(config.run_dir / 'class_migration.json', initialization)
+                print(f"Migrated classes (including blank): {initialization['old_classes_including_blank']} -> {initialization['new_classes_including_blank']}", flush=True)
             print(f'Initialized weights from: {config.init_from}; optimizer and epoch start fresh', flush=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=config.lr_decay)
@@ -367,7 +396,7 @@ def train(config: TrainConfig, on_step=None):
             elapsed_at_save = (segment_elapsed + time.perf_counter() - segment_started
                                if segment_started is not None else epoch_elapsed)
             checkpoints.save({
-                'identity': identity, 'model': model.state_dict(),
+                'identity': identity, 'model': model.state_dict(), 'initialization': initialization,
                 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(),
                 'scaler': scaler.state_dict(), 'position': dict(position), 'rng': rng_state(),
                 'metrics': {'epoch_totals': dict(epoch_totals), 'log_offset': metrics_log.offset,
@@ -415,6 +444,7 @@ def train(config: TrainConfig, on_step=None):
                 if improved:
                     best = dict(identity=identity, epoch=epoch_number, step=position['step'],
                                 metrics=validation, characters=list(vocabulary.characters),
+                                source_characters=list(vocabulary.source_characters), initialization=initialization,
                                 channels=config.channels, model_type=config.model_type,
                                 selection_metric=config.selection_metric, selection_score=score,
                                 validation_results=[dict(e) for e in events],
@@ -446,7 +476,7 @@ def train(config: TrainConfig, on_step=None):
             print_best_validation(best, config.run_dir / 'metrics.jsonl')
 
         if not config.resume:
-            if config.init_from and config.selection_metric in ('mean-augmented-cer', 'mean-font-cer'):
+            if config.init_from and (config.selection_metric in ('mean-augmented-cer', 'mean-font-cer') or (config.migrate_aliases and config.validation_text)):
                 metrics_log.append(validate_and_select(0))
             save()  # Even interruption before the first periodic save has a restart point.
         total_batches = math.ceil(len(records) / config.batch_size)
@@ -547,7 +577,7 @@ def train(config: TrainConfig, on_step=None):
 def main():
     defaults = TrainConfig()
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'init_from'):
+    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'init_from', 'character_aliases'):
         parser.add_argument('--' + name.replace('_', '-'), type=Path, default=getattr(defaults, name))
     for name in ('batch_size', 'epochs', 'early_stopping_patience', 'channels', 'seed', 'save_every', 'workers',
                  'font_size_min', 'font_size_max', 'padding_min', 'padding_max', 'vertical_jitter', 'validation_font_size', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):
@@ -558,11 +588,13 @@ def main():
     parser.add_argument('--model-type', choices=('small', 'residual'), default='small')
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
     parser.add_argument('--monitor-validation', type=Path, action='append', default=[])
+    parser.add_argument('--western-font', dest='western_fonts', type=Path, action='append', default=[])
     parser.add_argument('--extra-font', dest='extra_fonts', type=Path, action='append', default=[])
-    for name in ('amp', 'deterministic', 'resume', 'validation-augmented', 'vertical-full-range'):
+    for name in ('amp', 'deterministic', 'resume', 'validation-augmented', 'vertical-full-range', 'migrate-aliases'):
         parser.add_argument('--' + name, action='store_true')
     args = vars(parser.parse_args())
     args['extra_fonts'] = tuple(args['extra_fonts'])
+    args['western_fonts'] = tuple(args['western_fonts'])
     args['monitor_validation'] = tuple(args['monitor_validation'])
     config = TrainConfig(**args)
     try:
