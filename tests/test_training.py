@@ -96,8 +96,8 @@ class TrainingTests(unittest.TestCase):
         self.assertTrue(torch.all(batch.images[1, :, :, batch.image_widths[1]:] == 1))
         self.assertLess(float(batch.images.min()), 1)
         self.assertTrue(torch.equal(batch.images, render(samples).images))
-        blank = render_sample(Sample('\U0010ffff', RenderParams(str(FONT))))
-        self.assertEqual(blank.getextrema(), (255, 255))
+        with self.assertRaisesRegex(ValueError, 'No renderable text'):
+            render_sample(Sample('\U0010ffff', RenderParams(str(FONT))))
         with self.assertRaises(KeyError):render([Sample('外', RenderParams(str(FONT)))])
         p = parameters_for_sample(FONT, 7, 2, 'a', 32, 40)
         random.seed(99); random.random()
@@ -106,7 +106,7 @@ class TrainingTests(unittest.TestCase):
     def test_missing_glyph_replaces_image_and_label_without_dropping_rows(self):
         missing = '\U0010ffff'
         original = missing + '日' + missing * 2 + '本' + missing
-        expected = ' 日 本 '
+        expected = '日 本'
         vocabulary = Vocabulary(' 日本' + missing)
         renderer = BatchRenderer(vocabulary)
         batch = renderer([Sample(original, RenderParams(str(FONT)), 'original-id')])
@@ -160,7 +160,7 @@ class TrainingTests(unittest.TestCase):
                 batch = BatchRenderer(Vocabulary(' 日本'))([
                     Sample(records[0][0], RenderParams(str(FONT))),
                     Sample(records[0][0], RenderParams('second-font'))])
-            self.assertEqual(batch.texts, ['日本', '日 '])
+            self.assertEqual(batch.texts, ['日本', '日'])
 
     def test_warm_start_checks_label_order_and_loads_exact_weights(self):
         vocab = Vocabulary(' 日本')

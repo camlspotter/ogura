@@ -39,6 +39,7 @@ class TrainConfig:
     extra_fonts: tuple[Path, ...] = ()
     western_fonts: tuple[Path, ...] = ()
     character_aliases: Path | None = None
+    evaluation_aliases: Path | None = None
     init_from: Path | None = None
     migrate_aliases: bool = False
     padding_min: int = 4
@@ -180,7 +181,7 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
-                'character_aliases', 'migrate_aliases', 'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'western_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
+                'character_aliases', 'evaluation_aliases', 'migrate_aliases', 'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'western_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
         settings.pop(key)
     if config.selection_metric == "validation-cer":
         settings.pop("selection_metric")  # Preserve legacy resume identities.
@@ -189,7 +190,9 @@ def identity_for(config, device):
         code.update(path.name.encode()); code.update(path.read_bytes())
     from .aliases import CharacterAliases
     aliases = CharacterAliases.read(config.character_aliases)
+    evaluation_aliases = CharacterAliases.read(config.evaluation_aliases)
     return {
+        **({'evaluation_aliases': evaluation_aliases.config} if config.evaluation_aliases else {}),
         **({'character_aliases': aliases.config} if aliases.mapping or aliases.collapse_spaces or aliases.compose_katakana else {}),
         **({'selection_validation_sha256': sorted(sha256(p) for p in config.monitor_validation)}
            if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer') else {}),
@@ -290,6 +293,8 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
+            '652d9987d77aea84c96f3362a04ac8c378c03568f0eec19d45f9d0ced65f3f91',  # Scoring-only aliases disabled preserves prior training.
+
             'e9b466b0eed6f8dea2e4927fcac82973347b89ae78f1840d6ec2539e087c1f17',
             'd41c87ce959847b0bfa9ca2e5a1b0986e47c6deb07a3e75d854098014046ac6f',
             'e95b3d11d2b01f10b50d9dc2630c240bdf25cadad824de04305da2751912d784',
@@ -302,6 +307,8 @@ def train(config: TrainConfig, on_step=None):
             'e9956d6bc8c4b393adb9a770635a61f2f2c7ae7f38763067d5fe9aaa6bf347ca',
         )) if config.resume else None
         vocabulary = Vocabulary.read(config.vocabulary, identity.get('character_aliases'))
+        from .aliases import CharacterAliases
+        evaluation_aliases = CharacterAliases(identity.get('evaluation_aliases'))
         records, report = prepare_data(config, vocabulary)
         validation_dataset = None
         augmented_validation_dataset = None
@@ -413,7 +420,7 @@ def train(config: TrainConfig, on_step=None):
             grid_score = None
             started = time.perf_counter()
             if grid_datasets:
-                rows = evaluate_sets(model, grid_datasets, vocabulary, config.batch_size, device)
+                rows = evaluate_sets(model, grid_datasets, vocabulary, config.batch_size, device, evaluation_aliases)
                 overall, summaries = font_grid_summary(rows, hashes)
                 print_grid_summary(overall, summaries)
                 grid_score = overall['cer']
@@ -427,15 +434,15 @@ def train(config: TrainConfig, on_step=None):
                                    seconds=duration, conditions=len(rows)))
                 print(f"validation_total epoch={epoch_number} seconds={duration:.3f}", flush=True)
             elif validation_dataset is not None:
-                validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device)
+                validation = evaluate(model, validation_dataset, vocabulary, config.batch_size, device, evaluation_aliases)
                 if augmented_validation_dataset is not None:
                     events.append(dict(kind='validation_baseline', epoch=epoch_number,
                                        step=position['step'], **validation))
                     print(f"validation_baseline epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} CER={validation['cer']:.2%}", flush=True)
-                    validation = evaluate(model, augmented_validation_dataset, vocabulary, config.batch_size, device)
+                    validation = evaluate(model, augmented_validation_dataset, vocabulary, config.batch_size, device, evaluation_aliases)
                 events.append(dict(kind='validation', epoch=epoch_number, step=position['step'], **validation))
             if monitor_datasets:
-                for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device):
+                for result in evaluate_sets(model, monitor_datasets, vocabulary, config.batch_size, device, evaluation_aliases):
                     events.append(dict(kind='validation_length', epoch=epoch_number, step=position['step'], **result))
             if validation is not None:
                 score = grid_score if grid_score is not None else selection_score(config.selection_metric, validation, events)
@@ -525,7 +532,7 @@ def train(config: TrainConfig, on_step=None):
                 if device.type == 'cuda':
                     torch.cuda.synchronize(device)
                 batch_seconds = time.perf_counter() - batch_started
-                totals = batch_totals(predictions, batch.texts, loss_value, batch_seconds)
+                totals = batch_totals(predictions, batch.texts, loss_value, batch_seconds, evaluation_aliases)
                 add_totals(epoch_totals, totals)
                 if updated:
                     position['step'] += 1
@@ -562,7 +569,7 @@ def train(config: TrainConfig, on_step=None):
                         elapsed = segment_elapsed + time.perf_counter() - segment_started
                         eta = epoch_eta(epoch_totals, total_batches, elapsed)
                     print(f"step={position['step']} epoch={epoch + 1} loss={loss_value:.6f} accuracy={summary(totals)['exact_accuracy']:.2%} CER={summary(totals)['cer']:.2%} seconds={batch_seconds:.3f} batch={batch_index + 1}/{total_batches} ({(batch_index + 1) / total_batches:.1%}) elapsed={format_duration(elapsed)} remaining={format_duration(eta)} finish_local={local_finish_time(eta)}", flush=True)
-                    for reference, prediction, sample_cer in worst_samples(batch.texts, predictions, config.log_samples):
+                    for reference, prediction, sample_cer in worst_samples(batch.texts, predictions, config.log_samples, evaluation_aliases):
                         print(f'  CER: {sample_cer:.2%}\n  正解: {reference!r}\n  予測: {prediction!r}', flush=True)
                 if on_step is not None:
                     on_step(dict(position), batch.sample_ids)
@@ -577,7 +584,7 @@ def train(config: TrainConfig, on_step=None):
 def main():
     defaults = TrainConfig()
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'init_from', 'character_aliases'):
+    for name in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'init_from', 'character_aliases', 'evaluation_aliases'):
         parser.add_argument('--' + name.replace('_', '-'), type=Path, default=getattr(defaults, name))
     for name in ('batch_size', 'epochs', 'early_stopping_patience', 'channels', 'seed', 'save_every', 'workers',
                  'font_size_min', 'font_size_max', 'padding_min', 'padding_max', 'vertical_jitter', 'validation_font_size', 'threads', 'log_every', 'log_samples', 'max_steps', 'limit'):

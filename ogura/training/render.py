@@ -117,13 +117,13 @@ def parameters_for_sample(font_path, seed, epoch, sample_id, size_min=40, size_m
 
 
 def replace_unsupported(text: str, font_path: str) -> str:
-    """Replace missing glyphs, then collapse U+0020 runs without stripping edges."""
+    """Replace missing glyphs, collapse U+0020 runs, and trim edge spaces."""
     supported = font_characters(font_path)
     if any(ord(c) not in supported for c in text):
         if ord(' ') not in supported:
             raise ValueError('Font must support the replacement space U+0020')
         text = ''.join(c if ord(c) in supported else ' ' for c in text)
-    return re.sub(' +', ' ', text)
+    return re.sub(' +', ' ', text).strip(' \u3000')
 
 
 def is_western_character(c):
@@ -170,7 +170,7 @@ def normalized_text(text, params):
         if ord(' ') not in supported:
             raise ValueError('Font must support replacement space U+0020')
         normalized.append(''.join(c if ord(c) in supported else ' ' for c in run))
-    return re.sub(' +', ' ', ''.join(normalized))
+    return re.sub(' +', ' ', ''.join(normalized)).strip(' \u3000')
 
 
 @lru_cache(maxsize=32)
@@ -244,6 +244,8 @@ def western_positions(text, path, size):
 def render_mixed(sample):
     p = sample.render_params
     text = normalized_text(sample.text, p)
+    if not text:
+        raise ValueError("No renderable text remains after edge-space trimming")
     runs = western_runs(text, p.font_path, p.western_font_path)
     for size in range(p.font_size, 0, -1):
         layout = []
@@ -299,6 +301,8 @@ def render_sample(sample: Sample) -> Image.Image:
     if p.western_font_path:
         return render_mixed(sample)
     sample = replace(sample, text=normalized_text(sample.text, p))
+    if not sample.text:
+        raise ValueError("No renderable text remains after edge-space trimming")
     for size in range(p.font_size, 0, -1):
         font = load_font(p.font_path, size)
         left, top, right, bottom = font.getbbox(sample.text)
@@ -333,6 +337,8 @@ class BatchRenderer:
         if any(not s.text or any(c in s.text for c in '\r\n\x85\u2028\u2029') for s in samples):
             raise ValueError('Expected nonempty single-line text')
         samples = [replace(s, text=normalized_text(s.text, s.render_params)) for s in samples]
+        if any(not s.text for s in samples):
+            raise ValueError('No renderable text remains after missing-glyph replacement and edge-space trimming')
         encoded = [self.vocabulary.encode(s.text) for s in samples]
         images = [render_sample(s) for s in samples]
         # Merging distinct glyphs can introduce repeated CTC labels.

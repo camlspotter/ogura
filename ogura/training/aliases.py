@@ -10,6 +10,11 @@ class CharacterAliases:
         config = {"version": 1, "groups": []} if config is None else config
         if not isinstance(config, dict) or type(config.get("version")) is not int or config["version"] not in (1, 2) or not isinstance(config.get("groups"), list):
             raise ValueError("Expected character aliases version 1 or 2 and a groups list")
+        # Human-readable notes are metadata, not part of checkpoint identity.
+        if "_comment" in config:
+            if not isinstance(config["_comment"], str):
+                raise ValueError("Alias _comment must be a string")
+            config = {key: value for key, value in config.items() if key != "_comment"}
         options = {"collapse_ascii_spaces", "compose_katakana_diacritics"}
         expected = {"version", "groups"} | (options if config["version"] == 2 else set())
         if set(config) != expected or any(type(config[k]) is not bool for k in options if k in config):

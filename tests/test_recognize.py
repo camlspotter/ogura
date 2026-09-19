@@ -71,3 +71,15 @@ class PreprocessingTests(unittest.TestCase):
                     x, widths = load_image(picture, mode)
                     self.assertTrue(np.array_equal(np.asarray(im), (x[0, 0].numpy()*255).round().astype(np.uint8)))
                     self.assertEqual(widths.item(), 151)
+
+    def test_horizontal_stretch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)/'input.png'
+            Image.new('L', (80, 48), 120).save(p)
+            for scale, width in ((1, 80), (1.5, 120), (2, 160)):
+                pixels, widths = load_image(p, width_scale=scale)
+                self.assertEqual(widths.item(), width)
+                self.assertEqual(pixels.shape, (1, 1, 48, width))
+            for scale in (0, -1, float('nan'), float('inf')):
+                with self.assertRaises(ValueError):
+                    load_image(p, width_scale=scale)

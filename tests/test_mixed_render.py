@@ -46,7 +46,7 @@ class MixedTests(unittest.TestCase):
         p=RenderParams(str(FONT),western_font_path=str(T))
         text='日本 Mill αβ АБ Ａ１２\U0010ffff\U0010fffe'
         norm=normalized_text(text,p)
-        self.assertEqual(norm,text[:-2]+' ')
+        self.assertEqual(norm,text[:-2])
         self.assertIsNone(ImageChops.difference(render_sample(Sample(text,p)),
                                               render_sample(Sample(norm,p))).getbbox())
         narrow='i'*25

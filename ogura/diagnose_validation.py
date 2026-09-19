@@ -75,14 +75,16 @@ def write_html(path, results):
         parts.append('</table>')
         for row in result['worst']:
             parts.append(f'<article><b>#{row["sample_index"]} CER {row["cer"]:.2%}</b><div class="image"><img src="{row["image"]}" alt="入力画像"></div>')
-            for label,key in [('正解','reference'),('予測','prediction')]:
+            for label,key in [('判定用正解','reference'),('判定用予測','prediction'),('変換前正解','raw_reference'),('変換前予測','raw_prediction')]:
                 parts.append(f'<pre>{label}: {esc(json.dumps(row[key],ensure_ascii=False))}</pre>')
             parts.append('<pre>'+esc(json.dumps(row['edits'],ensure_ascii=False))+'</pre></article>')
         parts.append('</details>')
     path.write_text('\n'.join(parts),encoding='utf-8')
 
 
-def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20):
+def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20, evaluation_aliases=None):
+    from ogura.training.aliases import CharacterAliases
+    evaluation_aliases = evaluation_aliases or CharacterAliases()
     output=Path(output)
     output.mkdir(parents=True,exist_ok=False)
     (output/'images').mkdir()
@@ -95,20 +97,23 @@ def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20):
             for condition_id,(info,dataset) in enumerate(datasets):
                 started=time.perf_counter()
                 counts=Counter();occurrences=Counter();worst=[]
-                total_errors=0;exact=0;characters=0
+                total_errors=0;exact=0;characters=0;accepted_by_aliases=0
                 for start in range(0,len(dataset),batch_size):
                     samples=[dataset[i] for i in range(start,min(start+batch_size,len(dataset)))]
                     batch=renderer(samples)
                     logits=model(batch.images.to(device))
                     predictions=decode(logits,model.output_lengths(batch.image_widths),vocabulary)
                     for k,(ref,pred) in enumerate(zip(batch.texts,predictions)):
+                        raw_ref,raw_pred=ref,pred
+                        ref,pred=evaluation_aliases.normalize(ref),evaluation_aliases.normalize(pred)
+                        if raw_ref != raw_pred and ref == pred:accepted_by_aliases+=1
                         occurrences.update(ref);characters+=len(ref)
                         if ref==pred:exact+=1;continue
                         edits=align_errors(ref,pred);total_errors+=len(edits)
                         counts.update((e['kind'],e['reference'],e['prediction']) for e in edits)
                         index=start+k
                         row=dict(condition_id=condition_id,sample_index=index,sample_id=samples[k].sample_id,
-                                 reference=ref,prediction=pred,cer=len(edits)/len(ref),edits=edits,
+                                 reference=ref,prediction=pred,raw_reference=raw_ref,raw_prediction=raw_pred,cer=len(edits)/len(ref),edits=edits,
                                  render_text=samples[k].text,render_params=asdict(samples[k].render_params))
                         errors.write(json.dumps(row,ensure_ascii=False,default=str)+'\n')
                         key=(row['cer'],-index)
@@ -124,7 +129,7 @@ def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20):
                     Image.fromarray(pixels).save(output/row['image'])
                     kept.append(row)
                 result=dict(condition_id=condition_id,condition=info,samples=len(dataset),
-                            reference_characters=characters,character_errors=total_errors,
+                            reference_characters=characters,character_errors=total_errors,accepted_by_aliases=accepted_by_aliases,
                             cer=total_errors/characters,accuracy=exact/len(dataset),
                             seconds=time.perf_counter()-started,confusions=confusion_rows(counts,occurrences),
                             reference_occurrences=dict(occurrences),worst=kept)
@@ -145,6 +150,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint',type=Path,required=True)
     parser.add_argument('--run-config',type=Path)
+    parser.add_argument('--evaluation-aliases',type=Path)
     parser.add_argument('--font-dir',type=Path)
     parser.add_argument('--validation-text',type=Path,action='append')
     parser.add_argument('--device',default='auto')
@@ -160,13 +166,17 @@ def main():
     if device.type not in ('cpu','cuda'):raise ValueError('Use CPU or CUDA')
     if device.type=='cuda':torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
     state,vocabulary,config=load_validation_context(args.checkpoint,args.run_config,args.font_dir)
+    from ogura.training.aliases import CharacterAliases
+    evaluation_aliases=(CharacterAliases.read(args.evaluation_aliases) if args.evaluation_aliases
+                        else CharacterAliases(state['identity'].get('evaluation_aliases')))
     paths=args.validation_text or [ROOT/'datasets'/name/'validation.txt' for name in ('validation_short5','validation','validation_long80')]
     datasets=validation_sets(config,vocabulary,paths,state['identity'],all_fonts=True)
     model=make_model(len(vocabulary),state['channels'],state.get('model_type','small')).to(device)
     model.load_state_dict(state['model'])
-    diagnose(model,datasets,vocabulary,args.batch_size,device,args.output,args.top)
+    diagnose(model,datasets,vocabulary,args.batch_size,device,args.output,args.top,evaluation_aliases)
     write_json(args.output/'manifest.json',dict(checkpoint=str(args.checkpoint),checkpoint_sha256=sha256(args.checkpoint),
                epoch=state['epoch'],step=state['step'],identity=state['identity'],top=args.top,
+               evaluation_aliases=evaluation_aliases.config,
                alignment='Levenshtein; ties: diagonal, deletion, insertion',
                counts='All samples in all conditions; repeated texts are separate rendering observations'))
     print(f'Report: {args.output / "index.html"}')

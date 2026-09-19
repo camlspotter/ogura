@@ -10,7 +10,7 @@ from .model import ctc_loss
 from .render import BatchRenderer
 
 
-def evaluate(model, dataset, vocabulary, batch_size, device):
+def evaluate(model, dataset, vocabulary, batch_size, device, evaluation_aliases=None):
     previous_mode = model.training
     random_state = rng_state()
     totals = empty_totals()
@@ -27,7 +27,7 @@ def evaluate(model, dataset, vocabulary, batch_size, device):
                 loss = float(ctc_loss(logits,batch))
                 if not math.isfinite(loss):raise FloatingPointError('Non-finite validation loss')
                 predictions = decode(logits,model.output_lengths(batch.image_widths),vocabulary)
-                add_totals(totals,batch_totals(predictions,batch.texts,loss,0))
+                add_totals(totals,batch_totals(predictions,batch.texts,loss,0,evaluation_aliases))
         if device.type == 'cuda':torch.cuda.synchronize(device)
         totals['seconds'] = time.perf_counter()-started
         return summary(totals)

@@ -17,10 +17,11 @@ def edit_distance(reference, prediction):
     return previous[-1]
 
 
-def worst_samples(references, predictions, count):
+def worst_samples(references, predictions, count, evaluation_aliases=None):
     """Rank this batch by per-sample CER descending; ties keep batch order."""
     if count <= 0:
         return []
+    references, predictions = evaluation_texts(references, predictions, evaluation_aliases)
     rows = [(reference, prediction, edit_distance(reference, prediction) / len(reference))
             for reference, prediction in zip(references, predictions)]
     return sorted(rows, key=lambda row: row[2], reverse=True)[:count]
@@ -45,9 +46,17 @@ def empty_totals():
                 reference_characters=0, loss_sum=0.0, seconds=0.0)
 
 
-def batch_totals(predictions, references, loss, seconds):
+def evaluation_texts(references, predictions, aliases=None):
+    """Normalize copies for scoring only; never changes CTC targets or images."""
+    if aliases is None:
+        return references, predictions
+    return ([aliases.normalize(t) for t in references], [aliases.normalize(t) for t in predictions])
+
+
+def batch_totals(predictions, references, loss, seconds, evaluation_aliases=None):
     if len(predictions) != len(references) or not references:
         raise ValueError('Expected equally sized nonempty predictions and references')
+    references, predictions = evaluation_texts(references, predictions, evaluation_aliases)
     return dict(batches=1, samples=len(references),
                 exact_matches=sum(a == b for a,b in zip(predictions,references)),
                 character_errors=sum(edit_distance(a,b) for a,b in zip(references,predictions)),

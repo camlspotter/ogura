@@ -53,10 +53,10 @@ def validation_sets(config, vocabulary, paths, identity, all_fonts=False):
     return result
 
 
-def evaluate_sets(model, datasets, vocabulary, batch_size, device):
+def evaluate_sets(model, datasets, vocabulary, batch_size, device, evaluation_aliases=None):
     rows = []
     for info, dataset in datasets:
-        row = dict(**info, **evaluate(model, dataset, vocabulary, batch_size, device))
+        row = dict(**info, **evaluate(model, dataset, vocabulary, batch_size, device, evaluation_aliases))
         print(f"validation_length dataset={row['dataset']} mode={row['mode']} "
               f"{('font=' + row['font'] + ' ') if 'font' in row else ''}accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.2%} seconds={row['seconds']:.3f}", flush=True)
         rows.append(row)
@@ -130,6 +130,7 @@ def main():
     parser.add_argument('--all-fonts', action='store_true', help='Evaluate every text in every configured font')
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--run-config', type=Path)
+    parser.add_argument('--evaluation-aliases', type=Path, help='Override scoring-only aliases; model labels remain unchanged')
     parser.add_argument('--font-dir', type=Path, help='Override font directory after moving a run')
     parser.add_argument('--validation-text', type=Path, action='append')
     parser.add_argument('--device', default='auto')
@@ -146,13 +147,16 @@ def main():
         torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
     state, vocabulary, config = load_validation_context(args.checkpoint, args.run_config, args.font_dir)
     identity = state['identity']
+    from ogura.training.aliases import CharacterAliases
+    evaluation_aliases = (CharacterAliases.read(args.evaluation_aliases) if args.evaluation_aliases
+                          else CharacterAliases(identity.get('evaluation_aliases')))
     paths = args.validation_text or [ROOT/'datasets'/name/'validation.txt'
                                     for name in ('validation_short5','validation','validation_long80')]
     all_fonts = args.all_fonts or config.selection_metric == 'mean-font-cer'
     datasets = validation_sets(config, vocabulary, paths, identity, all_fonts=all_fonts)
     model = make_model(len(vocabulary), state['channels'], state.get('model_type', 'small')).to(device)
     model.load_state_dict(state['model'])
-    rows = evaluate_sets(model, datasets, vocabulary, args.batch_size, device)
+    rows = evaluate_sets(model, datasets, vocabulary, args.batch_size, device, evaluation_aliases)
     grid = None
     if all_fonts:
         overall, summaries = font_grid_summary(rows, validation_font_keys(identity))
@@ -162,7 +166,7 @@ def main():
     with args.output.open('x', encoding='utf-8') as stream:
         json.dump(dict(checkpoint_sha256=sha256(args.checkpoint), epoch=state['epoch'],
                        step=state['step'], rendering_settings=identity['settings'],
-                       character_aliases=vocabulary.aliases.config,
+                       character_aliases=vocabulary.aliases.config, evaluation_aliases=evaluation_aliases.config,
                        font_sha256=identity['font_sha256'], extra_font_sha256=identity.get('extra_font_sha256', []),
                        western_font_sha256=identity.get('western_font_sha256', []), results=rows, grid=grid), stream, ensure_ascii=False, indent=2)
         stream.write('\n')
