@@ -2,7 +2,6 @@
 import argparse
 import json
 import math
-from itertools import product
 from pathlib import Path
 
 import numpy as np
@@ -36,10 +35,8 @@ def adjust_contrast(gray, cutoff=1.0):
     return ImageOps.autocontrast(gray, cutoff=cutoff)
 
 
-def load_image(path, preprocessing='none', contrast_cutoff=1.0, width_scale=1.0):
+def load_image(path, preprocessing='none', contrast_cutoff=1.0):
     """Preserve aspect ratio, resize to height 48, and pad right to a multiple of 8."""
-    if not math.isfinite(width_scale) or width_scale <= 0:
-        raise ValueError('Width scale must be finite and positive')
     with Image.open(path) as source:
         rgba = ImageOps.exif_transpose(source).convert('RGBA')
         background = Image.new('RGBA', rgba.size, 'white')
@@ -50,7 +47,7 @@ def load_image(path, preprocessing='none', contrast_cutoff=1.0, width_scale=1.0)
         gray = adjust_contrast(gray, contrast_cutoff)
     elif preprocessing != 'none':
         raise ValueError(f'Unknown preprocessing: {preprocessing}')
-    width = max(1, round(gray.width * 48 / gray.height * width_scale))
+    width = max(1, round(gray.width * 48 / gray.height))
     gray = gray.resize((width, 48), Image.Resampling.LANCZOS)
     pixels = torch.ones(1, 1, 48, (width + 7)//8*8)
     pixels[0, 0, :, :width] = torch.from_numpy(np.array(gray, dtype=np.float32)/255)
@@ -61,8 +58,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--device', default='auto')
-    parser.add_argument('--width-scale', type=float, action='append',
-                        help='Horizontal stretch factor; repeat to compare (default: 1)')
     parser.add_argument('--output', type=Path)
     parser.add_argument('--preprocessing', choices=('none', 'otsu', 'contrast'), default='none')
     parser.add_argument('--compare-preprocessing', action='store_true',
@@ -75,11 +70,6 @@ def main():
     args = parser.parse_args()
     if not math.isfinite(args.contrast_cutoff) or not 0 <= args.contrast_cutoff < 50:
         parser.error('--contrast-cutoff must be finite and in [0, 50)')
-    scales = args.width_scale or [1.0]
-    if any(not math.isfinite(s) or s <= 0 for s in scales):
-        parser.error('--width-scale must be finite and positive')
-    if len(set(scales)) != len(scales):
-        parser.error('Duplicate width scales')
     if args.output and args.output.exists():
         raise FileExistsError(args.output)
     if args.save_inputs:
@@ -98,17 +88,13 @@ def main():
     rows = []
     with torch.inference_mode():
         for index, path in enumerate(args.images, 1):
-            for mode, scale in product(modes, scales):
-                pixels, widths = load_image(path, mode, args.contrast_cutoff, scale)
-                suffix = f'-width{scale:g}' if args.width_scale else ''
+            for mode in modes:
+                pixels, widths = load_image(path, mode, args.contrast_cutoff)
                 if args.save_inputs:
                     Image.fromarray((pixels[0, 0].numpy()*255).round().astype(np.uint8)).save(
-                        args.save_inputs/f'{index:03d}-{path.stem}-{mode}{suffix}.png')
+                        args.save_inputs/f'{index:03d}-{path.stem}-{mode}.png')
                 prediction = decode(model(pixels.to(device)), model.output_lengths(widths), vocabulary)[0]
                 row = dict(image=str(path), preprocessing=mode, prediction=prediction)
-                if args.width_scale:
-                    row.update(width_scale=scale, image_width=int(widths[0]),
-                               output_positions=int(model.output_lengths(widths)[0]))
                 if mode == 'contrast':
                     row['contrast_cutoff'] = args.contrast_cutoff
                 rows.append(row)
