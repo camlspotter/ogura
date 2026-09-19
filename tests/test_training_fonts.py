@@ -36,6 +36,11 @@ class DownloadTests(unittest.TestCase):
         selected = entries(True)
         self.assertIn('LICENSE-ZenMaruGothic', [e['name'] for e in selected])
         self.assertNotIn('MPLUSRounded1c-Light.ttf', [e['name'] for e in selected])
-        for entry in selected:
+        extra = entries(True, True, True)
+        names = {e['name'] for e in extra}
+        self.assertTrue({'MPLUSRounded1c-Thin.ttf', 'MPLUSRounded1c-Light.ttf', 'KosugiMaru-Regular.ttf', 'LICENSE-KosugiMaru.txt'} <= names)
+        self.assertEqual(len(font_paths(Path('.'), True, True)), 10)
+        self.assertEqual(len(names), len(extra))
+        for entry in extra:
             self.assertEqual(len(entry['sha256']), 64)
             self.assertNotIn('/main/', entry['url'])

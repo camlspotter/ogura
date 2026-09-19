@@ -820,3 +820,50 @@ run-dir/class_migration.jsonとlatest.pt/best.ptのinitializationに保存しま
 
 移行後の中断再開は、同じ同一視設定と学習条件で `--resume` を使用します。
 `--init-from` と `--migrate-aliases` は外してください。再開時に再度重みを統合しません。
+
+### 丸ゴシック3書体を追加する
+
+```sh
+uv run --frozen python -m ogura.download_training_fonts \
+  --include-rounded --include-western --include-rounded-extra
+uv run --frozen --extra train python scripts/preview_rounded_fonts.py
+```
+
+追加書体はM PLUS Rounded 1c Thin/Light（フォント内にOFL 1.1の宣言あり）と
+Kosugi Maru Regular（Apache 2.0、LICENSE-KosugiMaru.txtを取得）。
+取得元の版・SHA256はtraining_fonts.jsonに固定し、バイナリはコミットしない。
+比較画像はdatasets/font_candidates/rounded-comparison.pngに保存する。
+M PLUS Roundedの元語彙カバー数は5,572、Kosugi Maruは7,212（元語彙16,057）。
+描画不能文字は従来どおり描画・正解とも空白に置換する。
+
+以下は欧文混合学習後のbest.ptを引き継ぐ。字種設定は同じなので重み移行は不要。
+学習前のepoch 0を含め、3長さ×10日本語書体×2欧文書体の60条件を評価する。
+別途baselineの3条件も評価する。前段階の42条件とは平均CERを直接比較しない。
+
+```sh
+uv run --frozen --extra train python -m ogura.training.train \
+  --device cuda --run-dir runs/noto48-residual64-rounded-extra \
+  --init-from runs/noto48-residual64-aliases-western/best.pt \
+  --character-aliases config/character_aliases.json \
+  --model-type residual --channels 64 \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSansCJKjp-Light.otf \
+  --extra-font corpus/fonts/ZenMaruGothic-Light.ttf \
+  --extra-font corpus/fonts/ZenMaruGothic-Regular.ttf \
+  --extra-font corpus/fonts/MPLUSRounded1c-Thin.ttf \
+  --extra-font corpus/fonts/MPLUSRounded1c-Light.ttf \
+  --extra-font corpus/fonts/KosugiMaru-Regular.ttf \
+  --western-font corpus/fonts/Tinos-Regular.ttf \
+  --western-font 'corpus/fonts/Arimo[wght].ttf' \
+  --font-size-min 28 --font-size-max 40 \
+  --padding-min 2 --padding-max 6 --vertical-full-range \
+  --clean-probability 0.25 --learning-rate 0.0001 \
+  --batch-size 32 --epochs 20 --workers 4 \
+  --validation-text datasets/validation/validation.txt --validation-augmented \
+  --monitor-validation datasets/validation_short5/validation.txt \
+  --monitor-validation datasets/validation_long80/validation.txt \
+  --selection-metric mean-font-cer --early-stopping-patience 5 \
+  --save-every 500 --log-every 100 --log-samples 3
+```
