@@ -929,3 +929,67 @@ best選択・早期終了に適用し、CTC lossは従来のラベルのまま�
 判定設定はチェックポイントに保存し、異なる判定基準でのresumeは拒否する。
 既存モデルで新しい判定基準の学習を開始する場合は新しいrunで `--init-from` を使う。
 `--migrate-aliases` は不要。判定基準変更前後の成績は直接比較しない。
+
+### 欧文テキストの追加コーパス
+
+```bash
+uv run --frozen python -m ogura.build_english
+```
+
+固定リビジョンの `wikimedia/wikipedia` の `20231101.en` から最初の1分割
+（約420MB、SHA256検証あり）を `corpus/wikipedia/20231101.en/` に取得する。
+英語Wikipedia全体からの無作為抽出ではなく、この分割内からの初期追加データである。
+
+出力は `datasets/english_wikipedia_30k/`：
+
+- `train.txt`：学習用30,000行、1行1エントリ。
+- `validation.txt`：検証用1,000行。学習とは別の記事から抽出。
+- `train.jsonl` / `validation.jsonl`：記事ID・タイトル・URL・原文内の開始終了位置。
+- `manifest.json`：固定ソース、乱数seed、入力・出力ハッシュ、文字数・連続文字頻度。
+
+20〜25文字を単語境界で切り出す。元の大文字・小文字や句読点を保存し、
+既存の字種集合にない文字を含む候補は採らない。自然な段落を優先するヒューリスティックで、
+一覧記事・コード・文字表などを除外するが、意味的な自然さを完全には保証しない。
+1記事から1例のみ採用し、同じ16文字の断片が重なる例を除外する。
+既存の日本語学習データと3種類の検証テキストにも同じ重複チェックを適用する。
+
+既存の学習ファイルには混ぜず、追加テキストとして独立して作成する。
+検証テキストを学習用に混ぜないこと。画像生成・追加学習はこのコマンドでは行わない。
+既存出力は上書きせず、再生成比較時は `--output` で別ディレクトリを指定する。
+再現には同じソース・除外データ・字種集合・seedが必要。
+Wikipediaの原文抜粋であり、記事URL等の出典を保持し、配布時には元資料のライセンスに従う。
+
+欧文追加学習用の混合データと、対応する検証manifestは次で作成する。
+
+```bash
+uv run --frozen python -m ogura.prepare_english_training
+bash scripts/train_english_supplement.sh
+```
+
+`datasets/japanese_english_30k/` に日本語339,839行＋欧文30,000行を
+seed固定で混ぜた `train.txt`、語彙、4種類の検証セットを作る。
+元データのハッシュ、語彙、検証との16文字断片重複を確認してから生成する。
+既存データやmanifestは変更しない。`build_english` と同様、出力の上書きはしない。
+
+実行スクリプトはGPU用。`runs/noto48-residual64-rounded-extra/best.pt` から
+重みを引き継ぎ、`runs/noto48-residual64-english30k/` に新しい学習を開始する。
+分類層は変更せず、optimizer・epochはリセットする。10種類の日本語書体と
+Tinos/Arimo、既存のサイズ・余白の揺らぎを使う。clean例25%では従来通り
+Noto Sansのみで描くため、追加欧文のすべてが欧文フォントになるわけではない。
+
+今回は揺らぎ付き欧文1,000行のCERをbest選択・早期終了の基準にする。
+最大20epoch、5epoch改善がなければ終了する。日本語の通常・5文字・80文字は
+baseline/augmentedで毎epoch監視するが、best選択には含めない。
+各augmented検証は固定seedのフォント割当であり、全フォント直積の評価ではない。
+日本語の悪化が見られたら継続を見直す。以前のmean-font-cerと数値を直接比較しない。
+
+中断からの再開：
+
+```bash
+bash scripts/train_english_supplement.sh --resume
+```
+
+`--resume` 時はスクリプトが `--init-from` を外し、新runのlatestから再開する。
+コマンド末尾に `--epochs 30` などを渡して上書き可能。
+このリポジトリには学習済み重み・生成テキスト・フォントは含めない。
+GPUマシンで同じコーパス生成コマンドを実行するか、生成ディレクトリをコピーする。
