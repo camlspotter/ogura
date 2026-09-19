@@ -533,7 +533,7 @@ uv run --frozen --extra train python -m ogura.recognize \
 CTC greedy decodeによる認識文字列を表示・保存する。
 これはPDFを画像化した資料での確認であり、スキャン由来の傾き・汚れ等は別途検証する。
 
-二値化の効果を同じモデルで比較するには、次を実行する：
+二値化・階調補正の効果を同じモデルで比較するには、次を実行する：
 
 ```sh
 uv run --frozen --extra train python -m ogura.recognize \
@@ -544,7 +544,11 @@ uv run --frozen --extra train python -m ogura.recognize \
   datasets/real_samples/line-*.png
 ```
 
-各画像について `preprocessing=none` と `otsu` の結果を並べて出力する。
+各画像について `preprocessing=none`、`otsu`、`contrast` の3結果を並べて出力する。
+contrastは二値化せず、元解像度で明るさの分布の両端を各1%除いて黒〜白へ線形に広げる。
+中間階調を保ち、輪郭へのフィルターは使わない。`--contrast-cutoff` で両端の除外率を
+0以上50未満で指定できる（0なら最小値〜最大値）。単色画像はそのままにする。
+`--preprocessing contrast` で単独実行でき、結果JSONLにはcontrast_cutoffも記録する。
 otsuは元解像度のグレースケール画像を大津法で二値化してから48pxに縮小する。
 縮小時にはアンチエイリアスが入る。二値化は背景とともに文字の輪郭にも
 影響するため、結果だけで字体と背景の影響を完全には分離できない。
