@@ -867,3 +867,35 @@ uv run --frozen --extra train python -m ogura.training.train \
   --selection-metric mean-font-cer --early-stopping-patience 5 \
   --save-every 500 --log-every 100 --log-samples 3
 ```
+
+### 誤認識を画像付きで診断する
+
+```sh
+uv run --frozen --extra train python -m ogura.diagnose_validation \
+  --checkpoint runs/noto48-residual64-rounded-extra/best.pt \
+  --device cuda --batch-size 32 --top 20 \
+  --output runs/noto48-residual64-rounded-extra/validation-errors
+```
+
+保存済みの書体・揺らぎ・字種統合設定を復元し、全書体の組み合わせとbaselineを
+固定の検証画像で評価する。現在の10日本語書体×2欧文書体なら60条件＋baseline3条件。
+元のvalidationと同じ語彙・データ・フォントのハッシュを検証する。
+`--validation-text` は繰り返し指定可能。省略時はshort5、通常長、long80を評価する。
+移動した実行環境では `--run-config` と `--font-dir` で場所を指定できる。
+学習用レンダラーの画像を診断するため、contrast等の実画像用前処理は加えない。
+
+- `index.html`：ブラウザで開く。条件ごとの混同上位30組と、CERの悪い順の画像・正解・予測。
+- `images/`：各条件で誤った例の上位 `--top` 件。実入力の高さ48px、バッチ用右パディングを除く。
+- `errors.jsonl`：上位だけでなく、全誤認識例の正解・予測・編集操作・位置・描画パラメータ。
+- `conditions.json`：条件一覧、全サンプルのCER・完全一致率、文字出現数と混同集計、上位例。
+- `confusions.json`：全条件を合わせた置換・削除・挿入の集計。字のコードポイントも記録。
+- `manifest.json`：チェックポイントSHA256・epoch・描画条件などの記録。
+
+CER降順、同率はサンプル順。正しく読めた例は画像を保存しないが、文字出現数の分母には含める。
+置換・削除の率は、その条件での正解文字の出現数を分母にする。挿入にはこの率を付けない。
+同じ文を複数条件で描画した場合、それぞれ別の観測として数える。
+編集位置は同一視・空白置換後の正解上の0始まりで、挿入は文字間の位置。
+Levenshteinの最小編集対応が複数ある場合は対角・削除・挿入を優先して固定するため、
+同じ文字の連続などでは位置や誤りの種類が一意に確定した証拠ではない。
+統合済み文字同士の混同はこのモデルの出力からは復元できない。
+既存の出力ディレクトリは上書きしない。生成したレポート・画像はGitに追加しない。

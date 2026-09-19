@@ -105,6 +105,25 @@ def print_grid_summary(overall, summaries):
           f"augmented_seconds={overall['seconds']:.3f}", flush=True)
 
 
+def load_validation_context(checkpoint, run_config=None, font_dir=None):
+    """Restore rendering and label configuration, verifying font file identities."""
+    from ogura.training.train import TrainConfig, sha256
+    state = torch.load(checkpoint, map_location='cpu', weights_only=True)
+    identity = state['identity']
+    vocabulary = Vocabulary(state.get('source_characters', state['characters']), identity.get('character_aliases'))
+    saved_args = json.loads((run_config or checkpoint.parent/'run_config.json').read_text())['arguments']
+    def font_path(value):
+        return font_dir/Path(value).name if font_dir else Path(value)
+    config = TrainConfig(**identity['settings'], font=font_path(saved_args['font']),
+                         extra_fonts=tuple(font_path(p) for p in saved_args.get('extra_fonts', [])),
+                         western_fonts=tuple(font_path(p) for p in saved_args.get('western_fonts', [])))
+    if sha256(config.font) != identity['font_sha256'] or [sha256(p) for p in config.extra_fonts] != identity.get('extra_font_sha256', []):
+        raise ValueError('Font files differ from checkpoint')
+    if [sha256(p) for p in config.western_fonts] != identity.get('western_font_sha256', []):
+        raise ValueError('Western font files differ from checkpoint')
+    return state, vocabulary, config
+
+
 def main():
     from ogura.training.train import TrainConfig, sha256
     parser = argparse.ArgumentParser(description=__doc__)
@@ -125,19 +144,8 @@ def main():
     if device.type not in ('cpu','cuda'):raise ValueError('Use CPU or CUDA')
     if device.type=='cuda':
         torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
-    state = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
+    state, vocabulary, config = load_validation_context(args.checkpoint, args.run_config, args.font_dir)
     identity = state['identity']
-    vocabulary = Vocabulary(state.get('source_characters', state['characters']), identity.get('character_aliases'))
-    saved_args = json.loads((args.run_config or args.checkpoint.parent/'run_config.json').read_text())['arguments']
-    def font_path(value):
-        return args.font_dir/Path(value).name if args.font_dir else Path(value)
-    config = TrainConfig(**identity['settings'], font=font_path(saved_args['font']),
-                         extra_fonts=tuple(font_path(p) for p in saved_args.get('extra_fonts', [])),
-                         western_fonts=tuple(font_path(p) for p in saved_args.get('western_fonts', [])))
-    if sha256(config.font) != identity['font_sha256'] or [sha256(p) for p in config.extra_fonts] != identity.get('extra_font_sha256', []):
-        raise ValueError('Font files differ from checkpoint')
-    if [sha256(p) for p in config.western_fonts] != identity.get('western_font_sha256', []):
-        raise ValueError('Western font files differ from checkpoint')
     paths = args.validation_text or [ROOT/'datasets'/name/'validation.txt'
                                     for name in ('validation_short5','validation','validation_long80')]
     all_fonts = args.all_fonts or config.selection_metric == 'mean-font-cer'
