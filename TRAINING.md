@@ -993,3 +993,28 @@ bash scripts/train_english_supplement.sh --resume
 コマンド末尾に `--epochs 30` などを渡して上書き可能。
 このリポジトリには学習済み重み・生成テキスト・フォントは含めない。
 GPUマシンで同じコーパス生成コマンドを実行するか、生成ディレクトリをコピーする。
+
+### 実文書の新旧予測の比較
+
+ローカルの `datasets/real_samples/references.jsonl` は12行を画像とPDF文字情報で
+照合した正解。画像SHA256・出典・判定上の注記を保持する。画像とともにGPUマシンの
+同じディレクトリへコピーする。権利上、画像・正解・予測・レポートはコミットしない。
+折り返された端末表示ではなく、`ogura.recognize --output` の元JSONLを入力する。
+
+```bash
+uv run --frozen --extra train python -m ogura.evaluate_real \
+  --references datasets/real_samples/references.jsonl \
+  --preprocessing contrast \
+  --output runs/real-comparison.json \
+  runs/noto48-residual64-rounded-extra/real-predictions-contrast.jsonl \
+  runs/noto48-residual64-english30k/real-predictions-contrast.jsonl
+```
+
+1ファイルでも評価可能。複数指定時は先頭ファイルを基準に行ごとの誤り数差を出す。
+全行の誤り数／全正解文字数のCERと完全一致率、空白に関係する編集数、文字ごとの編集を
+保存し、CERの高い行から表示する。ファイルごとに同じ12画像の予測が揃っている必要があり、
+欠落・重複・未確認正解・画像ハッシュ不一致はエラー。
+既存のcharacter_aliasesとevaluation_aliasesを両側に適用し、元の文字列も残す。
+予測の端の空白は除去しない。O/0・引用符などの新しい同一視は追加しない。
+行内空白には字間との判別の曖昧さがあるため、空白誤り数も併せて確認する。
+これら12行は繰り返し改善に使った診断用データであり、未見資料での精度推定とは区別する。
