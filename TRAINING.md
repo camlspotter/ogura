@@ -1141,3 +1141,24 @@ bash scripts/train_quote_supplement.sh --resume
 修正版スクリプトを `--resume` なしで実行し、欧文追加学習のbestから移行し直す。
 新クラスは最初は選ばれないため、epoch=0で引用符の誤りが出ること自体は想定内。
 既存の欧文・日本語の監視成績と、大量の引用符出力がないことを確認する。
+
+
+### 引用符モデルから追加の同形字を統合する
+
+`config/character_aliases_quotes_homoglyphs.json` は既存の引用符モデル用設定を引き継ぎ、
+`Ë/Ё → Ë`、`ë/ё → ë`、`Π/П → Π`、`Φ/Ф → Φ`、`Γ/Г → Γ` をモデルの正解ラベルと出力クラスで統合する。
+今回の追加は欧文の文字体系間に限定し、漢字・仮名や `З/3` は追加しない。
+小文字の `п/π`、`ф/φ`、`г/γ` は統合しない。元の字形で描画し、正解ラベルを代表元に変換する。
+以前の設定ファイルは旧runの再現用に保持する。
+
+```sh
+bash scripts/train_quote_homoglyphs.sh
+# 同じ新runの中断後に再開する場合
+bash scripts/train_quote_homoglyphs.sh --resume
+```
+
+`runs/noto48-residual64-quotes-v2/best.pt` を起点に、
+新run `runs/noto48-residual64-quotes-homoglyphs` を開始する。
+分類層の対応する重み・バイアスを平均して5クラス減らし、特徴抽出部分とその他の
+クラスの重みを引き継ぐ。optimizerとepochは新規開始。旧runの `--resume` ではない。
+これは追加学習用の初期化であり、統合直後の認識性能を保存するものではない。
