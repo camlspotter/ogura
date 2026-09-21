@@ -1018,3 +1018,99 @@ uv run --frozen --extra train python -m ogura.evaluate_real \
 予測の端の空白は除去しない。O/0・引用符などの新しい同一視は追加しない。
 行内空白には字間との判別の曖昧さがあるため、空白誤り数も併せて確認する。
 これら12行は繰り返し改善に使った診断用データであり、未見資料での精度推定とは区別する。
+
+### 曲がった引用符を含む次の字種集合
+
+`refine_charset` は `‘` (U+2018)、`’` (U+2019)、`“` (U+201C)、
+`”` (U+201D) を必須文字に含める。ASCIIの引用符とは別の字種とし、
+同一視設定には追加しない。既存モデル用の語彙を上書きしない生成例：
+
+```bash
+uv run --frozen python -m ogura.refine_charset --output charset/selected_quotes
+```
+
+現行集合に4文字だけを追加し、元の字種数は16,061、現在の同一視設定適用後は
+15,922クラス（CTC blankを除く）となる。既存datasetsのtargetsやモデルは変更しない。
+この集合を学習に使うには、対応する用例の抽出・検証manifest更新に加え、
+モデルの分類層への新クラス追加が必要。追加時は `--migrate-aliases --allow-new-classes` を指定する。
+
+新モデル用の `config/character_aliases_quotes.json` は半角・全角の既存の同一視を維持し、
+`~`・`～`・`〜` を代表文字 `~` に統合する。引用符4文字はそれぞれ別クラス。
+この設定と `charset/selected_quotes/targets.jsonl` の組み合わせは15,921クラス＋blank。
+既存の `config/character_aliases.json` と評価用同一視設定は旧モデルの比較用に残す。
+
+新しい語彙・学習用例・検証manifestを用意した後、旧bestから移行する際の追加指定：
+
+```text
+--init-from runs/noto48-residual64-english30k/best.pt
+--character-aliases config/character_aliases_quotes.json
+--migrate-aliases --allow-new-classes
+```
+
+変更のないクラスとblank、特徴抽出・文脈層はそのままコピーし、統合クラスは旧分類層の行を
+平均する。新クラスだけ新モデルの初期値を使う（学習seedで再現）。移行記録には追加文字・
+初期化クラス・統合クラスを保存する。optimizerとepochは新規開始。旧クラスの分割、
+元字種の削除、構造変更は拒否する。古いlatestで元語彙が保存されていない場合は新語彙から
+対応を推測せずエラーにするため、元語彙が保存されたbestを使う。
+途中再開は新runで `--resume` とし、`--init-from`・`--migrate-aliases`・
+`--allow-new-classes` は外す。字種や設定は新runと一致させる。
+既存の欧文追加学習スクリプトは旧語彙向けなので、この新語彙にはそのまま使用しない。
+
+引用符の用例抽出と描画確認：
+
+```bash
+uv run --frozen python -m ogura.build_quotes
+uv run --frozen --extra train python scripts/preview_quotes.py
+```
+
+`build_quotes` は既存英語コーパスの固定分割から、各引用符を含む20〜25文字の
+原文抜粋を採る。既存英語学習・検証で使用した記事は除外し、記事hashで分割する。
+既存混合学習、日本語と英語の検証、および新しい用例同士で16文字断片の重複を除外する。
+既定は各文字を含む学習100行・検証25行以上（同じ行に複数の引用符を含められる）。
+不足した場合は合成せずエラー。`’` はアポストロフィとしての自然な用例も含む。
+出力は `datasets/quote_supplement/` のtrain/validation TXT、出典付きJSONL、targets、
+頻度・入力ハッシュ付きmanifest。既存学習ファイルにはまだ混ぜない。
+
+`preview_quotes` は10種の日本語フォント単独と、Tinos/Arimoとの組み合わせを28/40pxで
+学習と同じレンダラーを使って描画する。`datasets/font_candidates/quote-review/` に
+3枚の比較画像とcoverage.jsonを保存する。引用符とASCII引用符は別ラベルのまま、
+全半角英字・カナ・波線の描画とラベル対応も表示する。この比較文字列は描画確認専用で、
+学習データには入れない。
+
+引用符データを既存の日本語＋欧文データに混合する：
+
+```bash
+uv run --frozen python -m ogura.prepare_quote_training
+```
+
+`datasets/japanese_english_quotes/` に369,839＋290＝370,129行の `train.txt` と
+新しい `targets.jsonl` を作る。引用符用74行は学習に混ぜず `quotes/validation.txt` に保存。
+`english`・`validation`・`validation_short5`・`validation_long80` の4検証セットは本文を
+変えずコピーし、新しい学習データ・語彙のハッシュに結び直す。元のデータは上書きしない。
+入力ハッシュ・字種・重複・全5検証セットとの16文字断片の重複を検査し、seed固定で混合する。
+
+GPUで引用符追加・波線統合の学習を開始する：
+
+```bash
+uv run --frozen python -m ogura.refine_charset --output charset/selected_quotes
+uv run --frozen python -m ogura.build_quotes
+uv run --frozen python -m ogura.prepare_quote_training
+bash scripts/train_quote_supplement.sh
+```
+
+前の欧文追加学習で作成済みの `datasets/english_wikipedia_30k` と
+`datasets/japanese_english_30k`、元Wikipediaコーパス・charset生成元が必要。
+生成ディレクトリをコピー済みの場合は、その生成コマンドを再実行しない（上書き拒否）。
+学習は `runs/noto48-residual64-english30k/best.pt` から移行し、
+`runs/noto48-residual64-quotes` に保存する。移行直後のepoch=0にも検証して記録する。
+今回は引用符専用74行の揺らぎ付きCERをbest・早期終了の基準とし、
+従来の欧文1,000行、日本語の通常・短文・長文を毎epoch監視する。
+専用検証は小規模なので、全体成績の代用とはしない。最大20epoch、patience=5。
+
+中断後の再開：
+
+```bash
+bash scripts/train_quote_supplement.sh --resume
+```
+
+再開時は移行フラグとinit-fromを外し、新runのlatestを読み込む。

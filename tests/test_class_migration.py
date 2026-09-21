@@ -72,3 +72,57 @@ class MigrationTests(unittest.TestCase):
             wrong=root/'wrong.jsonl';wrong.write_text('{}')
             with self.assertRaises(ValueError):
                 migrate_classifier(make_model(4,2),torch.load(ckpt,weights_only=True),Vocabulary.read(vocab,ALIASES),2,'small',wrong)
+
+    def test_add_quotes_and_merge_wave_preserves_old_features(self):
+        aliases={'version':1,'groups':[{'representative':'~','members':['~','〜']}]}
+        old=Vocabulary(' ~〜A')
+        new=Vocabulary('”A〜“~‘ ’',aliases)
+        for kind in ('small','residual'):
+            source=make_model(len(old),2,kind)
+            state=dict(characters=list(old.characters),source_characters=list(old.source_characters),
+                       channels=2,model_type=kind,model=source.state_dict())
+            dest=make_model(len(new),2,kind)
+            initial={k:v.clone() for k,v in dest.state_dict().items()}
+            with self.assertRaisesRegex(ValueError,'allow-new-classes'):
+                migrate_classifier(dest,state,new,2,kind)
+            report=migrate_classifier(dest,state,new,2,kind,allow_new_classes=True)
+            self.assertEqual(set(report['initialized_classes']),set('“”‘’'))
+            for key,value in source.state_dict().items():
+                if not key.startswith('classifier.'):
+                    self.assertTrue(torch.equal(value,dest.state_dict()[key]))
+            for key in ('classifier.weight','classifier.bias'):
+                actual=dest.state_dict()[key]; original=source.state_dict()[key]
+                self.assertTrue(torch.equal(actual[0],original[0]))
+                for c in ' A':self.assertTrue(torch.equal(actual[new.ids[c]],original[old.ids[c]]))
+                for c in '“”‘’':self.assertTrue(torch.equal(actual[new.ids[c]],initial[key][new.ids[c]]))
+                self.assertTrue(torch.equal(actual[new.ids['~']],original[[old.ids['~'],old.ids['〜']]].mean(0)))
+            with self.assertRaisesRegex(ValueError,'remove'):
+                migrate_classifier(dest,state,Vocabulary(' ~A“”‘’'),2,kind,allow_new_classes=True)
+            merged=dict(state,characters=list(new.characters),source_characters=list(new.source_characters),
+                        identity={'character_aliases':aliases},model=dest.state_dict())
+            with self.assertRaisesRegex(ValueError,'split'):
+                migrate_classifier(make_model(len(new)+1,2,kind),merged,Vocabulary(new.source_characters),2,kind,allow_new_classes=True)
+
+    @unittest.skipUnless(FONT.exists(), 'Noto font required')
+    def test_training_with_added_classes_and_resume(self):
+        with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
+            root=Path(tmp);old=Vocabulary(' A~〜')
+            source=make_model(len(old),2)
+            checkpoint=root/'old.pt'
+            torch.save(dict(characters=list(old.characters),source_characters=list(old.source_characters),
+                            channels=2,model=source.state_dict()),checkpoint)
+            vocab=root/'targets.jsonl'
+            vocab.write_text(''.join(json.dumps({'character':c})+'\n' for c in ' A~〜“”‘’'))
+            text=root/'train.txt';text.write_text('“A”\n‘A’\n')
+            alias=root/'alias.json';alias.write_text(json.dumps({'version':1,'groups':[{'representative':'~','members':['~','〜']}]}))
+            cfg=TrainConfig(text=text,vocabulary=vocab,font=FONT,character_aliases=alias,
+                            init_from=checkpoint,migrate_aliases=True,allow_new_classes=True,
+                            run_dir=root/'run',channels=2,threads=1,batch_size=1,epochs=1,
+                            log_samples=0,device='cpu')
+            train(replace(cfg,max_steps=1))
+            state=torch.load(root/'run/latest.pt',weights_only=True)
+            self.assertEqual(set(state['initialization']['initialized_classes']),set('“”‘’'))
+            train(replace(cfg,resume=True,init_from=None,migrate_aliases=False,allow_new_classes=False))
+            resumed=torch.load(root/'run/latest.pt',weights_only=True)
+            self.assertEqual(state['initialization'],resumed['initialization'])
+            self.assertEqual(resumed['position']['step'],2)

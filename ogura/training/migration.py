@@ -7,7 +7,7 @@ import torch
 from .render import Vocabulary
 
 
-def migrate_classifier(model, state, vocabulary, channels, model_type, vocabulary_path=None):
+def migrate_classifier(model, state, vocabulary, channels, model_type, vocabulary_path=None, allow_new_classes=False):
     settings = state if 'characters' in state else state.get('identity', {}).get('settings', {})
     if settings.get('channels') != channels or settings.get('model_type', 'small') != model_type:
         raise ValueError('Migration requires the same architecture and channels')
@@ -28,8 +28,11 @@ def migrate_classifier(model, state, vocabulary, channels, model_type, vocabular
         raise ValueError('Checkpoint class ordering is inconsistent')
     if (old.aliases.compose_katakana and not vocabulary.aliases.compose_katakana) or (old.aliases.collapse_spaces and not vocabulary.aliases.collapse_spaces):
         raise ValueError('Migration cannot undo sequence or whitespace normalization')
-    if set(source) != set(vocabulary.source_characters):
-        raise ValueError('Migration requires the same source characters; additions/removals are unsupported')
+    added = set(vocabulary.source_characters) - set(source)
+    if set(source) - set(vocabulary.source_characters):
+        raise ValueError('Migration cannot remove source characters')
+    if added and not allow_new_classes:
+        raise ValueError('New source characters require --allow-new-classes')
     # An already merged class cannot be separated back into its original characters.
     for c in source:
         if vocabulary.aliases.normalize(c) != vocabulary.aliases.normalize(old.aliases.normalize(c)):
@@ -41,7 +44,7 @@ def migrate_classifier(model, state, vocabulary, channels, model_type, vocabular
         if len(target) != 1 or target not in vocabulary.ids:
             raise ValueError(f'No one-character destination for old class {c!r}')
         contributors[vocabulary.ids[target]].append(index)
-    if any(not indices for indices in contributors):
+    if not allow_new_classes and any(not indices for indices in contributors):
         raise ValueError('New class has no source weights')
     weights = state['model']
     expected = model.state_dict()
@@ -57,11 +60,14 @@ def migrate_classifier(model, state, vocabulary, channels, model_type, vocabular
     for key in ('classifier.weight', 'classifier.bias'):
         # Copy singleton rows exactly; averaging is only a starting point for retraining.
         migrated[key] = torch.stack([
+            expected[key][i].detach().cpu().clone() if not indices else
             weights[key][indices[0]].clone() if len(indices) == 1 else weights[key][indices].mean(dim=0)
-            for indices in contributors
+            for i, indices in enumerate(contributors)
         ])
     model.load_state_dict(migrated, strict=True)
-    return dict(method='mean-classifier-rows-v1',
+    return dict(method='mean-existing-initialize-new-v1' if allow_new_classes else 'mean-classifier-rows-v1',
+                added_source_characters=sorted(added),
+                initialized_classes=[vocabulary.characters[i-1] for i,indices in enumerate(contributors) if i and not indices],
                 old_classes_including_blank=len(old), new_classes_including_blank=len(vocabulary),
                 source_aliases=old.aliases.config, target_aliases=vocabulary.aliases.config,
                 merged_groups=[dict(representative=vocabulary.characters[i-1],

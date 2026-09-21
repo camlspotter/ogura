@@ -57,12 +57,12 @@ def prose(line):
             not re.search(r'(?:\b[A-Za-z]\b\s+){5}', line))
 
 
-def candidate(article, vocabulary, seed, low=20, high=25):
+def candidate(article, vocabulary, seed, low=20, high=25, required_character=None):
     """Return one literal, whole-word excerpt per article, with source offsets."""
     if re.search(r'^(?:List of|Lists of|Index of|Outline of|Glossary of)\b|alphabet|Unicode|disambiguation', article['title'], re.I):
         return None
     rng = random.Random(f'{seed}:{article["id"]}')
-    paragraphs = [(m.start(), m.group()) for m in re.finditer(r'[^\n]+', article['text']) if prose(m.group())]
+    paragraphs = [(m.start(), m.group()) for m in re.finditer(r'[^\n]+', article['text']) if (required_character is None or required_character in m.group()) and prose(m.group())]
     rng.shuffle(paragraphs)
     for offset, paragraph in paragraphs:
         tokens = list(WORDS.finditer(paragraph))
@@ -75,7 +75,7 @@ def candidate(article, vocabulary, seed, low=20, high=25):
                 text = paragraph[start:end]
                 if len(text) > high: break
                 if len(text) < low: continue
-                if (set(text) <= vocabulary and
+                if ((required_character is None or required_character in text) and set(text) <= vocabulary and
                     all(c == ' ' or (ord(c) <= 255 and (c.isalpha() or c.isdigit())) or c in ",.;:!?'-\"()“”‘’–—" for c in text) and
                     len(LATIN.findall(text)) / len(text) >= .7 and
                     all(len(w.strip('.,;:!?\"()')) > 1 or w in ('a', 'A', 'I') for w in text.split())):

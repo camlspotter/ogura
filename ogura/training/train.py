@@ -42,6 +42,7 @@ class TrainConfig:
     evaluation_aliases: Path | None = None
     init_from: Path | None = None
     migrate_aliases: bool = False
+    allow_new_classes: bool = False
     padding_min: int = 4
     padding_max: int = 4
     vertical_jitter: int = 0
@@ -181,7 +182,7 @@ def identity_for(config, device):
     # Paths and operational settings may differ after copying a run to another machine.
     settings = asdict(config)
     for key in ('text', 'vocabulary', 'font', 'run_dir', 'validation_text', 'device', 'resume', 'max_steps',
-                'character_aliases', 'evaluation_aliases', 'migrate_aliases', 'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'western_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
+                'character_aliases', 'evaluation_aliases', 'migrate_aliases', 'allow_new_classes', 'workers', 'save_every', 'log_every', 'log_samples', 'epochs', 'extra_fonts', 'western_fonts', 'init_from', 'monitor_validation', 'early_stopping_patience'):
         settings.pop(key)
     if config.selection_metric == "validation-cer":
         settings.pop("selection_metric")  # Preserve legacy resume identities.
@@ -211,12 +212,12 @@ def identity_for(config, device):
     }
 
 
-def load_initial_weights(model, path, vocabulary, channels, model_type="small", vocabulary_path=None, migrate_aliases=False):
+def load_initial_weights(model, path, vocabulary, channels, model_type="small", vocabulary_path=None, migrate_aliases=False, allow_new_classes=False):
     """Load weights only; verify labels and architecture for either export format."""
     state = torch.load(path, map_location='cpu', weights_only=True)
     if migrate_aliases:
         from .migration import migrate_classifier
-        report = migrate_classifier(model, state, vocabulary, channels, model_type, vocabulary_path)
+        report = migrate_classifier(model, state, vocabulary, channels, model_type, vocabulary_path, allow_new_classes)
         return dict(report, checkpoint_sha256=sha256(path), source_epoch=state.get('epoch', state.get('position', {}).get('epoch')),
                     source_step=state.get('step', state.get('position', {}).get('step')))
     if 'characters' in state:
@@ -265,6 +266,8 @@ def train(config: TrainConfig, on_step=None):
         raise ValueError('Early stopping patience must be nonnegative')
     if config.early_stopping_patience and not config.validation_text:
         raise ValueError('Early stopping requires --validation-text')
+    if config.allow_new_classes and not config.migrate_aliases:
+        raise ValueError('--allow-new-classes requires --migrate-aliases')
     if config.migrate_aliases and (not config.init_from or config.resume):
         raise ValueError('--migrate-aliases requires --init-from and a new run')
     if config.resume and config.init_from:
@@ -367,7 +370,7 @@ def train(config: TrainConfig, on_step=None):
         model = make_model(len(vocabulary), config.channels, config.model_type).to(device)
         initialization = saved.get('initialization') if saved else None
         if config.init_from:
-            initialization = load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type, config.vocabulary, config.migrate_aliases)
+            initialization = load_initial_weights(model, config.init_from, vocabulary, config.channels, config.model_type, config.vocabulary, config.migrate_aliases, config.allow_new_classes)
             if initialization:
                 atomic_json(config.run_dir / 'class_migration.json', initialization)
                 print(f"Migrated classes (including blank): {initialization['old_classes_including_blank']} -> {initialization['new_classes_including_blank']}", flush=True)
@@ -597,7 +600,7 @@ def main():
     parser.add_argument('--monitor-validation', type=Path, action='append', default=[])
     parser.add_argument('--western-font', dest='western_fonts', type=Path, action='append', default=[])
     parser.add_argument('--extra-font', dest='extra_fonts', type=Path, action='append', default=[])
-    for name in ('amp', 'deterministic', 'resume', 'validation-augmented', 'vertical-full-range', 'migrate-aliases'):
+    for name in ('amp', 'deterministic', 'resume', 'validation-augmented', 'vertical-full-range', 'migrate-aliases', 'allow-new-classes'):
         parser.add_argument('--' + name, action='store_true')
     args = vars(parser.parse_args())
     args['extra_fonts'] = tuple(args['extra_fonts'])

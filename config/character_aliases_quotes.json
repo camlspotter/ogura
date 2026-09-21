@@ -1,0 +1,1153 @@
+{
+  "version": 2,
+  "groups": [
+    {
+      "representative": " ",
+      "members": [
+        " ",
+        "　"
+      ]
+    },
+    {
+      "representative": "!",
+      "members": [
+        "!",
+        "！"
+      ]
+    },
+    {
+      "representative": "\"",
+      "members": [
+        "\"",
+        "＂"
+      ]
+    },
+    {
+      "representative": "#",
+      "members": [
+        "#",
+        "＃"
+      ]
+    },
+    {
+      "representative": "$",
+      "members": [
+        "$",
+        "＄"
+      ]
+    },
+    {
+      "representative": "%",
+      "members": [
+        "%",
+        "％"
+      ]
+    },
+    {
+      "representative": "&",
+      "members": [
+        "&",
+        "＆"
+      ]
+    },
+    {
+      "representative": "'",
+      "members": [
+        "'",
+        "＇"
+      ]
+    },
+    {
+      "representative": "(",
+      "members": [
+        "(",
+        "（"
+      ]
+    },
+    {
+      "representative": ")",
+      "members": [
+        ")",
+        "）"
+      ]
+    },
+    {
+      "representative": "*",
+      "members": [
+        "*",
+        "＊"
+      ]
+    },
+    {
+      "representative": "+",
+      "members": [
+        "+",
+        "＋"
+      ]
+    },
+    {
+      "representative": ",",
+      "members": [
+        ",",
+        "，"
+      ]
+    },
+    {
+      "representative": "-",
+      "members": [
+        "-",
+        "－"
+      ]
+    },
+    {
+      "representative": ".",
+      "members": [
+        ".",
+        "．"
+      ]
+    },
+    {
+      "representative": "/",
+      "members": [
+        "/",
+        "／"
+      ]
+    },
+    {
+      "representative": "0",
+      "members": [
+        "0",
+        "０"
+      ]
+    },
+    {
+      "representative": "1",
+      "members": [
+        "1",
+        "１"
+      ]
+    },
+    {
+      "representative": "2",
+      "members": [
+        "2",
+        "２"
+      ]
+    },
+    {
+      "representative": "3",
+      "members": [
+        "3",
+        "３"
+      ]
+    },
+    {
+      "representative": "4",
+      "members": [
+        "4",
+        "４"
+      ]
+    },
+    {
+      "representative": "5",
+      "members": [
+        "5",
+        "５"
+      ]
+    },
+    {
+      "representative": "6",
+      "members": [
+        "6",
+        "６"
+      ]
+    },
+    {
+      "representative": "7",
+      "members": [
+        "7",
+        "７"
+      ]
+    },
+    {
+      "representative": "8",
+      "members": [
+        "8",
+        "８"
+      ]
+    },
+    {
+      "representative": "9",
+      "members": [
+        "9",
+        "９"
+      ]
+    },
+    {
+      "representative": ":",
+      "members": [
+        ":",
+        "："
+      ]
+    },
+    {
+      "representative": ";",
+      "members": [
+        ";",
+        "；"
+      ]
+    },
+    {
+      "representative": "<",
+      "members": [
+        "<",
+        "＜"
+      ]
+    },
+    {
+      "representative": "=",
+      "members": [
+        "=",
+        "＝"
+      ]
+    },
+    {
+      "representative": ">",
+      "members": [
+        ">",
+        "＞"
+      ]
+    },
+    {
+      "representative": "?",
+      "members": [
+        "?",
+        "？"
+      ]
+    },
+    {
+      "representative": "@",
+      "members": [
+        "@",
+        "＠"
+      ]
+    },
+    {
+      "representative": "A",
+      "members": [
+        "A",
+        "Α",
+        "А",
+        "Ａ"
+      ]
+    },
+    {
+      "representative": "B",
+      "members": [
+        "B",
+        "Β",
+        "В",
+        "Ｂ"
+      ]
+    },
+    {
+      "representative": "C",
+      "members": [
+        "C",
+        "С",
+        "Ｃ"
+      ]
+    },
+    {
+      "representative": "D",
+      "members": [
+        "D",
+        "Ｄ"
+      ]
+    },
+    {
+      "representative": "E",
+      "members": [
+        "E",
+        "Ε",
+        "Е",
+        "Ｅ"
+      ]
+    },
+    {
+      "representative": "F",
+      "members": [
+        "F",
+        "Ｆ"
+      ]
+    },
+    {
+      "representative": "G",
+      "members": [
+        "G",
+        "Ｇ"
+      ]
+    },
+    {
+      "representative": "H",
+      "members": [
+        "H",
+        "Η",
+        "Н",
+        "Ｈ"
+      ]
+    },
+    {
+      "representative": "I",
+      "members": [
+        "I",
+        "Ι",
+        "Ｉ"
+      ]
+    },
+    {
+      "representative": "J",
+      "members": [
+        "J",
+        "Ｊ"
+      ]
+    },
+    {
+      "representative": "K",
+      "members": [
+        "K",
+        "Κ",
+        "Ｋ"
+      ]
+    },
+    {
+      "representative": "L",
+      "members": [
+        "L",
+        "Ｌ"
+      ]
+    },
+    {
+      "representative": "M",
+      "members": [
+        "M",
+        "Μ",
+        "М",
+        "Ｍ"
+      ]
+    },
+    {
+      "representative": "N",
+      "members": [
+        "N",
+        "Ν",
+        "Ｎ"
+      ]
+    },
+    {
+      "representative": "O",
+      "members": [
+        "O",
+        "Ο",
+        "О",
+        "Ｏ"
+      ]
+    },
+    {
+      "representative": "P",
+      "members": [
+        "P",
+        "Ρ",
+        "Р",
+        "Ｐ"
+      ]
+    },
+    {
+      "representative": "Q",
+      "members": [
+        "Q",
+        "Ｑ"
+      ]
+    },
+    {
+      "representative": "R",
+      "members": [
+        "R",
+        "Ｒ"
+      ]
+    },
+    {
+      "representative": "S",
+      "members": [
+        "S",
+        "Ｓ"
+      ]
+    },
+    {
+      "representative": "T",
+      "members": [
+        "T",
+        "Τ",
+        "Т",
+        "Ｔ"
+      ]
+    },
+    {
+      "representative": "U",
+      "members": [
+        "U",
+        "Ｕ"
+      ]
+    },
+    {
+      "representative": "V",
+      "members": [
+        "V",
+        "Ｖ"
+      ]
+    },
+    {
+      "representative": "W",
+      "members": [
+        "W",
+        "Ｗ"
+      ]
+    },
+    {
+      "representative": "X",
+      "members": [
+        "X",
+        "Χ",
+        "Х",
+        "Ｘ"
+      ]
+    },
+    {
+      "representative": "Y",
+      "members": [
+        "Y",
+        "Υ",
+        "Ｙ"
+      ]
+    },
+    {
+      "representative": "Z",
+      "members": [
+        "Z",
+        "Ζ",
+        "Ｚ"
+      ]
+    },
+    {
+      "representative": "[",
+      "members": [
+        "[",
+        "［"
+      ]
+    },
+    {
+      "representative": "\\",
+      "members": [
+        "\\",
+        "＼"
+      ]
+    },
+    {
+      "representative": "]",
+      "members": [
+        "]",
+        "］"
+      ]
+    },
+    {
+      "representative": "^",
+      "members": [
+        "^",
+        "＾"
+      ]
+    },
+    {
+      "representative": "_",
+      "members": [
+        "_",
+        "＿"
+      ]
+    },
+    {
+      "representative": "`",
+      "members": [
+        "`",
+        "｀"
+      ]
+    },
+    {
+      "representative": "a",
+      "members": [
+        "a",
+        "а",
+        "ａ"
+      ]
+    },
+    {
+      "representative": "b",
+      "members": [
+        "b",
+        "ｂ"
+      ]
+    },
+    {
+      "representative": "c",
+      "members": [
+        "c",
+        "с",
+        "ｃ"
+      ]
+    },
+    {
+      "representative": "d",
+      "members": [
+        "d",
+        "ｄ"
+      ]
+    },
+    {
+      "representative": "e",
+      "members": [
+        "e",
+        "е",
+        "ｅ"
+      ]
+    },
+    {
+      "representative": "f",
+      "members": [
+        "f",
+        "ｆ"
+      ]
+    },
+    {
+      "representative": "g",
+      "members": [
+        "g",
+        "ｇ"
+      ]
+    },
+    {
+      "representative": "h",
+      "members": [
+        "h",
+        "ｈ"
+      ]
+    },
+    {
+      "representative": "i",
+      "members": [
+        "i",
+        "ｉ"
+      ]
+    },
+    {
+      "representative": "j",
+      "members": [
+        "j",
+        "ｊ"
+      ]
+    },
+    {
+      "representative": "k",
+      "members": [
+        "k",
+        "ｋ"
+      ]
+    },
+    {
+      "representative": "l",
+      "members": [
+        "l",
+        "ｌ"
+      ]
+    },
+    {
+      "representative": "m",
+      "members": [
+        "m",
+        "ｍ"
+      ]
+    },
+    {
+      "representative": "n",
+      "members": [
+        "n",
+        "ｎ"
+      ]
+    },
+    {
+      "representative": "o",
+      "members": [
+        "o",
+        "ο",
+        "о",
+        "ｏ"
+      ]
+    },
+    {
+      "representative": "p",
+      "members": [
+        "p",
+        "р",
+        "ｐ"
+      ]
+    },
+    {
+      "representative": "q",
+      "members": [
+        "q",
+        "ｑ"
+      ]
+    },
+    {
+      "representative": "r",
+      "members": [
+        "r",
+        "ｒ"
+      ]
+    },
+    {
+      "representative": "s",
+      "members": [
+        "s",
+        "ｓ"
+      ]
+    },
+    {
+      "representative": "t",
+      "members": [
+        "t",
+        "ｔ"
+      ]
+    },
+    {
+      "representative": "u",
+      "members": [
+        "u",
+        "ｕ"
+      ]
+    },
+    {
+      "representative": "v",
+      "members": [
+        "v",
+        "ｖ"
+      ]
+    },
+    {
+      "representative": "w",
+      "members": [
+        "w",
+        "ｗ"
+      ]
+    },
+    {
+      "representative": "x",
+      "members": [
+        "x",
+        "х",
+        "ｘ"
+      ]
+    },
+    {
+      "representative": "y",
+      "members": [
+        "y",
+        "у",
+        "ｙ"
+      ]
+    },
+    {
+      "representative": "z",
+      "members": [
+        "z",
+        "ｚ"
+      ]
+    },
+    {
+      "representative": "{",
+      "members": [
+        "{",
+        "｛"
+      ]
+    },
+    {
+      "representative": "|",
+      "members": [
+        "|",
+        "｜"
+      ]
+    },
+    {
+      "representative": "}",
+      "members": [
+        "}",
+        "｝"
+      ]
+    },
+    {
+      "representative": "~",
+      "members": [
+        "~",
+        "～",
+        "〜"
+      ]
+    },
+    {
+      "representative": "、",
+      "members": [
+        "、",
+        "､"
+      ]
+    },
+    {
+      "representative": "。",
+      "members": [
+        "。",
+        "｡"
+      ]
+    },
+    {
+      "representative": "「",
+      "members": [
+        "「",
+        "｢"
+      ]
+    },
+    {
+      "representative": "」",
+      "members": [
+        "」",
+        "｣"
+      ]
+    },
+    {
+      "representative": "゛",
+      "members": [
+        "゛",
+        "ﾞ"
+      ]
+    },
+    {
+      "representative": "゜",
+      "members": [
+        "゜",
+        "ﾟ"
+      ]
+    },
+    {
+      "representative": "ァ",
+      "members": [
+        "ァ",
+        "ｧ"
+      ]
+    },
+    {
+      "representative": "ア",
+      "members": [
+        "ア",
+        "ｱ"
+      ]
+    },
+    {
+      "representative": "ィ",
+      "members": [
+        "ィ",
+        "ｨ"
+      ]
+    },
+    {
+      "representative": "イ",
+      "members": [
+        "イ",
+        "ｲ"
+      ]
+    },
+    {
+      "representative": "ゥ",
+      "members": [
+        "ゥ",
+        "ｩ"
+      ]
+    },
+    {
+      "representative": "ウ",
+      "members": [
+        "ウ",
+        "ｳ"
+      ]
+    },
+    {
+      "representative": "ェ",
+      "members": [
+        "ェ",
+        "ｪ"
+      ]
+    },
+    {
+      "representative": "エ",
+      "members": [
+        "エ",
+        "ｴ"
+      ]
+    },
+    {
+      "representative": "ォ",
+      "members": [
+        "ォ",
+        "ｫ"
+      ]
+    },
+    {
+      "representative": "オ",
+      "members": [
+        "オ",
+        "ｵ"
+      ]
+    },
+    {
+      "representative": "カ",
+      "members": [
+        "カ",
+        "ｶ"
+      ]
+    },
+    {
+      "representative": "キ",
+      "members": [
+        "キ",
+        "ｷ"
+      ]
+    },
+    {
+      "representative": "ク",
+      "members": [
+        "ク",
+        "ｸ"
+      ]
+    },
+    {
+      "representative": "ケ",
+      "members": [
+        "ケ",
+        "ｹ"
+      ]
+    },
+    {
+      "representative": "コ",
+      "members": [
+        "コ",
+        "ｺ"
+      ]
+    },
+    {
+      "representative": "サ",
+      "members": [
+        "サ",
+        "ｻ"
+      ]
+    },
+    {
+      "representative": "シ",
+      "members": [
+        "シ",
+        "ｼ"
+      ]
+    },
+    {
+      "representative": "ス",
+      "members": [
+        "ス",
+        "ｽ"
+      ]
+    },
+    {
+      "representative": "セ",
+      "members": [
+        "セ",
+        "ｾ"
+      ]
+    },
+    {
+      "representative": "ソ",
+      "members": [
+        "ソ",
+        "ｿ"
+      ]
+    },
+    {
+      "representative": "タ",
+      "members": [
+        "タ",
+        "ﾀ"
+      ]
+    },
+    {
+      "representative": "チ",
+      "members": [
+        "チ",
+        "ﾁ"
+      ]
+    },
+    {
+      "representative": "ッ",
+      "members": [
+        "ッ",
+        "ｯ"
+      ]
+    },
+    {
+      "representative": "ツ",
+      "members": [
+        "ツ",
+        "ﾂ"
+      ]
+    },
+    {
+      "representative": "テ",
+      "members": [
+        "テ",
+        "ﾃ"
+      ]
+    },
+    {
+      "representative": "ト",
+      "members": [
+        "ト",
+        "ﾄ"
+      ]
+    },
+    {
+      "representative": "ナ",
+      "members": [
+        "ナ",
+        "ﾅ"
+      ]
+    },
+    {
+      "representative": "ニ",
+      "members": [
+        "ニ",
+        "ﾆ"
+      ]
+    },
+    {
+      "representative": "ヌ",
+      "members": [
+        "ヌ",
+        "ﾇ"
+      ]
+    },
+    {
+      "representative": "ネ",
+      "members": [
+        "ネ",
+        "ﾈ"
+      ]
+    },
+    {
+      "representative": "ノ",
+      "members": [
+        "ノ",
+        "ﾉ"
+      ]
+    },
+    {
+      "representative": "ハ",
+      "members": [
+        "ハ",
+        "ﾊ"
+      ]
+    },
+    {
+      "representative": "ヒ",
+      "members": [
+        "ヒ",
+        "ﾋ"
+      ]
+    },
+    {
+      "representative": "フ",
+      "members": [
+        "フ",
+        "ﾌ"
+      ]
+    },
+    {
+      "representative": "ヘ",
+      "members": [
+        "ヘ",
+        "ﾍ"
+      ]
+    },
+    {
+      "representative": "ホ",
+      "members": [
+        "ホ",
+        "ﾎ"
+      ]
+    },
+    {
+      "representative": "マ",
+      "members": [
+        "マ",
+        "ﾏ"
+      ]
+    },
+    {
+      "representative": "ミ",
+      "members": [
+        "ミ",
+        "ﾐ"
+      ]
+    },
+    {
+      "representative": "ム",
+      "members": [
+        "ム",
+        "ﾑ"
+      ]
+    },
+    {
+      "representative": "メ",
+      "members": [
+        "メ",
+        "ﾒ"
+      ]
+    },
+    {
+      "representative": "モ",
+      "members": [
+        "モ",
+        "ﾓ"
+      ]
+    },
+    {
+      "representative": "ャ",
+      "members": [
+        "ャ",
+        "ｬ"
+      ]
+    },
+    {
+      "representative": "ヤ",
+      "members": [
+        "ヤ",
+        "ﾔ"
+      ]
+    },
+    {
+      "representative": "ュ",
+      "members": [
+        "ュ",
+        "ｭ"
+      ]
+    },
+    {
+      "representative": "ユ",
+      "members": [
+        "ユ",
+        "ﾕ"
+      ]
+    },
+    {
+      "representative": "ョ",
+      "members": [
+        "ョ",
+        "ｮ"
+      ]
+    },
+    {
+      "representative": "ヨ",
+      "members": [
+        "ヨ",
+        "ﾖ"
+      ]
+    },
+    {
+      "representative": "ラ",
+      "members": [
+        "ラ",
+        "ﾗ"
+      ]
+    },
+    {
+      "representative": "リ",
+      "members": [
+        "リ",
+        "ﾘ"
+      ]
+    },
+    {
+      "representative": "ル",
+      "members": [
+        "ル",
+        "ﾙ"
+      ]
+    },
+    {
+      "representative": "レ",
+      "members": [
+        "レ",
+        "ﾚ"
+      ]
+    },
+    {
+      "representative": "ロ",
+      "members": [
+        "ロ",
+        "ﾛ"
+      ]
+    },
+    {
+      "representative": "ワ",
+      "members": [
+        "ワ",
+        "ﾜ"
+      ]
+    },
+    {
+      "representative": "ヲ",
+      "members": [
+        "ヲ",
+        "ｦ"
+      ]
+    },
+    {
+      "representative": "ン",
+      "members": [
+        "ン",
+        "ﾝ"
+      ]
+    },
+    {
+      "representative": "・",
+      "members": [
+        "・",
+        "･"
+      ]
+    },
+    {
+      "representative": "ー",
+      "members": [
+        "ー",
+        "ｰ"
+      ]
+    },
+    {
+      "representative": "淚",
+      "members": [
+        "淚",
+        "淚"
+      ]
+    }
+  ],
+  "collapse_ascii_spaces": true,
+  "compose_katakana_diacritics": true
+}
