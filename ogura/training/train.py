@@ -26,6 +26,7 @@ from torch.utils.data import DataLoader, Dataset
 from ogura.text_common import ROOT
 from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
 from .evaluate import evaluate
+from .error_samples import EVERY_BATCHES, MAX_SAMPLES, error_rows
 from .model import LineCNN, ctc_loss, make_model
 from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, print_best_validation, epoch_eta, format_duration, local_finish_time
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
@@ -296,6 +297,7 @@ def train(config: TrainConfig, on_step=None):
             raise FileExistsError('Checkpoints already exist; use --resume or a new --run-dir')
         identity = identity_for(config, device)
         saved = checkpoints.load(identity, compatible_code_hashes=(
+            '440eef483f06e87ec70e4b0883d78fbb777a4aaf1714faf76b4709c581e77bcf',  # Diagnostic logging only.
             '652d9987d77aea84c96f3362a04ac8c378c03568f0eec19d45f9d0ced65f3f91',  # Scoring-only aliases disabled preserves prior training.
 
             'e9b466b0eed6f8dea2e4927fcac82973347b89ae78f1840d6ec2539e087c1f17',
@@ -381,6 +383,7 @@ def train(config: TrainConfig, on_step=None):
         position = {'epoch': 0, 'next_batch': 0, 'step': 0}
         epoch_totals = empty_totals()
         log_offset = 0
+        error_log_offset = 0
         epoch_elapsed = 0.0
         segment_started = None
         segment_elapsed = 0.0
@@ -393,12 +396,21 @@ def train(config: TrainConfig, on_step=None):
             position = dict(saved['position'])
             epoch_totals = dict(saved['metrics']['epoch_totals'])
             log_offset = saved['metrics']['log_offset']
+            error_log_offset = saved['metrics'].get('error_log_offset', 0)
             epoch_elapsed = saved['metrics'].get('epoch_elapsed_seconds', epoch_totals['seconds'])
             best = saved['best']
             restore_rng(saved['rng'])
             del saved
             print(f'Resuming: {position}', flush=True)
         metrics_log = MetricsLog(config.run_dir / 'metrics.jsonl', log_offset)
+        error_log = MetricsLog(config.run_dir / 'training_errors.jsonl', error_log_offset)
+        atomic_json(config.run_dir / 'training_errors_metadata.json', {
+            'format': 1, 'identity': identity, 'every_batches': EVERY_BATCHES, 'max_samples': MAX_SAMPLES,
+            'fonts': [{'path': str(p.resolve()), 'sha256': sha256(p)}
+                      for p in (config.font, *config.extra_fonts, *config.western_fonts)],
+            'render_sha256': sha256(Path(__file__).with_name('render.py')),
+            'replay': 'BatchRenderer with input_text, render_params, and the saved vocabulary/aliases; preserves CTC width adjustment',
+        })
         write_best(config.run_dir, best)
         model.train()
 
@@ -409,7 +421,7 @@ def train(config: TrainConfig, on_step=None):
                 'identity': identity, 'model': model.state_dict(), 'initialization': initialization,
                 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(),
                 'scaler': scaler.state_dict(), 'position': dict(position), 'rng': rng_state(),
-                'metrics': {'epoch_totals': dict(epoch_totals), 'log_offset': metrics_log.offset,
+                'metrics': {'epoch_totals': dict(epoch_totals), 'log_offset': metrics_log.offset, 'error_log_offset': error_log.offset,
                             'epoch_elapsed_seconds': elapsed_at_save},
                 'best': best,
             })
@@ -563,6 +575,11 @@ def train(config: TrainConfig, on_step=None):
                 stopping_event = early_stop_event() if end_epoch else None
                 if stopping_event:
                     events.append(stopping_event)
+                if (batch_index + 1) % EVERY_BATCHES == 0:
+                    local_start = (batch_index - start) * config.batch_size
+                    samples = [dataset[i] for i in range(local_start, local_start + len(batch.texts))]
+                    error_log.append(error_rows(samples, batch.texts, predictions, batch.image_widths,
+                                                epoch+1, batch_index+1, position['step'], evaluation_aliases))
                 metrics_log.append(events)
                 stop = bool(stopping_event) or config.max_steps is not None and position['step'] >= config.max_steps
                 if end_epoch or stop or (updated and position['step'] % config.save_every == 0):
