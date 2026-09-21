@@ -6,3 +6,6 @@ charset/
 datasets/
 
 runs/
+
+# JDocQA source PDFs are local training data.
+/JDocQA_pdf_files/
