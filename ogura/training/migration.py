@@ -1,4 +1,7 @@
-"""Warm-start a coarser label space without discarding learned image features."""
+"""Warm-start merged/expanded labels while preserving learned image features."""
+
+NEW_CLASS_LOGIT_MARGIN = 5.0
+QUOTE_DONORS = {"“": '"', "”": '"', "‘": "'", "’": "'"}
 import hashlib
 from pathlib import Path
 
@@ -60,12 +63,28 @@ def migrate_classifier(model, state, vocabulary, channels, model_type, vocabular
     for key in ('classifier.weight', 'classifier.bias'):
         # Copy singleton rows exactly; averaging is only a starting point for retraining.
         migrated[key] = torch.stack([
-            expected[key][i].detach().cpu().clone() if not indices else
+            torch.zeros_like(expected[key][i], device='cpu') if not indices else
             weights[key][indices[0]].clone() if len(indices) == 1 else weights[key][indices].mean(dim=0)
             for i, indices in enumerate(contributors)
         ])
+    initialization = []
+    for i, indices in enumerate(contributors):
+        if indices:
+            continue
+        char = vocabulary.characters[i-1]
+        donor_char = vocabulary.aliases.normalize(QUOTE_DONORS.get(char, ''))
+        donor = vocabulary.ids.get(donor_char, 0)
+        if not contributors[donor]:
+            donor = 0
+        # Identical weights and a lower bias guarantee a lower score than the
+        # retained donor for any feature vector, before the first optimizer step.
+        migrated['classifier.weight'][i].copy_(migrated['classifier.weight'][donor])
+        migrated['classifier.bias'][i].copy_(migrated['classifier.bias'][donor] - NEW_CLASS_LOGIT_MARGIN)
+        initialization.append(dict(character=char, donor=donor_char if donor else '<blank>',
+                                   logit_margin=NEW_CLASS_LOGIT_MARGIN))
     model.load_state_dict(migrated, strict=True)
-    return dict(method='mean-existing-initialize-new-v1' if allow_new_classes else 'mean-classifier-rows-v1',
+    return dict(method='mean-existing-donor-minus-margin-v2' if allow_new_classes else 'mean-classifier-rows-v1',
+                new_class_initialization=initialization,
                 added_source_characters=sorted(added),
                 initialized_classes=[vocabulary.characters[i-1] for i,indices in enumerate(contributors) if i and not indices],
                 old_classes_including_blank=len(old), new_classes_including_blank=len(vocabulary),

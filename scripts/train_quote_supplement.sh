@@ -11,7 +11,7 @@ if [[ "$resume" == false ]]; then
 fi
 exec uv run --frozen --extra train python -m ogura.training.train \
   --device cuda \
-  --run-dir runs/noto48-residual64-quotes \
+  --run-dir runs/noto48-residual64-quotes-v2 \
   --text datasets/japanese_english_quotes/train.txt \
   --vocabulary datasets/japanese_english_quotes/targets.jsonl \
   --character-aliases config/character_aliases_quotes.json \

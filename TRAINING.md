@@ -1048,7 +1048,10 @@ uv run --frozen python -m ogura.refine_charset --output charset/selected_quotes
 ```
 
 変更のないクラスとblank、特徴抽出・文脈層はそのままコピーし、統合クラスは旧分類層の行を
-平均する。新クラスだけ新モデルの初期値を使う（学習seedで再現）。移行記録には追加文字・
+平均する。新しい曲がった引用符は対応するASCII引用符の重みをコピーし、バイアスを5下げる。
+対応元がない新クラスはblankをコピーして同じくバイアスを5下げる。移行直後は対応元より
+スコアが低いため、新クラスのランダム出力で既存認識を壊さない。確率分布は厳密には変わり、
+波線クラスの平均による変化は別に残る。移行記録には初期化元・マージン・追加文字・
 初期化クラス・統合クラスを保存する。optimizerとepochは新規開始。旧クラスの分割、
 元字種の削除、構造変更は拒否する。古いlatestで元語彙が保存されていない場合は新語彙から
 対応を推測せずエラーにするため、元語彙が保存されたbestを使う。
@@ -1102,7 +1105,7 @@ bash scripts/train_quote_supplement.sh
 `datasets/japanese_english_30k`、元Wikipediaコーパス・charset生成元が必要。
 生成ディレクトリをコピー済みの場合は、その生成コマンドを再実行しない（上書き拒否）。
 学習は `runs/noto48-residual64-english30k/best.pt` から移行し、
-`runs/noto48-residual64-quotes` に保存する。移行直後のepoch=0にも検証して記録する。
+`runs/noto48-residual64-quotes-v2` に保存する。移行直後のepoch=0にも検証して記録する。
 今回は引用符専用74行の揺らぎ付きCERをbest・早期終了の基準とし、
 従来の欧文1,000行、日本語の通常・短文・長文を毎epoch監視する。
 専用検証は小規模なので、全体成績の代用とはしない。最大20epoch、patience=5。
@@ -1114,3 +1117,8 @@ bash scripts/train_quote_supplement.sh --resume
 ```
 
 再開時は移行フラグとinit-fromを外し、新runのlatestを読み込む。
+
+旧ランダム初期化で学習した `runs/noto48-residual64-quotes` は再開しない。
+修正版スクリプトを `--resume` なしで実行し、欧文追加学習のbestから移行し直す。
+新クラスは最初は選ばれないため、epoch=0で引用符の誤りが出ること自体は想定内。
+既存の欧文・日本語の監視成績と、大量の引用符出力がないことを確認する。

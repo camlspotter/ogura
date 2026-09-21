@@ -82,7 +82,6 @@ class MigrationTests(unittest.TestCase):
             state=dict(characters=list(old.characters),source_characters=list(old.source_characters),
                        channels=2,model_type=kind,model=source.state_dict())
             dest=make_model(len(new),2,kind)
-            initial={k:v.clone() for k,v in dest.state_dict().items()}
             with self.assertRaisesRegex(ValueError,'allow-new-classes'):
                 migrate_classifier(dest,state,new,2,kind)
             report=migrate_classifier(dest,state,new,2,kind,allow_new_classes=True)
@@ -94,7 +93,9 @@ class MigrationTests(unittest.TestCase):
                 actual=dest.state_dict()[key]; original=source.state_dict()[key]
                 self.assertTrue(torch.equal(actual[0],original[0]))
                 for c in ' A':self.assertTrue(torch.equal(actual[new.ids[c]],original[old.ids[c]]))
-                for c in '“”‘’':self.assertTrue(torch.equal(actual[new.ids[c]],initial[key][new.ids[c]]))
+                for c in '“”‘’':
+                    expected=original[0] - (5.0 if key.endswith('bias') else 0)
+                    self.assertTrue(torch.equal(actual[new.ids[c]],expected))
                 self.assertTrue(torch.equal(actual[new.ids['~']],original[[old.ids['~'],old.ids['〜']]].mean(0)))
             with self.assertRaisesRegex(ValueError,'remove'):
                 migrate_classifier(dest,state,Vocabulary(' ~A“”‘’'),2,kind,allow_new_classes=True)
@@ -126,3 +127,24 @@ class MigrationTests(unittest.TestCase):
             resumed=torch.load(root/'run/latest.pt',weights_only=True)
             self.assertEqual(state['initialization'],resumed['initialization'])
             self.assertEqual(resumed['position']['step'],2)
+
+    def test_new_quotes_cannot_outrank_donors_and_can_learn(self):
+        old=Vocabulary(' A\"\'')
+        new=Vocabulary('”A“\"‘ \'’')
+        source=make_model(len(old),2)
+        state=dict(characters=list(old.characters),source_characters=list(old.source_characters),
+                   channels=2,model=source.state_dict())
+        dest=make_model(len(new),2)
+        report=migrate_classifier(dest,state,new,2,'small',allow_new_classes=True)
+        self.assertEqual({r['donor'] for r in report['new_class_initialization']},{'"',"'"})
+        features=torch.randn(100,source.classifier.in_features)*100
+        logits=dest.classifier(features)
+        for c,d in [('“','"'),('”','"'),('‘',"'"),('’',"'")]:
+            torch.testing.assert_close(logits[:,new.ids[c]],logits[:,new.ids[d]]-5,atol=1e-4,rtol=1e-5)
+        self.assertFalse(any(i in {new.ids[c] for c in '“”‘’'} for i in logits.argmax(-1).tolist()))
+        expected=[old.characters[i-1] if i else '<blank>' for i in source.classifier(features).argmax(-1).tolist()]
+        actual=[new.characters[i-1] if i else '<blank>' for i in logits.argmax(-1).tolist()]
+        self.assertEqual(expected,actual)
+        loss=torch.nn.functional.cross_entropy(logits,torch.full((100,),new.ids['“']))
+        loss.backward()
+        self.assertGreater(dest.classifier.weight.grad[new.ids['“']].abs().sum().item(),0)
