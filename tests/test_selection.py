@@ -72,3 +72,14 @@ class SelectionTests(unittest.TestCase):
             model=make_model(6,2)
             with self.assertRaisesRegex(ValueError,'vocabulary'):
                 load_initial_weights(model,source,Vocabulary('日本語文字'),2,vocabulary_path=text)
+
+
+class MeanSetSelectionTests(SelectionTests):
+    def test_latest_warmstart_initial_best_and_resume(self):
+        original = train
+        def with_new_metric(config, *args, **kwargs):
+            if config.selection_metric == 'mean-augmented-cer':
+                config = replace(config, selection_metric='mean-set-cer')
+            return original(config, *args, **kwargs)
+        with patch('tests.test_selection.train', side_effect=with_new_metric):
+            super().test_latest_warmstart_initial_best_and_resume()

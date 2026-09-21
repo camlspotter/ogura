@@ -110,8 +110,19 @@ def load_validation_context(checkpoint, run_config=None, font_dir=None):
     from ogura.training.train import TrainConfig, sha256
     state = torch.load(checkpoint, map_location='cpu', weights_only=True)
     identity = state['identity']
-    vocabulary = Vocabulary(state.get('source_characters', state['characters']), identity.get('character_aliases'))
     saved_args = json.loads((run_config or checkpoint.parent/'run_config.json').read_text())['arguments']
+    source = state.get('source_characters', state.get('characters'))
+    if source is None:
+        vocabulary_path = Path(saved_args['vocabulary'])
+        if sha256(vocabulary_path) != identity['vocabulary_sha256']:
+            raise ValueError('Vocabulary file differs from checkpoint')
+        source = Vocabulary.read(vocabulary_path).source_characters
+    vocabulary = Vocabulary(source, identity.get('character_aliases'))
+    # latest.pt stores architecture and progress in resumable state, unlike best.pt.
+    if 'position' in state:
+        state = dict(state, channels=identity['settings']['channels'],
+                     model_type=identity['settings'].get('model_type', 'small'),
+                     epoch=state['position']['epoch'], step=state['position']['step'])
     def font_path(value):
         return font_dir/Path(value).name if font_dir else Path(value)
     config = TrainConfig(**identity['settings'], font=font_path(saved_args['font']),

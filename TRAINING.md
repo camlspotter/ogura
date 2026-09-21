@@ -1162,3 +1162,50 @@ bash scripts/train_quote_homoglyphs.sh --resume
 分類層の対応する重み・バイアスを平均して5クラス減らし、特徴抽出部分とその他の
 クラスの重みを引き継ぐ。optimizerとepochは新規開始。旧runの `--resume` ではない。
 これは追加学習用の初期化であり、統合直後の認識性能を保存するものではない。
+
+### 評価セットの拡充と6セット平均による選択
+
+```sh
+uv run --frozen --extra train python -m ogura.build_evaluation_suite
+```
+
+`datasets/evaluation_v2` に、自然文から引用符・同形字の追加検証セットと、
+学習中には使わない最終確認用の `test/` を作る。既存の引用符74例は新validationにも保持。
+日本語Wikipediaは従来のvalidation/test記事分割、英語は従来の非学習記事分割を使い、
+既存英語学習記事・既存引用符学習記事も除外する。
+元テキストおよび同一視後の16文字断片で、学習・既存評価・新セット間の重複を除外する
+（保持する既存引用符は意図的な再利用）。出典・切り出し位置・入力ハッシュを保存する。
+引用符は新規各100用例、同形字は各50用例を目標にするが、自然文が不足した文字は
+合成せず `manifest.json` の `shortfalls` に記録する。既存出力は上書きしない。
+既にモデル比較に使用した70例の出典は `--prior-probe` で指定でき、testへの混入を防ぐ。
+同じ成果物をGPUへコピーする場合は `datasets/evaluation_v2/` 全体をコピーする。
+
+追加学習前に、best/latestを同じ固定条件で評価できる。
+
+```sh
+uv run --frozen --extra train python -m ogura.evaluate_suite \
+  --checkpoint runs/noto48-residual64-quotes-homoglyphs/latest.pt \
+  --font-dir corpus/fonts --device cuda \
+  --output runs/noto48-residual64-quotes-homoglyphs/evaluation-v2-latest.json
+```
+
+`--checkpoint` と `--output` を変えればbestも比較できる。latestの読み込みでは、
+run_configに記載された語彙ファイルが必要で、checkpointのハッシュと照合する。
+このコマンドは `test/` を読み込まない。testのmanifestは `split=test` とし、
+通常の検証ローダーへの誤投入も拒否する。testは引用符・同形字の最終確認用であり、
+日本語全般の性能を測る包括的なテストセットではない。
+
+```sh
+bash scripts/train_evaluation_v2.sh
+# 中断後
+bash scripts/train_evaluation_v2.sh --resume
+```
+
+最新の統合モデルの `latest.pt` から、新run `runs/noto48-residual64-evaluation-v2` を開始する。
+`--selection-metric mean-set-cer` は、通常長・短行・長行・英語・引用符・同形字の
+**各セットの揺らぎ付きCERの単純平均**でbestとearly stoppingを判断する。
+各セットを1/6ずつ扱い、行長・サンプル数で重み付けしない。baselineは監視用で平均には含めない。
+各テキストの書体・サイズ・位置はseedとsample_idで固定し、毎epoch同じ画像で比較する。
+全書体の直積評価ではなく、各行に固定された1組の書体を使う。
+従来どおり個別のaccuracy/CERも記録し、開始時（epoch 0）にも全セットを評価する。
+選択対象の変更は同じrunのresumeでは行わず、新runのinit-fromで行う。
