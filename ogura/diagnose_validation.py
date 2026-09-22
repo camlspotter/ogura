@@ -13,7 +13,7 @@ import torch
 
 from ogura.evaluate_lengths import load_validation_context, validation_sets
 from ogura.text_common import ROOT
-from ogura.training.metrics import decode
+from ogura.training.metrics import decode, weighted_edit_distance
 from ogura.training.model import make_model
 from ogura.training.render import BatchRenderer
 from ogura.training.train import sha256
@@ -65,7 +65,7 @@ def write_html(path, results):
     for result in results:
         info=result['condition']
         title=f"{info['dataset']} / {info['min_length']}–{info['max_length']} / {info['mode']} / {info.get('font','baseline')}"
-        parts.append(f'<details open><summary>{esc(title)} — CER {result["cer"]:.4%}, 完全一致 {result["accuracy"]:.2%}</summary>')
+        parts.append(f'<details open><summary>{esc(title)} — CER {result["cer"]:.4%}, weighted CER {result["weighted_cer"]:.4%}, 完全一致 {result["accuracy"]:.2%}</summary>')
         parts.append('<table><tr><th>種別</th><th>正解 → 予測</th><th>件数</th><th>正解字の出現数</th><th>率</th></tr>')
         for c in result['confusions'][:30]:
             pair=(json.dumps(c['reference'],ensure_ascii=False)+' '+(c['reference_codepoint'] or '')
@@ -74,7 +74,7 @@ def write_html(path, results):
             parts.append(f'<tr><td>{c["kind"]}</td><td>{esc(pair)}</td><td>{c["count"]}</td><td>{c["reference_occurrences"]}</td><td>{rate}</td></tr>')
         parts.append('</table>')
         for row in result['worst']:
-            parts.append(f'<article><b>#{row["sample_index"]} CER {row["cer"]:.2%}</b><div class="image"><img src="{row["image"]}" alt="入力画像"></div>')
+            parts.append(f'<article><b>#{row["sample_index"]} CER {row["cer"]:.2%}, weighted CER {row["weighted_cer"]:.2%}</b><div class="image"><img src="{row["image"]}" alt="入力画像"></div>')
             for label,key in [('判定用正解','reference'),('判定用予測','prediction'),('変換前正解','raw_reference'),('変換前予測','raw_prediction')]:
                 parts.append(f'<pre>{label}: {esc(json.dumps(row[key],ensure_ascii=False))}</pre>')
             parts.append('<pre>'+esc(json.dumps(row['edits'],ensure_ascii=False))+'</pre></article>')
@@ -97,7 +97,7 @@ def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20, ev
             for condition_id,(info,dataset) in enumerate(datasets):
                 started=time.perf_counter()
                 counts=Counter();occurrences=Counter();worst=[]
-                total_errors=0;exact=0;characters=0;accepted_by_aliases=0
+                total_errors=0;weighted_errors=0.;exact=0;characters=0;accepted_by_aliases=0
                 for start in range(0,len(dataset),batch_size):
                     samples=[dataset[i] for i in range(start,min(start+batch_size,len(dataset)))]
                     batch=renderer(samples)
@@ -108,12 +108,13 @@ def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20, ev
                         ref,pred=evaluation_aliases.normalize(ref),evaluation_aliases.normalize(pred)
                         if raw_ref != raw_pred and ref == pred:accepted_by_aliases+=1
                         occurrences.update(ref);characters+=len(ref)
+                        weighted = weighted_edit_distance(ref,pred);weighted_errors += weighted
                         if ref==pred:exact+=1;continue
                         edits=align_errors(ref,pred);total_errors+=len(edits)
                         counts.update((e['kind'],e['reference'],e['prediction']) for e in edits)
                         index=start+k
                         row=dict(condition_id=condition_id,sample_index=index,sample_id=samples[k].sample_id,
-                                 reference=ref,prediction=pred,raw_reference=raw_ref,raw_prediction=raw_pred,cer=len(edits)/len(ref),edits=edits,
+                                 reference=ref,prediction=pred,raw_reference=raw_ref,raw_prediction=raw_pred,cer=len(edits)/len(ref),weighted_cer=weighted/len(ref),edits=edits,
                                  render_text=samples[k].text,render_params=asdict(samples[k].render_params))
                         errors.write(json.dumps(row,ensure_ascii=False,default=str)+'\n')
                         key=(row['cer'],-index)
@@ -130,7 +131,7 @@ def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20, ev
                     kept.append(row)
                 result=dict(condition_id=condition_id,condition=info,samples=len(dataset),
                             reference_characters=characters,character_errors=total_errors,accepted_by_aliases=accepted_by_aliases,
-                            cer=total_errors/characters,accuracy=exact/len(dataset),
+                            cer=total_errors/characters,weighted_character_errors=weighted_errors,weighted_cer=weighted_errors/characters,accuracy=exact/len(dataset),
                             seconds=time.perf_counter()-started,confusions=confusion_rows(counts,occurrences),
                             reference_occurrences=dict(occurrences),worst=kept)
                 results.append(result);all_counts.update(counts);all_occurrences.update(occurrences)

@@ -21,6 +21,7 @@ def main():
     p.add_argument('--run-config',type=Path)
     p.add_argument('--base',type=Path,default=ROOT/'datasets/japanese_english_quotes')
     p.add_argument('--suite',type=Path,default=ROOT/'datasets/evaluation_v2')
+    p.add_argument('--selection-metric',choices=['mean-set-cer','mean-set-weighted-cer'],default='mean-set-cer')
     p.add_argument('--device',default='cpu',choices=['cpu','cuda'])
     p.add_argument('--batch-size',type=int,default=32)
     p.add_argument('--threads',type=int,default=4)
@@ -37,11 +38,11 @@ def main():
     model.load_state_dict(state['model'])
     rows=evaluate_sets(model,datasets,vocabulary,args.batch_size,device,CharacterAliases(state['identity'].get('evaluation_aliases')))
     aug=[r for r in rows if r['mode']=='augmented']
-    score=selection_score('mean-set-cer',aug[0],[dict(r,kind='validation_length') for r in aug[1:]])
-    report=dict(checkpoint=str(args.checkpoint),checkpoint_sha256=sha256(args.checkpoint),epoch=state['epoch'],step=state['step'],selection_metric='mean-set-cer',selection_score=score,sets=rows,suite_manifest_sha256=sha256(args.suite/'manifest.json'))
+    score=selection_score(args.selection_metric,aug[0],[dict(r,kind='validation_length') for r in aug[1:]])
+    report=dict(checkpoint=str(args.checkpoint),checkpoint_sha256=sha256(args.checkpoint),epoch=state['epoch'],step=state['step'],selection_metric=args.selection_metric,selection_score=score,sets=rows,suite_manifest_sha256=sha256(args.suite/'manifest.json'))
     args.output.parent.mkdir(parents=True,exist_ok=True)
     with args.output.open('x') as f:json.dump(report,f,ensure_ascii=False,indent=2);f.write('\n')
-    print(f'mean-set-cer={score:.4%}',flush=True)
+    print(f'{args.selection_metric}={score:.4%}',flush=True)
 
 
 if __name__=='__main__':main()

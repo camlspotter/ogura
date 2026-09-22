@@ -1209,3 +1209,93 @@ bash scripts/train_evaluation_v2.sh --resume
 全書体の直積評価ではなく、各行に固定された1組の書体を使う。
 従来どおり個別のaccuracy/CERも記録し、開始時（epoch 0）にも全セットを評価する。
 選択対象の変更は同じrunのresumeでは行わず、新runのinit-fromで行う。
+
+### 引用符の混同・周辺の空白挿入への半減点
+
+validationログ・JSONと診断HTMLに `weighted_CER`（JSONでは `weighted_cer`）を併記する。
+通常のCER・完全一致率は変更しない。同一視設定適用後の文字列を比較し、
+正解にも存在する引用符 `“ ” ‘ ’ " '` の直前・直後への余分なASCII空白挿入は
+1文字あたり0.5とする（予測の引用符が同じグループの別コードでも適用）。
+引用符の置換も、二重引用符 `“ ” "` 内、一重引用符 `‘ ’ '` 内では0.5とする。
+同一コードなら0、二重と一重の間の置換は1。それ以外の挿入・削除・置換も1として
+最小編集距離を計算する。書体によって左右・直線型の区別が困難なための部分点であり、
+引用符のコードやモデルの分類クラスを統合するものではない。
+分母は通常のCERと同じ正解文字数。例えば `a“b` → `a “ b` は通常2誤り、
+重み付きでは1誤り相当になる。元からある空白の削除は半減しない。
+
+Kosugi Maruなどでは引用符の左右の字面の余白が大きく、空白文字と見分けにくい。
+原文どおりを最良としつつ、この曖昧さを部分点として扱う。CTC損失、描画、正解ラベル、
+訓練バッチのCERは変更しない。評価基準を変えるだけではモデルへの勾配は変わらない。
+改善しない場合には、原文を優先しつつ引用符周辺の空白や同グループの引用符の違いを減点付きで許す代替正解を扱う損失へ
+拡張する方針を `weighted_edit_distance` にもコメントしている。
+
+最良モデル選択・early stoppingにも半減点を使う場合は、新しいrunで明示する：
+
+```sh
+bash scripts/train_evaluation_v2.sh \
+  --init-from runs/noto48-residual64-evaluation-v2/best.pt \
+  --run-dir runs/noto48-residual64-evaluation-v2-weighted \
+  --selection-metric mean-set-weighted-cer
+```
+
+6セットの揺らぎ付きweighted CERを等重みで平均する。既存の `mean-set-cer` は通常CERのまま。
+選択基準が変わるため既存runへ `--resume` して切り替えない。
+単独評価の `ogura.evaluate_suite` も `--selection-metric mean-set-weighted-cer` に対応する。
+
+連続する一重引用符2個と二重引用符1個も、両方向とも組全体で0.5減点とする。
+例えば `''` ↔ `"`、`‘‘` ↔ `“`、`’’` ↔ `”`。上記の一重・二重グループ内の
+字形の組み合わせをすべて対象にする。`' '` のように間に空白がある場合は対象外。
+編集距離に2文字対1文字・1文字対2文字の遷移を加え、消費した文字を重複して数えず、
+3個以上の連続では余った引用符にも減点を適用する。完全一致は引き続き0減点。
+
+### 細い欧文字の連続をWikipediaから収集
+
+```sh
+uv run --frozen python -m ogura.collect_latin_sequences \
+  --output datasets/latin_sequences_wikipedia_lowercase
+```
+
+既存の固定された英語Wikipediaシャードから、`ff ll tt ii fi fl ffi ffl il li ij ji ft ti it lt tl`
+を含むASCII単語を採取する。対象の小文字列に大小文字を区別して一致させ、元の綴りを保持する。
+例えば `Hawaii` はiiの対象、`II`・`III` は対象外。
+`words.jsonl` は本文中の単語一覧・出現数・出典例。英語版の本文に現れる固有名詞・外国語も
+含み、辞書で英単語と認定した一覧ではない。アクセント付き単語や数字の途中は切り出さない。
+`train.txt` は単語を途中で切らない20–25文字の自然文抜粋（1行1例）、`train.jsonl` は
+記事URL・元本文の位置・対象単語・該当する組を保持する。合成は行わない。
+
+既存の英語記事の分割seedを維持して学習側のみを利用し、datasets内のvalidation.jsonl/test.jsonl
+および既存probeに登録された英語記事を除外する。評価テキストと既存学習テキストについて、
+元文字列・同一視後の16文字断片の重複も除外する。既存学習データとの混合・学習は別工程。
+
+`--goal`（既定1000）は各組を含む抜粋の目標数。同じ例が複数の組を満たしても重複保存しない。
+1記事から同じ組を狙って何度も採取せず、不足はmanifestに記録する。共起によって目標数を
+超える組もある。単語一覧は採択した抜粋だけでなく対象シャードの適格な学習側本文全体を走査する。
+manifestに入力・除外ファイル・実装・出力のハッシュを記録し、既存出力の上書きは拒否する。
+再生成時には同じ除外ファイル集合を用意する（必要なら `--exclude-jsonl` を繰り返し指定）。
+
+### 欧文の連続文字データを混合して追加学習
+
+```sh
+# 抽出済みデータをコピーした場合は収集コマンド不要
+uv run --frozen python -m ogura.collect_latin_sequences \
+  --output datasets/latin_sequences_wikipedia_lowercase
+uv run --frozen python -m ogura.prepare_latin_training
+bash scripts/train_latin_sequences.sh
+# 中断後
+bash scripts/train_latin_sequences.sh --resume
+```
+
+`datasets/japanese_english_quotes` の370,129行に抽出した11,953行を1回ずつ加え、
+固定seedでシャッフルした382,082行を `datasets/japanese_english_latin_sequences/train.txt`
+に保存する。既存のデータは保持し、追加例を重複させるオーバーサンプリングは行わない。
+語彙・同一視設定は維持し、描画不能字の処理も従来どおり。入力ハッシュ・重複を確認して生成する。
+
+6評価セットの本文はそのままコピーし、新しい学習テキストのハッシュにmanifestを付け替える。
+reserved testの2セットも `test/` に保持し、学習・epochごとの検証には使用しない。
+追加学習は `runs/noto48-residual64-evaluation-v2/best.pt` から重みを読み込み、
+新run `runs/noto48-residual64-latin-sequences` でoptimizerとepochを開始する。
+`--selection-metric mean-set-weighted-cer` により、引用符の混同・空白の半減点を含む
+6セットの平均でbestとearly stoppingを決める。通常CERも併記し、CTC損失は変更しない。
+
+GPUへは `datasets/japanese_english_latin_sequences/` 全体をコピーすれば学習可能。
+生成済みデータ、フォント、チェックポイント、実文書画像はGitへ追加しない。

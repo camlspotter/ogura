@@ -28,7 +28,7 @@ from .checkpoint import Checkpoints, restore_rng, rng_state, write_best
 from .evaluate import evaluate
 from .error_samples import EVERY_BATCHES, MAX_SAMPLES, error_rows
 from .model import LineCNN, ctc_loss, make_model
-from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, print_best_validation, epoch_eta, format_duration, local_finish_time
+from .metrics import MetricsLog, add_totals, batch_totals, decode, empty_totals, summary, worst_samples, print_best_validation, epoch_eta, format_duration, local_finish_time, weighted_cer_label
 from .render import BatchRenderer, Vocabulary, font_characters, parameters_for_sample, replace_unsupported
 
 
@@ -197,7 +197,7 @@ def identity_for(config, device):
         **({'evaluation_aliases': evaluation_aliases.config} if config.evaluation_aliases else {}),
         **({'character_aliases': aliases.config} if aliases.mapping or aliases.collapse_spaces or aliases.compose_katakana else {}),
         **({'selection_validation_sha256': sorted(sha256(p) for p in config.monitor_validation)}
-           if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer', 'mean-set-cer') else {}),
+           if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer', 'mean-set-cer', 'mean-set-weighted-cer') else {}),
         **({'western_font_sha256': [sha256(p) for p in config.western_fonts],
              'western_rendering': 'script-runs-gpos-kern-v1'}
            if config.western_fonts else {}),
@@ -241,11 +241,12 @@ def selection_score(metric, validation, events):
     if metric == 'validation-cer':
         return validation['cer']
     rows = [e for e in events if e['kind'] == 'validation_length' and e['mode'] == 'augmented']
-    if metric == 'mean-set-cer':
+    if metric in ('mean-set-cer', 'mean-set-weighted-cer'):
         names = [e['dataset'] for e in rows]
         if not rows or len(set(names)) != len(names):
             raise ValueError('Mean-set selection requires one augmented result per monitor')
-        return math.fsum([validation['cer']] + [e['cer'] for e in rows]) / (len(rows) + 1)
+        key = 'weighted_cer' if metric == 'mean-set-weighted-cer' else 'cer'
+        return math.fsum([validation[key]] + [e[key] for e in rows]) / (len(rows) + 1)
     if sorted((e['min_length'], e['max_length']) for e in rows) != [(5, 5), (80, 80)]:
         raise ValueError('Mean selection requires augmented results for both 5 and 80 characters')
     return math.fsum([validation['cer']] + [e['cer'] for e in rows]) / 3
@@ -253,12 +254,12 @@ def selection_score(metric, validation, events):
 
 def train(config: TrainConfig, on_step=None):
     """on_step is an optional observer called only after a complete update."""
-    if config.selection_metric not in ('validation-cer', 'mean-augmented-cer', 'mean-font-cer', 'mean-set-cer'):
+    if config.selection_metric not in ('validation-cer', 'mean-augmented-cer', 'mean-font-cer', 'mean-set-cer', 'mean-set-weighted-cer'):
         raise ValueError('Unknown selection metric')
     if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer') and (
             not config.validation_augmented or not config.validation_text or len(config.monitor_validation) != 2):
         raise ValueError('Mean selection requires augmented main validation and two monitors (5 and 80 characters)')
-    if config.selection_metric == 'mean-set-cer':
+    if config.selection_metric in ('mean-set-cer', 'mean-set-weighted-cer'):
         if not config.validation_augmented or not config.validation_text or not config.monitor_validation:
             raise ValueError('Mean-set selection requires augmented main validation and monitors')
         paths = (config.validation_text, *config.monitor_validation)
@@ -464,7 +465,7 @@ def train(config: TrainConfig, on_step=None):
                 if augmented_validation_dataset is not None:
                     events.append(dict(kind='validation_baseline', epoch=epoch_number,
                                        step=position['step'], **validation))
-                    print(f"validation_baseline epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} CER={validation['cer']:.2%}", flush=True)
+                    print(f"validation_baseline epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} CER={validation['cer']:.2%}{weighted_cer_label(validation)}", flush=True)
                     validation = evaluate(model, augmented_validation_dataset, vocabulary, config.batch_size, device, evaluation_aliases)
                 events.append(dict(kind='validation', epoch=epoch_number, step=position['step'], **validation))
             if monitor_datasets:
@@ -483,8 +484,8 @@ def train(config: TrainConfig, on_step=None):
                                 validation_results=[dict(e) for e in events],
                                 model={k:v.detach().cpu().clone() for k,v in model.state_dict().items()})
                 print(f"validation epoch={epoch_number} accuracy={validation['exact_accuracy']:.2%} "
-                      f"CER={validation['cer']:.2%} seconds={validation['seconds']:.3f} best={improved}", flush=True)
-                if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer', 'mean-set-cer'):
+                      f"CER={validation['cer']:.2%}{weighted_cer_label(validation)} seconds={validation['seconds']:.3f} best={improved}", flush=True)
+                if config.selection_metric in ('mean-augmented-cer', 'mean-font-cer', 'mean-set-cer', 'mean-set-weighted-cer'):
                     events.append(dict(kind='selection', epoch=epoch_number, step=position['step'],
                                        metric=config.selection_metric, cer=score, is_best=improved))
                     print(f"selection epoch={epoch_number} {config.selection_metric}={score:.4%} best={improved}", flush=True)
@@ -509,7 +510,7 @@ def train(config: TrainConfig, on_step=None):
             print_best_validation(best, config.run_dir / 'metrics.jsonl')
 
         if not config.resume:
-            if config.init_from and (config.selection_metric in ('mean-augmented-cer', 'mean-font-cer', 'mean-set-cer') or (config.migrate_aliases and config.validation_text)):
+            if config.init_from and (config.selection_metric in ('mean-augmented-cer', 'mean-font-cer', 'mean-set-cer', 'mean-set-weighted-cer') or (config.migrate_aliases and config.validation_text)):
                 metrics_log.append(validate_and_select(0))
             save()  # Even interruption before the first periodic save has a restart point.
         total_batches = math.ceil(len(records) / config.batch_size)
@@ -622,7 +623,7 @@ def main():
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=getattr(defaults, name))
     for name in ('learning_rate', 'lr_decay', 'clean_probability'):
         parser.add_argument('--' + name.replace('_', '-'), type=float, default=getattr(defaults, name))
-    parser.add_argument('--selection-metric', choices=('validation-cer', 'mean-augmented-cer', 'mean-font-cer', 'mean-set-cer'), default='validation-cer')
+    parser.add_argument('--selection-metric', choices=('validation-cer', 'mean-augmented-cer', 'mean-font-cer', 'mean-set-cer', 'mean-set-weighted-cer'), default='validation-cer')
     parser.add_argument('--model-type', choices=('small', 'residual'), default='small')
     parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
     parser.add_argument('--monitor-validation', type=Path, action='append', default=[])

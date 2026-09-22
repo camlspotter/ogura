@@ -9,6 +9,7 @@ import torch
 
 from ogura.text_common import ROOT
 from ogura.training.evaluate import evaluate
+from ogura.training.metrics import weighted_cer_label
 from ogura.training.model import make_model
 from ogura.training.render import Vocabulary
 
@@ -58,7 +59,7 @@ def evaluate_sets(model, datasets, vocabulary, batch_size, device, evaluation_al
     for info, dataset in datasets:
         row = dict(**info, **evaluate(model, dataset, vocabulary, batch_size, device, evaluation_aliases))
         print(f"validation_length dataset={row['dataset']} mode={row['mode']} "
-              f"{('font=' + row['font'] + ' ') if 'font' in row else ''}accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.2%} seconds={row['seconds']:.3f}", flush=True)
+              f"{('font=' + row['font'] + ' ') if 'font' in row else ''}accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.2%}{weighted_cer_label(row)} seconds={row['seconds']:.3f}", flush=True)
         rows.append(row)
     return rows
 
@@ -83,7 +84,9 @@ def font_grid_summary(rows, font_hashes):
     if len(set(font_hashes)) != len(font_hashes) or len(actual) != len(expected) or set(actual) != expected:
         raise ValueError('Incomplete or duplicate length/font validation grid')
     def average(subset):
-        return dict(cer=math.fsum(r['cer'] for r in subset)/len(subset),
+        return dict(**({'weighted_cer': math.fsum(r['weighted_cer'] for r in subset)/len(subset)}
+                       if all('weighted_cer' in r for r in subset) else {}),
+                    cer=math.fsum(r['cer'] for r in subset)/len(subset),
                     exact_accuracy=math.fsum(r['exact_accuracy'] for r in subset)/len(subset),
                     seconds=sum(r['seconds'] for r in subset), conditions=len(subset))
     summaries = []
@@ -100,8 +103,8 @@ def font_grid_summary(rows, font_hashes):
 def print_grid_summary(overall, summaries):
     for row in summaries:
         label = f"font={row['font']}" if 'font' in row else f"length={row['length']}"
-        print(f"{row['kind']} {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}", flush=True)
-    print(f"validation_grid conditions={overall['conditions']} CER={overall['cer']:.4%} "
+        print(f"{row['kind']} {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}{weighted_cer_label(row)}", flush=True)
+    print(f"validation_grid conditions={overall['conditions']} CER={overall['cer']:.4%}{weighted_cer_label(overall)} "
           f"augmented_seconds={overall['seconds']:.3f}", flush=True)
 
 

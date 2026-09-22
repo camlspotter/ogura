@@ -17,6 +17,82 @@ def edit_distance(reference, prediction):
     return previous[-1]
 
 
+QUOTE_GROUPS = (frozenset('“”"'), frozenset("‘’'"))
+QUOTE_CHARACTERS = frozenset().union(*QUOTE_GROUPS)
+
+
+def same_quote_group(a, b):
+    return any(a in group and b in group for group in QUOTE_GROUPS)
+
+
+def weighted_edit_distance(reference, prediction):
+    """Levenshtein cost with partial credit for quote variants and adjacent spaces.
+
+    Some fonts (notably Kosugi Maru) leave substantial side bearings around
+    quotation marks. These look like typed spaces even when the source has none.
+    Exact source transcription remains preferable: insertion costs 0.5, not 0.
+    Curly left/right and straight quotes can be distinct in some fonts but
+    almost indistinguishable in others. Preserve their original code points:
+    exact matches cost 0; substitutions within the double-quote group or within
+    the single-quote group cost 0.5, regardless of font. Crossing these groups
+    costs 1 for one-to-one substitutions. Two adjacent single quotes may look
+    like one double quote: consume the pair versus one double quote at cost 0.5
+    in either direction. Any variants within these groups qualify, but spaces
+    between the single quotes do not. Extra quotes remain charged.
+    We do not merge classifier classes or turn variants into full credit.
+    Deletions, other substitutions, and spaces elsewhere still cost 1. Normalize
+    label aliases before calling; do not strip or canonicalize quotation marks.
+
+    This is evaluation only: CTC still learns the original single target string.
+    If this partial-credit evaluation does not resolve the practical problem,
+    extend the training loss to allow penalized optional spaces around quotes
+    and penalized quote variants, including two-to-one pairs (e.g. weighted
+    alternative targets),
+    while preferring the original text. This would address visual ambiguity in
+    learning itself; changing this evaluation score alone cannot change gradients.
+    Do not simply add random spaces to labels: that teaches insertion as correct.
+    """
+    if reference == prediction:
+        return 0.0
+    left = []; last = ''
+    for char in prediction:
+        left.append(last)
+        if char != ' ': last = char
+    right = [''] * len(prediction); last = ''
+    for j in range(len(prediction)-1, -1, -1):
+        right[j] = last
+        if prediction[j] != ' ': last = prediction[j]
+    # Only a quote already present in the reference can justify partial credit.
+    def insertion(i, j):
+        if prediction[j] != ' ': return 1.0
+        before = reference[i-1] if i else ''
+        after = reference[i] if i < len(reference) else ''
+        return .5 if ((before in QUOTE_CHARACTERS and same_quote_group(left[j], before)) or
+                      (after in QUOTE_CHARACTERS and same_quote_group(right[j], after))) else 1.0
+    previous = [0.0]
+    for j in range(len(prediction)): previous.append(previous[-1]+insertion(0,j))
+    two_back = None
+    doubles, singles = QUOTE_GROUPS
+    for i, char in enumerate(reference, 1):
+        current = [float(i)]
+        for j, other in enumerate(prediction, 1):
+            current.append(min(previous[j]+1, current[-1]+insertion(i,j-1),
+                               previous[j-1]+(0 if char == other else
+                                              .5 if same_quote_group(char, other) else 1)))
+            # Consume disjoint prefixes so no quote is counted twice or skipped.
+            # Two retained rows support 2:1/1:2 matches in O(n*m) time/O(m) space.
+            if i >= 2 and reference[i-2] in singles and char in singles and other in doubles:
+                current[-1] = min(current[-1], two_back[j-1] + .5)
+            if j >= 2 and char in doubles and prediction[j-2] in singles and other in singles:
+                current[-1] = min(current[-1], previous[j-2] + .5)
+        two_back, previous = previous, current
+    return previous[-1]
+
+
+def weighted_cer_label(row):
+    return f" weighted_CER={row['weighted_cer']:.4%}" if 'weighted_cer' in row else ''
+
+
 def worst_samples(references, predictions, count, evaluation_aliases=None):
     """Rank this batch by per-sample CER descending; ties keep batch order."""
     if count <= 0:
@@ -155,4 +231,4 @@ def print_best_validation(best, log_path):
             label += f" length={row['length']}"
         if 'exact_accuracy' not in row:
             continue
-        print(f"  {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}", flush=True)
+        print(f"  {label} accuracy={row['exact_accuracy']:.2%} CER={row['cer']:.4%}{weighted_cer_label(row)}", flush=True)
