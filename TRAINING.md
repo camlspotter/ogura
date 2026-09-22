@@ -1299,3 +1299,54 @@ reserved testの2セットも `test/` に保持し、学習・epochごとの検�
 
 GPUへは `datasets/japanese_english_latin_sequences/` 全体をコピーすれば学習可能。
 生成済みデータ、フォント、チェックポイント、実文書画像はGitへ追加しない。
+
+### 欧文字列17組の専用評価
+
+```sh
+uv run --frozen python -m ogura.build_latin_validation
+uv run --frozen --extra train python -m ogura.evaluate_latin_sequences \
+  --checkpoint runs/noto48-residual64-latin-sequences/best.pt \
+  --checkpoint runs/noto48-residual64-latin-sequences/latest.pt \
+  --device cuda --font-dir corpus/fonts \
+  --output runs/noto48-residual64-latin-sequences/sequence-evaluation
+```
+
+`datasets/validation_latin_sequences` に20–25文字の自然文を収集する。
+各組200行が目安で、不足はmanifestに記録して合成しない。英語Wikipediaの既存分割を維持し、
+学習側と予約済みテスト側を除外する。既存の学習・検証記事と元文字列・同一視後の16文字断片も
+除外する。単語自体が学習と同じ場合はあるが、記事・文脈を別にする。検証本文を追加学習へ混ぜない。
+
+評価時は同一runのbest/latestを指定し、画像はbaseline・固定揺らぎの各条件で一度描画したものを
+両モデルに渡す。各組の全出現数、欠落を含む出現数、欠落文字数、置換数を計測する。
+欠落率は「1文字以上欠落した組の出現数 / その組の全出現数」。完全に認識できた行も分母に含む。
+重複する組（ff/ffi/fiなど）は独立に集計し、足し合わせない。編集位置が曖昧なときは通常の
+最小編集距離の対角・削除・挿入の優先順に従うため、画像上の物理的な欠落位置の断定ではない。
+全体の通常CER・weighted CER・完全一致率も残す。
+
+`comparison.md` が横並びの比較、`report.json` が集計、`predictions.jsonl` が全例の
+正解・予測・編集位置・再描画パラメータ。画像は保存しない。初期bestから改善していないrunでは
+bestがepoch 0、latestが最後のepochとなる。生成済み検証データをGPUにコピーすれば収集処理は不要。
+出力先が存在する場合は上書きせずエラーとする。通常のepoch検証やearly stoppingの設定は変更しない。
+
+### 専用評価を毎epochとbest選択に含める
+
+```sh
+bash scripts/train_latin_validation.sh
+# 新runの中断後
+bash scripts/train_latin_validation.sh --resume
+```
+
+`datasets/validation_latin_sequences/` もGPUにコピーしてから実行する。
+従来の6セットに専用評価を加えた7セットの揺らぎ付きweighted CERを等重みで平均する。
+baselineは監視用。専用セットのCER・完全一致率は毎epochに表示し、組別欠落率の詳細比較は
+`ogura.evaluate_latin_sequences` で行う。CTC損失や学習データは変更しない。
+
+文字落ちが改善した `runs/noto48-residual64-latin-sequences/latest.pt` から重みを読み込み、
+`runs/noto48-residual64-latin-validation` を新規作成する。optimizer・epochは新しく開始し、
+epoch 0にも7セットで評価する。旧runへのresumeでは評価対象を変えない。
+旧 `scripts/train_latin_sequences.sh` は6セットのまま保持し、旧runの再開に使える。
+
+専用評価を加えても引用符・同形字の悪化を免除するわけではない。今回の保存値を使った参考計算
+（従来6セットはGPU、専用セットはCPU）では、7セット平均は旧epoch 0が約0.1998%、
+旧epoch 5が約0.2236%で、旧epoch 0が上位のまま。今回の新runの起点にlatestを選ぶのは、
+欧文字列の改善を保持した状態から他の成績を回復できるか試すためであり、総合bestへの昇格ではない。
