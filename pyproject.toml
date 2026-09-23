@@ -4,12 +4,15 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "pyarrow>=25.0.1",
+    "fonttools>=4.55",
+    "numpy>=2",
+    "Pillow==12.3.0",
+    "PyMuPDF==1.28.2",
+    "torch>=2.6,<3",
+    "torchvision>=0.21",
+    "python-doctr[viz]==1.0.0",
 ]
 
 [project.optional-dependencies]
-train = [
-    "fonttools>=4.55",
-    "numpy>=2",
-    "pillow>=11",
-    "torch>=2.6",
-]
+# Keep existing scripts using --extra train compatible; all dependencies are default.
+train = []
