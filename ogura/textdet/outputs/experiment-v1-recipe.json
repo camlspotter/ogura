@@ -1,0 +1,5458 @@
+{
+  "schema_version": 1,
+  "dpi": 150,
+  "seed": 20260921,
+  "selection_policy": "Positive allowlist from exported experiment; never select additional PDF pages",
+  "versions": {
+    "pymupdf": "1.28.2",
+    "pillow": "12.3.0"
+  },
+  "code_sha256": {
+    "prepare.py": "0bdffaf7c2386f1ad37cd43b8c968e01746df60c9e2120ba2e717251f9bb24d1",
+    "glyph_bounds.py": "5353c514375f681babda7913c21863e5932207fe6132f707dbe0097f12fd3456"
+  },
+  "experiment_manifest_sha256": "f95c00163995bf3ac66b9abe072054d29b498e698a6ba5a31a31324bffc57975",
+  "documents": {
+    "public_document_ministry00588.pdf": {
+      "sha256": "ac31e1aa952b2cd289126ccfd8398514cb6bdcda1cd129665b310afe2363fbc2"
+    },
+    "public_document_ministry00986.pdf": {
+      "sha256": "06be6090242a6f17f5b5f1f47b82ce77a38692c009c9b59056de3f7e61219237"
+    },
+    "public_document_ministry00794.pdf": {
+      "sha256": "18b614ead173c94619b64a3414162fef5314a3092f9afcbc70e5ea82f9a2515f"
+    },
+    "public_document_ministry00141.pdf": {
+      "sha256": "ca3748bb63fe53c6199e8a50e57555e10155ec7123dfe1b85ee011a8a691a36d"
+    },
+    "public_document00973.pdf": {
+      "sha256": "e48ac3b3350ad96e97f8b537c9c26dbfafe0845ec4a91a9bbfd31683bf8e9228"
+    },
+    "public_document_ministry01982.pdf": {
+      "sha256": "d929d8f0a31c0fc7d948b13a384291e10eb96ffe71f7c69798659819c32735ce"
+    },
+    "website0001.pdf": {
+      "sha256": "097c6354f079bdf961289d7fb260223cd049dc961e7ca936d4ea90d8f4024ec7"
+    },
+    "public_document_ministry01388.pdf": {
+      "sha256": "4fa989d4be5ffb38de07530c2bc2f4abb82ee1071cac763d03b8ea1fdc709912"
+    },
+    "public_document_ministry02474.pdf": {
+      "sha256": "e52a3ec225539781d50abc18ac3f1459f3d6aa020bc4c1222bfda67447ff1632"
+    },
+    "public_document_ministry02716.pdf": {
+      "sha256": "74fc4460464b828f6ba0d6c66c98ff1c01ead7a0c0ddc40258430474a2768ad1"
+    },
+    "public_document_ministry02714.pdf": {
+      "sha256": "d53f994c960d10cb20227d5b5d69a989d48889c97c73a0fbfaec3d41190de70a"
+    },
+    "website0069.pdf": {
+      "sha256": "7f88b3a854dfbcd892d69de05e68c29d6b47ad96b700e76eaca31e5c59deb40a"
+    },
+    "public_document_ministry01342.pdf": {
+      "sha256": "163bb9f9ef65aa9e8d96bf8f692cb54dbb9493b016746bcf4aa998e5492edce2"
+    },
+    "public_document_ministry00771.pdf": {
+      "sha256": "fd0cd3827cf1dc0988ed27fbb85efcbb30605f5dd84ed798dde95ed9b960547c"
+    },
+    "website0065.pdf": {
+      "sha256": "3d4e01ffa8df782d930fcfde11de5c4cbd152b754e5404eb84d8f8a557b9eea2"
+    },
+    "public_document01285.pdf": {
+      "sha256": "189629c99489c34b4ee88b68061aa8179bcd7e5d6bd866445ff683c9f8a3e70a"
+    },
+    "public_document00372.pdf": {
+      "sha256": "a8c8d99fb20cdd9d8bc0372483d89a07b6187488e9ee1380d26d11d5ac376760"
+    },
+    "public_document_ministry01246.pdf": {
+      "sha256": "7bc0e646360e766a0f58987f9bd3e01ddec083529415bfd965529c3b11ab9d58"
+    },
+    "public_document_ministry02061.pdf": {
+      "sha256": "4d376609a08cf80487e7611459f4b3fabdf50f05ce148ff512a62d3f2dc90564"
+    },
+    "public_document_ministry02672.pdf": {
+      "sha256": "b7fd063c72a67c255ff9a98450ff04553b12e5b490cda8ea7646d292b4a3072c"
+    },
+    "public_document_ministry01078.pdf": {
+      "sha256": "d230bdbaf0489d6a46da143b012b4a328797d933bc7fcc8392efcde9cbe1770e"
+    },
+    "kouhou00251.pdf": {
+      "sha256": "ae49b435398d7511980ccd3db8ce855329079f0328d588285aadd510bfbdbbed"
+    },
+    "public_document_ministry02005.pdf": {
+      "sha256": "d85ad5264094ec1298160822e1edecc8628afafbfe94523c3c26444b6d868745"
+    },
+    "public_document_ministry01663.pdf": {
+      "sha256": "41004c49e59ff4f18feb3a45040922f00cbfc3282e1b5abea950db7dbd4768b4"
+    },
+    "public_document_ministry02663.pdf": {
+      "sha256": "d87091d126a384de8bcdbf38ec6dbe05cb4a06580a0ae3a7d351b1b67519709b"
+    },
+    "public_document_ministry01161.pdf": {
+      "sha256": "322df28d1305227d6c2c254f9ec0b0b85bcb4f105555d3d2a258caf9cbfca3bc"
+    },
+    "public_document_ministry02326.pdf": {
+      "sha256": "80463f3b069531c59eee2296248527960386db45a681b244e93764d8ec5e6e15"
+    },
+    "public_document00687.pdf": {
+      "sha256": "916513e199fdf5082e12badcbfc8fafe1533da6c3a6161921e755eee5ebc25be"
+    },
+    "public_document_ministry01723.pdf": {
+      "sha256": "a29a5656ecfd9b407c38a6ad026e30db42766911b174e94515d0cab974a2888a"
+    },
+    "public_document_ministry02778.pdf": {
+      "sha256": "bee350f99b0c12d9014af261b50236fd703284693dec6bba9323535d017bcc14"
+    },
+    "public_document_ministry00106.pdf": {
+      "sha256": "fbe9dd0099b15c9daec898f3862a2395d92e998042105736577f4efc10d3098b"
+    },
+    "public_document_ministry01611.pdf": {
+      "sha256": "0ca07a3eae484a2fb9cdfaafc3fec401ff472dfff0f4046517e95ba550f0dc61"
+    },
+    "public_document00468.pdf": {
+      "sha256": "780707f6d7d6e5dcc940914947b694a4efcfcbb0b5d7ba4d8ee9248d496bd26f"
+    },
+    "public_document_ministry01603.pdf": {
+      "sha256": "98aaf1359f3a315a0802cd35e6af8c892781ce16077d49cbd3853c05becb6dac"
+    },
+    "public_document_ministry01450.pdf": {
+      "sha256": "09a8d8c5b9cdbee1efbed247278a4ac428361493ded9e259b58a32b2808b805d"
+    },
+    "public_document_ministry01266.pdf": {
+      "sha256": "b127c8931cf90758f0b170475e280271345cac6397ae2600ba3163a8a971abb5"
+    },
+    "public_document_ministry02718.pdf": {
+      "sha256": "ac186c35e8129e9c8f474a691a1a8c7a58f6ec57677cce610955a7563afec5f4"
+    },
+    "public_document_ministry00672.pdf": {
+      "sha256": "4f6a6aedaa3e4e3dad7cd3c29c50f372c4192a5fbe6309873a9a20161a2ecc23"
+    },
+    "public_document_ministry02427.pdf": {
+      "sha256": "be1893d6d5371077185da0ea9a2d2f97c95f8efd65bd43507002ca3e42a17c40"
+    },
+    "public_document_ministry02659.pdf": {
+      "sha256": "c8a8e77bf4b49c19098a2f01ab76ee5b4cc53e76db1875232e6258ada8281144"
+    },
+    "public_document_ministry00751.pdf": {
+      "sha256": "36c523369bac2d389fb0305c6afa729db4e21f6344e1ca212ab191fd3acc961e"
+    },
+    "public_document_ministry02651.pdf": {
+      "sha256": "5bb2b2e6d5c905113bbff03ed47a29d233f4960864cd55d1bff3ee898f0430bc"
+    },
+    "public_document00887.pdf": {
+      "sha256": "a3543ecd100956e47a0100def7d3713f981a0b0cbce96e61c48c29d853052901"
+    },
+    "public_document_ministry02488.pdf": {
+      "sha256": "be3dd2f015ae800dbefc01be0c1b12d25d4b6c7965a637b9aa15bba44c24d151"
+    },
+    "website0072.pdf": {
+      "sha256": "3e78bda7ce27a40a501d7b46ed0d9c96d8781bc3d4aaa62c90cbe06ed5c5ac24"
+    },
+    "public_document_ministry00406.pdf": {
+      "sha256": "db9e284dde5f999044f90719b557215e131ab76a5942e28a03d70914ff3a346a"
+    },
+    "public_document_ministry00950.pdf": {
+      "sha256": "2610798097f78bd37bf41a9286933d5b5d68d9625be8a307bc91fc18679eb75a"
+    },
+    "public_document_ministry00147.pdf": {
+      "sha256": "bb2ef539d1f009a7eeb4f1f44760601d1491fe49d7f0feb17e8ba4b014bb8281"
+    },
+    "public_document00289.pdf": {
+      "sha256": "e060ff4c26fa7c1611ed63fb5bddd85d4f7fb89fcb28c4d9c52e702a90e85e4e"
+    },
+    "public_document_ministry00017.pdf": {
+      "sha256": "22021360584ae0b4c261a05c8f0fda3ad5de543f651e0422acfc7402a71b6499"
+    },
+    "kouhou01234.pdf": {
+      "sha256": "e6d583225a3d4bacf21bb7faec99764fbfbfa845f494c5ba3307cde3f1eff683"
+    },
+    "public_document_ministry02086.pdf": {
+      "sha256": "3d558a49f4adab0c43654cc2d50e3995345d02d2ef71ceadd291f2147a4e04f5"
+    },
+    "public_document_ministry01343.pdf": {
+      "sha256": "79a937b3cf152dbaea7e310db1d4e7c169f2879eb56b7adf185f7dafd018233a"
+    },
+    "public_document_ministry01224.pdf": {
+      "sha256": "00d0712489d711c84ed3b2d533f2e803b3aeebfc48b73b6e3034f50f8b5ec9ed"
+    },
+    "public_document_ministry02446.pdf": {
+      "sha256": "e0cb1efac9d23977be93c685af6cdef31999d8a6f780c9313507a4874a413d9a"
+    },
+    "public_document_ministry00592.pdf": {
+      "sha256": "18245c344c494e93d94946a42ef89e066f1b5bfc90e9e9bb216a0b665bb71c7c"
+    },
+    "public_document00359.pdf": {
+      "sha256": "af84a63cd1df8c744bb32e91c2cf8857e5ff0a8649844705424c400e35b45c76"
+    },
+    "public_document_ministry00982.pdf": {
+      "sha256": "c4e1c23ece6a7d8b54b04cfd91c76700ea627ab449b3021c93a74e4a8ad107a2"
+    },
+    "public_document_ministry01305.pdf": {
+      "sha256": "ac097dc9ad7d95e51cedc85d754a88be9578aae920d69f04b2e4c6100c9de60c"
+    },
+    "public_document00674.pdf": {
+      "sha256": "9684b9ee302f077ea92fcc8ff312ba4047aa8df294200cf169ccb96f783e7866"
+    },
+    "public_document_ministry00817.pdf": {
+      "sha256": "11115de528ea13dd2cd750b0fff3c2a142fc4c0bac1a4c470c9dcc12c6367d31"
+    },
+    "public_document_ministry00297.pdf": {
+      "sha256": "e58e6207ff6aa771138be77f1c0c031c9c87448a18cd7ae358fa7eab286a487a"
+    },
+    "public_document_ministry00670.pdf": {
+      "sha256": "70d2e25dcc1ee876c2f8edb531384705684fa1cccd4fa9405c1c0701c2960f4f"
+    },
+    "public_document00104.pdf": {
+      "sha256": "d135dd1bf130409961b896bdc2d998f555c98cf704a92b897f93ddf6394e888d"
+    },
+    "public_document_ministry00140.pdf": {
+      "sha256": "b6e5acb515fcd4938aa792d340e939979415c30688db8bb4cf46260f6252a532"
+    },
+    "public_document_ministry00512.pdf": {
+      "sha256": "2e2f63eeb4b7f5c8b0e27a9fef3977f899452361872dee2e3ab36b5da3fcb4ac"
+    },
+    "public_document_ministry01074.pdf": {
+      "sha256": "f6fb054f8c7762186b66bef2ab425b2050de96f3b4974890d15e871fa4c12c37"
+    },
+    "public_document_ministry02025.pdf": {
+      "sha256": "517b166b323896d77ebdc53ff1efb74bbdb902b1c28cc40659772345daf5591e"
+    },
+    "public_document_ministry02372.pdf": {
+      "sha256": "b503a18147c324290a92f05b04fbd41034bca66e9f9f8322def91d9ac8d33bad"
+    },
+    "public_document01243.pdf": {
+      "sha256": "ad64659adbbfc248c7e2079eb414a01f23c4b9a3c556fdfe66763b1bd3e404a0"
+    },
+    "public_document_ministry00344.pdf": {
+      "sha256": "779255887db9de981be144572218f647bf3e46ecd8c1fd6d0181021c7e1cc4d8"
+    },
+    "public_document_ministry01083.pdf": {
+      "sha256": "b7de400a691107f9a77df80849965933436c338ff0c5500fdff7ecee4b7eb3cb"
+    },
+    "website0063.pdf": {
+      "sha256": "45d1c07007b5e6588e6ceefdea940c87858ef30e40980234f679d961b7ab6aac"
+    },
+    "public_document00016.pdf": {
+      "sha256": "0f2e4408ab76c9728234f7c9abe977d74eb679bbc15728708e641d41b7b24915"
+    },
+    "public_document_ministry00680.pdf": {
+      "sha256": "d8eb5fc0c79aa485dfcb3825b7612fd89b84913255f91914bcdb2d70ba410b51"
+    },
+    "public_document00467.pdf": {
+      "sha256": "6294c5935454f2ec3547a152a72b3b65c7b7be42b2cc9c416bf49b7b9cedc41e"
+    },
+    "public_document_ministry01079.pdf": {
+      "sha256": "d85def982686cf41c2601534b7b12b68b32c737b6782bbb359753204e907c4e4"
+    },
+    "public_document_ministry02307.pdf": {
+      "sha256": "150d68d8870833b4601760195ccb81777551e149b11d265f867b5e125377539b"
+    },
+    "public_document_ministry01699.pdf": {
+      "sha256": "da1ea66588ae6bcd4a0020bc43b658b95ba45f7e0372152297fc620677a888c0"
+    },
+    "public_document_ministry01678.pdf": {
+      "sha256": "387fd2fc12ab9c4885bc8c08724939425bdcd737e4eedc47a853991f69ed596e"
+    },
+    "public_document00634.pdf": {
+      "sha256": "1ca35ad6038547560226daed740460bb0abbb2871a8402bd826bbc1013e38cbd"
+    },
+    "public_document_ministry00279.pdf": {
+      "sha256": "0c18c3f1a7b4b5b9c73017f9dff6d445142e2a8f7eb6b12228993553dc0cf62a"
+    },
+    "public_document_ministry00300.pdf": {
+      "sha256": "160407a71c397a6b9230ad27b5bc387602b4fd0a854a7663f11b0824edd6bb1a"
+    },
+    "public_document_ministry01722.pdf": {
+      "sha256": "74a3bc840a072ee387813da595647175386924df6dafb92af43b696eb577c6a4"
+    },
+    "public_document_ministry01938.pdf": {
+      "sha256": "e16e182f94e3b5af559b76006c7ece7dfbf46a58f84113fac016e4ca225f5a95"
+    },
+    "public_document_ministry01653.pdf": {
+      "sha256": "548f3402837910f4dfde7e8963d05bce8eb9e04170642091ad39bb94e02a64dd"
+    },
+    "public_document_ministry01995.pdf": {
+      "sha256": "cd4cac8c6742520bb094db31bcf85c1c40d22242dc6c279ca291167eae8cc40b"
+    },
+    "public_document_ministry00292.pdf": {
+      "sha256": "d5fb0ba1b54761f98b946f8ae7d5df60e6f587266b40e47485a38015d653d558"
+    },
+    "public_document_ministry00628.pdf": {
+      "sha256": "e2042304e73e4477efbc2102830865d485a7e86f0fb32c1bbdd93b4617040745"
+    },
+    "public_document00476.pdf": {
+      "sha256": "9e7004c1cacb2d9db18e66bd35c132126c96a159990d83f64ca7dea7e9312467"
+    },
+    "website0018.pdf": {
+      "sha256": "06031a6acb90e63655c9147443546cadd34ea60c5a40b44f176f977e6cd49dc0"
+    },
+    "public_document00818.pdf": {
+      "sha256": "c9204831b7236bc729e89746e92fd16bd5de7b12cc976c9a962fb501c1edb289"
+    },
+    "public_document_ministry01665.pdf": {
+      "sha256": "c9a1a56ea1bff7cd2ccd3d8d093aeed9f254767af440274c6fe20facd7066f60"
+    },
+    "public_document_ministry00018.pdf": {
+      "sha256": "cbb7460affe802dbec96f8937aff024cb68de1af1b430b1af145cfd68532399f"
+    },
+    "public_document_ministry02490.pdf": {
+      "sha256": "8c211cab8856008693302baf26a65c835f240d9b77a32956cfbbf09015dbdf7d"
+    },
+    "kouhou01068.pdf": {
+      "sha256": "f0f45d9221b6b2506caf245297b0db8362bd591054f5d0a1a21013d47ac74c71"
+    },
+    "public_document00799.pdf": {
+      "sha256": "505b9ce94ce77ca198769020ef3819e255e1a528af1fa1d00980e177c809194a"
+    },
+    "public_document_ministry02405.pdf": {
+      "sha256": "e71021a102abb90cd982853f0fd586d4e1c15c5c657005e56b831da230ed6b5c"
+    },
+    "public_document_ministry01498.pdf": {
+      "sha256": "c43e6820d09d91e7ee4ddcf03d1e4e5677d43e7cb161b07f2f7c0fb1198103fc"
+    },
+    "public_document_ministry00257.pdf": {
+      "sha256": "e040cdd7b3be02fcacf961796eab01e2cf80db5bd714ad3014c3d8e4619c661e"
+    },
+    "public_document_ministry00825.pdf": {
+      "sha256": "b4d06ca8163bd782b7e69de5426f00a4715a756f4f6b5b3c1ef5e89b626228e0"
+    },
+    "public_document_ministry01927.pdf": {
+      "sha256": "e836326f5d1a2fcaaaed1a98a0035b5fbf6f08cde518350aa83f24597ed24c46"
+    },
+    "public_document_ministry01362.pdf": {
+      "sha256": "59df7585f18eb0c581fc62c03f613c431aecfad9d1369dfaff093d80de0bd65f"
+    },
+    "public_document_ministry02308.pdf": {
+      "sha256": "307841dbe77c20deacdd1f6794fddd06718811fed8b2ea608790a4322533205b"
+    },
+    "public_document_ministry00703.pdf": {
+      "sha256": "7f58e0a386b79625ef04dfe3acc8157e42cf280c1c16e0a5f14e6b028281f67b"
+    },
+    "public_document00505.pdf": {
+      "sha256": "0abe6385c866dbd387f413999818c61e922bb17c318567c4fe35167e8abb1b5d"
+    },
+    "public_document_ministry02301.pdf": {
+      "sha256": "cd1ac2fb149f7b184eb58d9c151f33727873f34b0669e0cd67b827b71c77ad2f"
+    },
+    "public_document_ministry01973.pdf": {
+      "sha256": "81a6ac0b983fe945f23922add578409c67c245fe27cb870a5974342a022ad6d3"
+    },
+    "public_document_ministry00833.pdf": {
+      "sha256": "25bfc0ea0032525d868101e8b322db97eae0a8bc95a71d1bb7b8ad7d5f38d395"
+    },
+    "website0033.pdf": {
+      "sha256": "387d6e98e8bb7db08c32e7d40f58bcde9546b455f653440cd47846ce0e75e5c2"
+    },
+    "public_document_ministry00028.pdf": {
+      "sha256": "95fdf68ef72fc9ffaa5484f308bb934cdc363312d922c3acfb6474e134cc320c"
+    },
+    "public_document_ministry00273.pdf": {
+      "sha256": "5147bd6e975d1a19b9cacff1bddbc9df54a0de26cf522fad30446c3df23b7c5a"
+    },
+    "public_document_ministry01221.pdf": {
+      "sha256": "fd43ba3b2ee31717852bbdcfbf31696c5ef4af2163406d420f12862ddbef0da7"
+    },
+    "public_document_ministry02522.pdf": {
+      "sha256": "6726c2c6f031cfc0d678df02ede07c2f66edf22474ae0a5708d3d58bd3e5e3e3"
+    },
+    "public_document_ministry01080.pdf": {
+      "sha256": "27024aa2fcb1de171de9f39060d10fe191e707f3e29dd09cb668ebcbe01109c6"
+    },
+    "public_document_ministry02460.pdf": {
+      "sha256": "cc8ad385391a31ec26ba84815dce689614a79498d5d7bc7471cebb87f876b2f2"
+    },
+    "kouhou00099.pdf": {
+      "sha256": "2795d2f714286f6a8ef21f45be96bd6527a0d5509a1b05e2dd6448e1f0b5e0fb"
+    },
+    "kouhou00215.pdf": {
+      "sha256": "f4bdfa339a05ce404c18493d3918555ee6dc29fb94ed885267ae0a980843c261"
+    },
+    "public_document_ministry02057.pdf": {
+      "sha256": "f8bbcc5fb6fc1c16b7e42fba881f03f81c4eb1552551f7830b8d962f6af5f8ce"
+    },
+    "public_document_ministry00597.pdf": {
+      "sha256": "fcdd0d58a41c05746ba7b653b3c7c26b90f5684c4a9b1b883b9b3f1049066d12"
+    },
+    "public_document01099.pdf": {
+      "sha256": "8724e07beee24435c3ff43387cae46bc3b4328e7337e1c12954a1b95c228a0d4"
+    },
+    "website0071.pdf": {
+      "sha256": "bf42ee1cdd6efacb1a0468a43b2808b3bb982ffd74435277302d6f8f8cacb260"
+    },
+    "public_document00640.pdf": {
+      "sha256": "b1454b45b168a1c481b5a0da18819cd568688ba233673f530ea94a28547de532"
+    },
+    "public_document_ministry00974.pdf": {
+      "sha256": "f948bad8ac37f770ffec0f2160497faba9f22e96d51bd4ca0583d48fa4d1a53e"
+    },
+    "public_document_ministry02387.pdf": {
+      "sha256": "3b71911732d04effa0123690fefa8dd5ee7107799f90a667454f205ee28b8f99"
+    },
+    "public_document_ministry02556.pdf": {
+      "sha256": "ea9edbce2cfb9502de23b592e799ea3e7d2e08f2e5f7c87a6c1e14f37e2d5016"
+    },
+    "public_document_ministry01163.pdf": {
+      "sha256": "b5fe612750ab3b8f0266ae168f9f0c51abca0620fae8bf9daf99bfd6adb48f3f"
+    },
+    "public_document_ministry01674.pdf": {
+      "sha256": "ab359a382a2e1bd2600d224e56bd83154252aa6c8201d3b2155e717d51a85fa8"
+    },
+    "public_document_ministry02032.pdf": {
+      "sha256": "4f16e94634e33b25aa99d40f5d77c7ddc4c92ad73555fca06a1658eb24f2387e"
+    },
+    "public_document_ministry01709.pdf": {
+      "sha256": "f14b91cf220e627a5248d12c848fa24e327873ea54e01b8eb865c4e6fa2e9555"
+    },
+    "public_document_ministry01235.pdf": {
+      "sha256": "fb9ddba721f3db2510fc52d64b10eea862eaed19dadbdf116861328a19dc6838"
+    },
+    "public_document00518.pdf": {
+      "sha256": "b30073716741f33a120f1d2d608c6ba4016bb9051f5f40757d1ba00f2bc4b4d9"
+    },
+    "public_document_ministry01042.pdf": {
+      "sha256": "533c33e40b6b8e0ab8c3a3d98a8284a2c3311b666cb2f3999ae165c06d07e7ff"
+    },
+    "kouhou01700.pdf": {
+      "sha256": "f05f78a259f0b5ffb2b19cbdef53205a60be86eb31f3041c3fe9915191cd83cd"
+    },
+    "public_document_ministry02029.pdf": {
+      "sha256": "051f0fce57ecbf40a0bb512a647e6ad85bc39a2bca055a74693bed5776be4693"
+    },
+    "public_document01169.pdf": {
+      "sha256": "1ab0b72db91de9074c8cbcc3b878b8d5da2c09a0b2e2808843eecf41395a9cbf"
+    },
+    "website0064.pdf": {
+      "sha256": "81a9179e52e1c46ce3aba1be77d39cb71c8e22cbd5a336707801b1c17b38205a"
+    },
+    "website0027.pdf": {
+      "sha256": "1be790a468fe963e4c781333afd9d29266745d85b2d1cc44e0d6e1d2f2c04bba"
+    },
+    "public_document_ministry00928.pdf": {
+      "sha256": "2038c9e8af0410bcf1703949490b41af4d31b2fe192ebfe7ab30b380c4507144"
+    },
+    "public_document_ministry02775.pdf": {
+      "sha256": "de6006666b33425d82b9abb223171f439ab5fa41651be47efa09b6c17c1ad535"
+    },
+    "public_document_ministry01386.pdf": {
+      "sha256": "e905012fd4507e66dcc71f77cced16b28d48b12a5c4965fb0b9bfe1537880d35"
+    },
+    "public_document00645.pdf": {
+      "sha256": "2170892fa121af9438516809655948198c58d3edfb4032338524c24ed524d3bf"
+    },
+    "public_document_ministry02017.pdf": {
+      "sha256": "b3fa9bf0f7695dd0cbb675696aa7a3fbb4a94707014408144e83d7b5178394d1"
+    },
+    "public_document00101.pdf": {
+      "sha256": "cf0d434954e7455c2cd4b9519e0d39f3e37044abd4252d9dc6069208523c26a1"
+    },
+    "public_document_ministry02169.pdf": {
+      "sha256": "50018752f373f3c9e36648e82e235607724b3ba0c1c6f755129ca8e9d344eb2e"
+    },
+    "public_document01024.pdf": {
+      "sha256": "9748bc1cafec663b05de797dacde22b10f7e1ec6fe59f384cd3f2c9f0039f9da"
+    },
+    "public_document_ministry01696.pdf": {
+      "sha256": "cd8afae89b94f47805b25411162d3bbe3c2671fe4212f6a151ac6000c8ee237e"
+    },
+    "public_document01036.pdf": {
+      "sha256": "32adcaa085b369b5cf144d771f19703f9ee07eae30ee2b5fcc6fc52c6b902370"
+    },
+    "public_document01262.pdf": {
+      "sha256": "745ada0955da602c8e576580f1749b2759d7952c2524f4da52248d8c16d1b781"
+    },
+    "public_document_ministry01265.pdf": {
+      "sha256": "974e3883e0b63f7e126ce721254286db11ca1e52429992f6dece21b4777e401a"
+    },
+    "public_document_ministry01628.pdf": {
+      "sha256": "910de1629adfd0c497468fc657ca49ea30a32a794b11e4f74dcace157aca55cb"
+    },
+    "public_document_ministry01578.pdf": {
+      "sha256": "bbf782191af3367d78596cd49ec1a52abe4ee10bff2e3ca6089ea99fdb4bf75c"
+    },
+    "public_document_ministry01515.pdf": {
+      "sha256": "d8fd34fa66a13997bb2a609acc145e2ee4f755d8d01ab177abed72eb9b333cac"
+    },
+    "public_document_ministry02322.pdf": {
+      "sha256": "f8280d5f7ce7d465b5375d2cc271d2b59a6d7890e3efc8391f764fa21c007368"
+    },
+    "public_document_ministry02594.pdf": {
+      "sha256": "46253b1b0fc8209e9b5c121d4edf4b3e8c68904296b464d202e6d13a5a2941e1"
+    },
+    "public_document_ministry01614.pdf": {
+      "sha256": "3d88a7df6885feed09690f99209b95f68618ce2688aefa26a88a8a430f19741d"
+    },
+    "website0013.pdf": {
+      "sha256": "0c51c7069bcc13ea0bef3f4e37f76f7932886656d08bb9fcbc73b4ab418c31ea"
+    },
+    "public_document_ministry00271.pdf": {
+      "sha256": "118c7dd79d61e8bb68a0ef0a2edfa7242eebfb3c00749a52e68f188444bf8924"
+    },
+    "public_document00045.pdf": {
+      "sha256": "e4b429765801ecf726170037610871944feec3042d15929d8a9206ee977dd415"
+    },
+    "public_document_ministry01033.pdf": {
+      "sha256": "2b7dd16c7c3a687598c6fecb9179dbd44e0b781ac1ef49483ea757c2256ec3c8"
+    },
+    "public_document_ministry01643.pdf": {
+      "sha256": "65dfcf9594a05c4aab4f1374379f3e2475295ac3a9b9f93db7b51a6c325b1924"
+    },
+    "kouhou01283.pdf": {
+      "sha256": "28aa5afd57f7d6ca75e779b198d1ee4f257e1a4c4fd602b8c5aa81d5469d1c30"
+    },
+    "public_document00603.pdf": {
+      "sha256": "6f9554f1c8a88a82c62f74f93c6990f3f9822deadd0474cdd02d43ff04fb83a6"
+    },
+    "public_document_ministry01960.pdf": {
+      "sha256": "fae2f31d58200172a44c7d18c91ec2e66b3a46d1ba1a15c6e656262b22f93ea8"
+    },
+    "public_document_ministry01315.pdf": {
+      "sha256": "9c4405729df27272353af0ca18ac52283ac8c0879fdd0fefdc326f9c0e281d92"
+    },
+    "public_document_ministry01606.pdf": {
+      "sha256": "dfb684fa2d3f1ca8cb3b0d72ec7a8b488520146273f08be86e511bc4f3222be0"
+    },
+    "website0059.pdf": {
+      "sha256": "ebb3d6c48de00fad095ecf7fc96b4d4052658fac9ec96dc1d4c4ad7fad17f9d8"
+    },
+    "public_document_ministry01397.pdf": {
+      "sha256": "58c5f172b494354f92d4b23d1c5c21a5800846b4233cb608ae0ee3397c4faeba"
+    },
+    "public_document_ministry01102.pdf": {
+      "sha256": "31cdfbe0644ba9eab86d98a4de0cb352bda42a4147a25258169941ecf7430593"
+    },
+    "public_document_ministry02759.pdf": {
+      "sha256": "15381253a7b8e03179767f8e0ed810faa22bc57693993689436bb27d94d63789"
+    },
+    "public_document_ministry02573.pdf": {
+      "sha256": "75d55244577d51ae120bd65fe9a2f1a9b5508737741763cf5081ffdc9a271ed7"
+    },
+    "public_document_ministry00991.pdf": {
+      "sha256": "4617970dd9c44d5aee51ec29fbef17453e02ddba0a4b33cbb9a9967650e020c5"
+    },
+    "public_document_ministry02344.pdf": {
+      "sha256": "56c72958b1dde3ccf8be93827f8aad908464fdcd605dc10a7c0e29b57c5f5d59"
+    },
+    "public_document_ministry01724.pdf": {
+      "sha256": "a42af31766775b23719d1ccc16da0cab76b75152e5738a36d5fc7f758e4d5c6d"
+    },
+    "public_document_ministry02704.pdf": {
+      "sha256": "bbb4d46d14f31c4fabad9a3b144f6d4811286f01a5eacf380a692e137e725c41"
+    },
+    "public_document_ministry01289.pdf": {
+      "sha256": "345c4a1522f46efd4532c787f7f46d5357a59fc1b510bcae06baf4b9e08af4db"
+    },
+    "public_document_ministry01946.pdf": {
+      "sha256": "f9c4b18b6565956936661ff3536570ba036529e413f4bb71e4be0f014217213e"
+    },
+    "public_document_ministry01467.pdf": {
+      "sha256": "9d4d7c000bc5e345b72577705b8f8c85dca376391e1be41f00773e7eddd46ccf"
+    },
+    "kouhou01251.pdf": {
+      "sha256": "dacfc36f7a9dfda2f5b7882765939b2b41cd9f430e8d7a65ef15efc7ea35c639"
+    },
+    "public_document01223.pdf": {
+      "sha256": "dc7301d2a9973b49dc572278a628a99f08a305f6c76001c0106e1cecde5599ea"
+    },
+    "public_document_ministry01566.pdf": {
+      "sha256": "e7473efc848ded6aecb950bd511188f091388d65ed627623488d51a2a9b00084"
+    },
+    "public_document_ministry00943.pdf": {
+      "sha256": "ddd9cd4b1556773c56584f6d9e9335e1dd37d86cf76feb697c4e9f9b63b88027"
+    },
+    "public_document00123.pdf": {
+      "sha256": "371d2e3f0ea4b47ad845bc222bbbfc1bd028592641ee89ad0b7da96b71e10220"
+    },
+    "public_document_ministry02122.pdf": {
+      "sha256": "adf5e9a785bc0dbcc87f7730084c1c256abb6a322a5809a0d069abeaa3c9760d"
+    },
+    "public_document_ministry00308.pdf": {
+      "sha256": "45d37860a9d5de9bc8196144c63868aae1aabb8547f258ed567e62fd4564fc0a"
+    },
+    "public_document_ministry00731.pdf": {
+      "sha256": "3bae8c2735cf22b004fc0ca877bb193b6edc79235c66d6188161a8561941d644"
+    },
+    "public_document00134.pdf": {
+      "sha256": "73d2e64d1934643b271eb5c65a6e20118603d511d0f145dd8991f8277388044f"
+    },
+    "public_document_ministry00656.pdf": {
+      "sha256": "5b532f58d2a4e4f386115d60d8c236610da3edf265e301b4b043a7edb7d0dffb"
+    },
+    "public_document_ministry00660.pdf": {
+      "sha256": "bbf57ed6bee091d5082419498ebca47c919f36a3afc262d77edb632c20648764"
+    },
+    "public_document_ministry02246.pdf": {
+      "sha256": "6c04423c46476bb6e30adf1151bfab309b15d6374d06da0598a329fdb8e98bc2"
+    },
+    "website0070.pdf": {
+      "sha256": "bd32f6eab51d9e2bd4636cbddd02ede8f3571863f800af81082a6c16861985b1"
+    },
+    "public_document_ministry00717.pdf": {
+      "sha256": "d3ba39c77935fefc09711a37bb25edd278097fdc85899b11e259b2be1197367f"
+    },
+    "public_document_ministry00818.pdf": {
+      "sha256": "142ff2599f3c8370122dd28ed32c4f336a59b8e73543b59f96c9ef535802d0dd"
+    },
+    "public_document00862.pdf": {
+      "sha256": "e1ce9721150651a3ec9c57920791f06525996d9edc7ba35d49edf7bc446ea51b"
+    },
+    "public_document_ministry02223.pdf": {
+      "sha256": "ce90086a64a097ea40e6e306d07944a01f75e85bde927ce66474cc18f7de2618"
+    },
+    "website0073.pdf": {
+      "sha256": "d45531265eac81b3114ce28120e447fd8aaf80dd79a5184b87b0849cc5acbbea"
+    },
+    "public_document00001.pdf": {
+      "sha256": "482bc4b71c67d4a589464c24b7eb7f98fd0cab59e1d16147a86aae32fbca0cb2"
+    },
+    "public_document_ministry02615.pdf": {
+      "sha256": "31503c051dce25710f4a77ae9c87bc83d0fc7e745292198b3561d59f55688bb3"
+    },
+    "public_document00180.pdf": {
+      "sha256": "7f88f80ca28f4603609519c79a74f6393303934e1c031e7bd564f2ca93798d2a"
+    },
+    "public_document01116.pdf": {
+      "sha256": "7b51a6499775395da005690a1eee38f21ab6fffd7c1e59bf82eebc09d80d05b5"
+    },
+    "kouhou01429.pdf": {
+      "sha256": "d8b012da4d26fcab3b07d43c6f7b465cd26dab92c73f98e90e033b601f37d609"
+    },
+    "public_document_ministry00123.pdf": {
+      "sha256": "e1bcf7842a474a1379c256b2aadd9a7b9ef42973c2292aa8717d5b57686ddc51"
+    },
+    "public_document_ministry02001.pdf": {
+      "sha256": "73c146b05ef421ce73fc7ce199900fa5dcd6cf01ef1ec63f3083a6d11b494e9e"
+    },
+    "public_document_ministry02494.pdf": {
+      "sha256": "87d818c159ac131c6cfeed2153c6137393cf56aab25f6df01d95f2fefe3329b9"
+    },
+    "public_document_ministry02500.pdf": {
+      "sha256": "3eb75d3b1581218e25c0c1caa5f678fcde1f09001d6ed6275cff7b54baef6299"
+    },
+    "public_document_ministry02735.pdf": {
+      "sha256": "80f520a4a27686b9d6fde2b7c86b995a00b340d49a47e11eda3257d8241495e4"
+    },
+    "public_document_ministry02305.pdf": {
+      "sha256": "d124282013bc227cff14505714774073c96c4009752f3874725fb8c84c06744d"
+    },
+    "public_document00218.pdf": {
+      "sha256": "0006d702b5f3d238a2c2b093cf524dc99189559047b5832b96c4758f6758a8ed"
+    },
+    "public_document_ministry02348.pdf": {
+      "sha256": "00d776ffe3597e0da1e15af0ae5b1342be6b8fd8f8f4f1295eda0095857064b2"
+    },
+    "public_document01029.pdf": {
+      "sha256": "5568387258b18359b954b1b9e671b884c95304429da0f60016da77077b1e4482"
+    },
+    "public_document_ministry00423.pdf": {
+      "sha256": "ce02edb719d7ac6219544613f76773962bfedfcd6fe0608cd1e8acf59adc12e7"
+    },
+    "public_document_ministry01185.pdf": {
+      "sha256": "a77823bf148cd436f606107ded1fd452c92008fc519fe8a0fce3e0ab451a62a5"
+    },
+    "public_document_ministry00027.pdf": {
+      "sha256": "b52487a46ec578405081d076d32c13df15b662db98841acc13d54819cb04f853"
+    },
+    "public_document_ministry01040.pdf": {
+      "sha256": "5f3b71ad2b60da6f5b57caaececb8e7bef0391e0b4dd2ba6680ef582dd53232b"
+    },
+    "public_document_ministry00014.pdf": {
+      "sha256": "920098df5e576e3b3abae6ea4629767f4570ade47fc3568f3d55209a25064b5b"
+    },
+    "public_document_ministry00162.pdf": {
+      "sha256": "f656517eb4bc9a676810b039badfb49c2a6025d4b7078746f5811b17c20c8556"
+    },
+    "public_document_ministry00895.pdf": {
+      "sha256": "34f9562af8150246dd4ae4cd9c22394f874c7d21ab10baa5a2b61d2b7b7010b4"
+    },
+    "public_document01034.pdf": {
+      "sha256": "163b26f73bf8468a199d0b5f808705b794a59e6b727cb8467c14e1cbe3ece887"
+    },
+    "public_document01167.pdf": {
+      "sha256": "241baca643b1216c827292fdf8ac7b719e31f3f5b4606fc376767a4653f0b54f"
+    },
+    "public_document_ministry00773.pdf": {
+      "sha256": "dec089b2d245c1f05521948a92558f77d56254576ada697e13eeff0353bba22f"
+    },
+    "public_document_ministry01208.pdf": {
+      "sha256": "a3d864bc403df1914c539e9223d5594b71747227a1521ecf95e16c55e280ce88"
+    },
+    "website0002.pdf": {
+      "sha256": "17a85b6c9a27cdf144615f039b6d1c44b9a8de5012b5a6712b8eb4cdb3ff61c2"
+    },
+    "website0031.pdf": {
+      "sha256": "b696ae0031e4825f6fccf6311cf59fcefc05078015d65335a7f902b003b25d81"
+    },
+    "public_document00013.pdf": {
+      "sha256": "c03683f851a47b957a3bcda60ed64c7bf873de63cc7b63fc0e65e919bdf11852"
+    },
+    "public_document_ministry01421.pdf": {
+      "sha256": "f4477a0a0332b0899cff7ef10979f3a7b00dcdc5746ef2f684e77c091f886c63"
+    },
+    "public_document_ministry02342.pdf": {
+      "sha256": "9f0da750a1cf45704afd423d63a5c6c0aa1df2897e4e420bbcede09ab1c2070c"
+    },
+    "public_document_ministry00527.pdf": {
+      "sha256": "5ba021b088420cdfc581527fb41689713d0776d2ccee487be5a2377cf1a8e0d6"
+    },
+    "public_document_ministry02015.pdf": {
+      "sha256": "863859d45e9c46011357b46d0cb63c5df5fda829d5b50bc2e4ae996ad7bb008c"
+    },
+    "public_document_ministry00721.pdf": {
+      "sha256": "3fb2863dd34fa86f17d716e566c3b9b6ddb77be84e0a4dfffaa7c4ddefd44f9f"
+    },
+    "public_document_ministry01376.pdf": {
+      "sha256": "eaf6efe20eed76ddc5af21ce54b92c05a808b323da7f8c81ae9b9b4e3c933db6"
+    },
+    "kouhou00206.pdf": {
+      "sha256": "929b17ee0f2adf38202722d034d1bbfa91c16768800a361d80dddeec3922b803"
+    },
+    "public_document00352.pdf": {
+      "sha256": "148db29d866f77bb50c71eb23e229d64b1605fccf737ce1e7c39b072d85b1cd0"
+    },
+    "public_document_ministry01206.pdf": {
+      "sha256": "15005fc33f5cc43ebe4ceb1871d7f3d3e5b2145001c17e640ae91b2d74a6a636"
+    },
+    "public_document_ministry02645.pdf": {
+      "sha256": "32f5a3d547fb9b2b1abc8e8f7299f74ad347e4d7a8cc27c1f87d436aa4e04218"
+    },
+    "public_document_ministry00791.pdf": {
+      "sha256": "1ab08ac73cf456289014864c59dfc953f52070c149832f3e73b2a574b2c69439"
+    },
+    "public_document_ministry00933.pdf": {
+      "sha256": "617ada68ce9a92e633f5ac4613f56da92ca845b2a97973f7a538db7d0bdddbab"
+    },
+    "public_document_ministry02171.pdf": {
+      "sha256": "c2380fcf8f7d9dd7e79d6f1c89da4643e348bd131432a875ddffa09b4f571abe"
+    },
+    "public_document_ministry02261.pdf": {
+      "sha256": "9696eb1c18397c4141fc9e49e25d76ed532b902fbd1c8b1f5f33b65a146b1547"
+    },
+    "public_document_ministry02763.pdf": {
+      "sha256": "9fcd35cf60df5a9a9cf640faead232445427e6eb9d19a6eabc1f4f9b90c9f3f0"
+    },
+    "public_document_ministry01012.pdf": {
+      "sha256": "52b61914c0b8704a2acecfba3b6664d8470ac476e9de0c04808f9b2b2e125e67"
+    },
+    "public_document_ministry00004.pdf": {
+      "sha256": "f3e3dd06e870d2ca72c519f3d3de136ba4a594dca82f8b538d11a1009696e98a"
+    },
+    "public_document_ministry00252.pdf": {
+      "sha256": "afcd736879915ce82918640494b4225a687af80bd9873f4e7f6004d35cc65cfa"
+    },
+    "public_document_ministry01633.pdf": {
+      "sha256": "fc50162354d9376481760cecc5c30619ecd58f26d5d7f95e9f267e0eb93b577c"
+    },
+    "public_document_ministry00993.pdf": {
+      "sha256": "c5763a07e2f7e6e840eaac138e2fde84e86a43152b040103d0a2ef1b5bc9b858"
+    },
+    "public_document_ministry02028.pdf": {
+      "sha256": "1f03d68e04d7454cfbf48335bcf28e2fdfa8566664b5869cf6e08884db30ed4b"
+    },
+    "public_document00496.pdf": {
+      "sha256": "d1a8c8f89beed86d662dc025629b9a6d23f55281859c383efadccb8ec523ebe8"
+    },
+    "public_document_ministry02537.pdf": {
+      "sha256": "89c095ed802c392588fe6e557dad19196a35704bd19945eb65b25a86b5c9aa2c"
+    },
+    "public_document_ministry00164.pdf": {
+      "sha256": "33c99b2a8f5e13c19e7aaa2c52fee0c93f5e0bdf49c6c29f49ee2378f8d1d83f"
+    },
+    "public_document_ministry02766.pdf": {
+      "sha256": "fcd1d81624997f77c5ad2be7d81597b740f54d8eba3a04895631e658a5962d03"
+    },
+    "public_document00324.pdf": {
+      "sha256": "35babf77e79946000c14c2c04e09dd2b58e0b681bc9fb112ed9c4f2c3359c0ed"
+    },
+    "kouhou00294.pdf": {
+      "sha256": "5b372190cecbd925155c3c754121987a2a65650b9d629a1a062c59c25be67239"
+    },
+    "public_document_ministry01658.pdf": {
+      "sha256": "1025b09c1516a0a50400f9de042686f47507a74d36cfba53561e23da1de3b634"
+    },
+    "public_document_ministry01493.pdf": {
+      "sha256": "a662512cb35f0564070e18e733420b0dcb44dc8e4516c9705526b4eccf17e0ef"
+    },
+    "public_document_ministry02648.pdf": {
+      "sha256": "7ac3b87a7cc7fc77b33d47cd20724e3aabdcd5f52157d664cf268d8a5b237c33"
+    },
+    "public_document_ministry02514.pdf": {
+      "sha256": "bb5ab4fde5b8cf7736d0e73ac3c578f27b1bea5a18552c1a83fd6b5bdd4a364a"
+    },
+    "public_document_ministry00459.pdf": {
+      "sha256": "f649a46f0d624d549426419a494d31058c23f5960dca74f7d93d88558f95895f"
+    },
+    "public_document_ministry02441.pdf": {
+      "sha256": "ea6ba9a3ad6339e072961079f78715508fc7e8762ea333b7fc3cdc2219e251c5"
+    },
+    "public_document_ministry02435.pdf": {
+      "sha256": "16c84a08882dea64a590a0d18ce0d9686c828ee58c9b676eb1826bbbbfc4bb2b"
+    },
+    "public_document_ministry02124.pdf": {
+      "sha256": "f4257726f94e402e543c1ddeee1a782490744bcf5adce888992be8dd76ed25e5"
+    }
+  },
+  "pages": [
+    {
+      "source_pdf": "public_document_ministry00588.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00588.pdf",
+      "image": "public_document_ministry00588_page-0004_page.png",
+      "expected_boxes": 44,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00986.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00986.pdf",
+      "image": "public_document_ministry00986_page-0004_page.png",
+      "expected_boxes": 114,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00794.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00794.pdf",
+      "image": "public_document_ministry00794_page-0001_page.png",
+      "expected_boxes": 465,
+      "expected_dimensions": [
+        4430,
+        3133
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00141.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00141.pdf",
+      "image": "public_document_ministry00141_page-0003_page.png",
+      "expected_boxes": 24,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document00973.pdf",
+      "page": 25,
+      "split": "train",
+      "split_group": "public_document00973.pdf",
+      "image": "public_document00973_page-0025_page.png",
+      "expected_boxes": 227,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01982.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01982.pdf",
+      "image": "public_document_ministry01982_page-0004_page.png",
+      "expected_boxes": 18,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01982.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry01982.pdf",
+      "image": "public_document_ministry01982_page-0008_page.png",
+      "expected_boxes": 9,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "website0001.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0001.pdf",
+      "image": "website0001_page-0002_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01388.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01388.pdf",
+      "image": "public_document_ministry01388_page-0001_page.png",
+      "expected_boxes": 52,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02474.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02474.pdf",
+      "image": "public_document_ministry02474_page-0001_page.png",
+      "expected_boxes": 48,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02474.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02474.pdf",
+      "image": "public_document_ministry02474_page-0002_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02716.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry02716.pdf",
+      "image": "public_document_ministry02716_page-0003_page.png",
+      "expected_boxes": 112,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02716.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry02716.pdf",
+      "image": "public_document_ministry02716_page-0005_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02714.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry02714.pdf",
+      "image": "public_document_ministry02714_page-0003_page.png",
+      "expected_boxes": 117,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02714.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry02714.pdf",
+      "image": "public_document_ministry02714_page-0006_page.png",
+      "expected_boxes": 119,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "website0069.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "website0069.pdf",
+      "image": "website0069_page-0005_page.png",
+      "expected_boxes": 58,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01342.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01342.pdf",
+      "image": "public_document_ministry01342_page-0001_page.png",
+      "expected_boxes": 357,
+      "expected_dimensions": [
+        4594,
+        3249
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00771.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00771.pdf",
+      "image": "public_document_ministry00771_page-0004_page.png",
+      "expected_boxes": 161,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00771.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry00771.pdf",
+      "image": "public_document_ministry00771_page-0008_page.png",
+      "expected_boxes": 287,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0065.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "website0065.pdf",
+      "image": "website0065_page-0004_page.png",
+      "expected_boxes": 58,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document01285.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "public_document01285.pdf",
+      "image": "public_document01285_page-0007_page.png",
+      "expected_boxes": 26,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document00372.pdf",
+      "page": 60,
+      "split": "train",
+      "split_group": "public_document00372.pdf",
+      "image": "public_document00372_page-0060_page.png",
+      "expected_boxes": 39,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01246.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry01246.pdf",
+      "image": "public_document_ministry01246_page-0006_page.png",
+      "expected_boxes": 46,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02061.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry02061.pdf",
+      "image": "public_document_ministry02061_page-0006_page.png",
+      "expected_boxes": 23,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02061.pdf",
+      "page": 11,
+      "split": "train",
+      "split_group": "public_document_ministry02061.pdf",
+      "image": "public_document_ministry02061_page-0011_page.png",
+      "expected_boxes": 20,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02672.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02672.pdf",
+      "image": "public_document_ministry02672_page-0001_page.png",
+      "expected_boxes": 114,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02672.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02672.pdf",
+      "image": "public_document_ministry02672_page-0002_page.png",
+      "expected_boxes": 162,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01078.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01078.pdf",
+      "image": "public_document_ministry01078_page-0001_page.png",
+      "expected_boxes": 108,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou00251.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "kouhou00251.pdf",
+      "image": "kouhou00251_page-0006_page.png",
+      "expected_boxes": 567,
+      "expected_dimensions": [
+        2398,
+        1613
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02005.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02005.pdf",
+      "image": "public_document_ministry02005_page-0001_page.png",
+      "expected_boxes": 76,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01663.pdf",
+      "page": 38,
+      "split": "train",
+      "split_group": "public_document_ministry01663.pdf",
+      "image": "public_document_ministry01663_page-0038_page.png",
+      "expected_boxes": 68,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01663.pdf",
+      "page": 75,
+      "split": "train",
+      "split_group": "public_document_ministry01663.pdf",
+      "image": "public_document_ministry01663_page-0075_page.png",
+      "expected_boxes": 69,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02663.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02663.pdf",
+      "image": "public_document_ministry02663_page-0001_page.png",
+      "expected_boxes": 32,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01161.pdf",
+      "page": 38,
+      "split": "train",
+      "split_group": "public_document_ministry01161.pdf",
+      "image": "public_document_ministry01161_page-0038_page.png",
+      "expected_boxes": 85,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02326.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02326.pdf",
+      "image": "public_document_ministry02326_page-0002_page.png",
+      "expected_boxes": 38,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document00687.pdf",
+      "page": 23,
+      "split": "train",
+      "split_group": "public_document00687.pdf",
+      "image": "public_document00687_page-0023_page.png",
+      "expected_boxes": 25,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "public_document00687.pdf",
+      "page": 56,
+      "split": "train",
+      "split_group": "public_document00687.pdf",
+      "image": "public_document00687_page-0056_page.png",
+      "expected_boxes": 51,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01723.pdf",
+      "page": 19,
+      "split": "train",
+      "split_group": "public_document_ministry01723.pdf",
+      "image": "public_document_ministry01723_page-0019_page.png",
+      "expected_boxes": 41,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02778.pdf",
+      "page": 14,
+      "split": "train",
+      "split_group": "public_document_ministry02778.pdf",
+      "image": "public_document_ministry02778_page-0014_page.png",
+      "expected_boxes": 80,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02778.pdf",
+      "page": 28,
+      "split": "train",
+      "split_group": "public_document_ministry02778.pdf",
+      "image": "public_document_ministry02778_page-0028_page.png",
+      "expected_boxes": 55,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00106.pdf",
+      "page": 46,
+      "split": "train",
+      "split_group": "public_document_ministry00106.pdf",
+      "image": "public_document_ministry00106_page-0046_page.png",
+      "expected_boxes": 847,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00106.pdf",
+      "page": 90,
+      "split": "train",
+      "split_group": "public_document_ministry00106.pdf",
+      "image": "public_document_ministry00106_page-0090_page.png",
+      "expected_boxes": 488,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01611.pdf",
+      "page": 14,
+      "split": "train",
+      "split_group": "public_document_ministry01611.pdf",
+      "image": "public_document_ministry01611_page-0014_page.png",
+      "expected_boxes": 149,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01611.pdf",
+      "page": 28,
+      "split": "train",
+      "split_group": "public_document_ministry01611.pdf",
+      "image": "public_document_ministry01611_page-0028_page.png",
+      "expected_boxes": 107,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00468.pdf",
+      "page": 11,
+      "split": "train",
+      "split_group": "public_document00468.pdf",
+      "image": "public_document00468_page-0011_page.png",
+      "expected_boxes": 7,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00468.pdf",
+      "page": 21,
+      "split": "train",
+      "split_group": "public_document00468.pdf",
+      "image": "public_document00468_page-0021_page.png",
+      "expected_boxes": 125,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01603.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry01603.pdf",
+      "image": "public_document_ministry01603_page-0003_page.png",
+      "expected_boxes": 15,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01603.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry01603.pdf",
+      "image": "public_document_ministry01603_page-0006_page.png",
+      "expected_boxes": 13,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01450.pdf",
+      "page": 15,
+      "split": "train",
+      "split_group": "public_document_ministry01450.pdf",
+      "image": "public_document_ministry01450_page-0015_page.png",
+      "expected_boxes": 34,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01450.pdf",
+      "page": 27,
+      "split": "train",
+      "split_group": "public_document_ministry01450.pdf",
+      "image": "public_document_ministry01450_page-0027_page.png",
+      "expected_boxes": 31,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01266.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry01266.pdf",
+      "image": "public_document_ministry01266_page-0005_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02718.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02718.pdf",
+      "image": "public_document_ministry02718_page-0002_page.png",
+      "expected_boxes": 6,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02718.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry02718.pdf",
+      "image": "public_document_ministry02718_page-0004_page.png",
+      "expected_boxes": 6,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00672.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00672.pdf",
+      "image": "public_document_ministry00672_page-0004_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02427.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02427.pdf",
+      "image": "public_document_ministry02427_page-0001_page.png",
+      "expected_boxes": 101,
+      "expected_dimensions": [
+        1755,
+        2482
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02659.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02659.pdf",
+      "image": "public_document_ministry02659_page-0001_page.png",
+      "expected_boxes": 135,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02659.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02659.pdf",
+      "image": "public_document_ministry02659_page-0002_page.png",
+      "expected_boxes": 34,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00751.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry00751.pdf",
+      "image": "public_document_ministry00751_page-0008_page.png",
+      "expected_boxes": 90,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02651.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02651.pdf",
+      "image": "public_document_ministry02651_page-0002_page.png",
+      "expected_boxes": 6,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02651.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry02651.pdf",
+      "image": "public_document_ministry02651_page-0004_page.png",
+      "expected_boxes": 6,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document00887.pdf",
+      "page": 179,
+      "split": "train",
+      "split_group": "public_document00887.pdf",
+      "image": "public_document00887_page-0179_page.png",
+      "expected_boxes": 43,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02488.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02488.pdf",
+      "image": "public_document_ministry02488_page-0001_page.png",
+      "expected_boxes": 70,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "website0072.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "website0072.pdf",
+      "image": "website0072_page-0004_page.png",
+      "expected_boxes": 48,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00406.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00406.pdf",
+      "image": "public_document_ministry00406_page-0004_page.png",
+      "expected_boxes": 84,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00406.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry00406.pdf",
+      "image": "public_document_ministry00406_page-0008_page.png",
+      "expected_boxes": 67,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00950.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "public_document_ministry00950.pdf",
+      "image": "public_document_ministry00950_page-0007_page.png",
+      "expected_boxes": 158,
+      "expected_dimensions": [
+        1754,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00950.pdf",
+      "page": 14,
+      "split": "train",
+      "split_group": "public_document_ministry00950.pdf",
+      "image": "public_document_ministry00950_page-0014_page.png",
+      "expected_boxes": 185,
+      "expected_dimensions": [
+        1754,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00147.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00147.pdf",
+      "image": "public_document_ministry00147_page-0002_page.png",
+      "expected_boxes": 44,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00147.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00147.pdf",
+      "image": "public_document_ministry00147_page-0004_page.png",
+      "expected_boxes": 252,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00289.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document00289.pdf",
+      "image": "public_document00289_page-0008_page.png",
+      "expected_boxes": 24,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document00289.pdf",
+      "page": 15,
+      "split": "train",
+      "split_group": "public_document00289.pdf",
+      "image": "public_document00289_page-0015_page.png",
+      "expected_boxes": 82,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00017.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00017.pdf",
+      "image": "public_document_ministry00017_page-0001_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00017.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00017.pdf",
+      "image": "public_document_ministry00017_page-0002_page.png",
+      "expected_boxes": 62,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "kouhou01234.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "kouhou01234.pdf",
+      "image": "kouhou01234_page-0001_page.png",
+      "expected_boxes": 136,
+      "expected_dimensions": [
+        2436,
+        1582
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02086.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry02086.pdf",
+      "image": "public_document_ministry02086_page-0004_page.png",
+      "expected_boxes": 63,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01343.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01343.pdf",
+      "image": "public_document_ministry01343_page-0001_page.png",
+      "expected_boxes": 39,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01343.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01343.pdf",
+      "image": "public_document_ministry01343_page-0002_page.png",
+      "expected_boxes": 116,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01224.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01224.pdf",
+      "image": "public_document_ministry01224_page-0002_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02446.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02446.pdf",
+      "image": "public_document_ministry02446_page-0001_page.png",
+      "expected_boxes": 67,
+      "expected_dimensions": [
+        1632,
+        2308
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02446.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02446.pdf",
+      "image": "public_document_ministry02446_page-0002_page.png",
+      "expected_boxes": 67,
+      "expected_dimensions": [
+        1632,
+        2308
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00592.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry00592.pdf",
+      "image": "public_document_ministry00592_page-0009_page.png",
+      "expected_boxes": 45,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00592.pdf",
+      "page": 17,
+      "split": "train",
+      "split_group": "public_document_ministry00592.pdf",
+      "image": "public_document_ministry00592_page-0017_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00359.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document00359.pdf",
+      "image": "public_document00359_page-0004_page.png",
+      "expected_boxes": 153,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00359.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document00359.pdf",
+      "image": "public_document00359_page-0008_page.png",
+      "expected_boxes": 153,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00982.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00982.pdf",
+      "image": "public_document_ministry00982_page-0003_page.png",
+      "expected_boxes": 48,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00982.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry00982.pdf",
+      "image": "public_document_ministry00982_page-0005_page.png",
+      "expected_boxes": 67,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01305.pdf",
+      "page": 111,
+      "split": "train",
+      "split_group": "public_document_ministry01305.pdf",
+      "image": "public_document_ministry01305_page-0111_page.png",
+      "expected_boxes": 80,
+      "expected_dimensions": [
+        1813,
+        1300
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01305.pdf",
+      "page": 219,
+      "split": "train",
+      "split_group": "public_document_ministry01305.pdf",
+      "image": "public_document_ministry01305_page-0219_page.png",
+      "expected_boxes": 79,
+      "expected_dimensions": [
+        1813,
+        1300
+      ]
+    },
+    {
+      "source_pdf": "public_document00674.pdf",
+      "page": 20,
+      "split": "train",
+      "split_group": "public_document00674.pdf",
+      "image": "public_document00674_page-0020_page.png",
+      "expected_boxes": 38,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00817.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry00817.pdf",
+      "image": "public_document_ministry00817_page-0009_page.png",
+      "expected_boxes": 232,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00297.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry00297.pdf",
+      "image": "public_document_ministry00297_page-0006_page.png",
+      "expected_boxes": 59,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00670.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00670.pdf",
+      "image": "public_document_ministry00670_page-0001_page.png",
+      "expected_boxes": 186,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00104.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document00104.pdf",
+      "image": "public_document00104_page-0001_page.png",
+      "expected_boxes": 141,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00140.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry00140_page-0001_page.png",
+      "expected_boxes": 48,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00140.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry00140_page-0002_page.png",
+      "expected_boxes": 83,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00512.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry00512_page-0001_page.png",
+      "expected_boxes": 44,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00512.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry00512_page-0002_page.png",
+      "expected_boxes": 82,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01074.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry01074_page-0001_page.png",
+      "expected_boxes": 44,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01074.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry01074_page-0002_page.png",
+      "expected_boxes": 82,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02025.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry02025_page-0001_page.png",
+      "expected_boxes": 48,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02025.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry02025_page-0002_page.png",
+      "expected_boxes": 93,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02372.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00140.pdf",
+      "image": "public_document_ministry02372_page-0002_page.png",
+      "expected_boxes": 82,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document01243.pdf",
+      "page": 74,
+      "split": "train",
+      "split_group": "public_document01243.pdf",
+      "image": "public_document01243_page-0074_page.png",
+      "expected_boxes": 35,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00344.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00344.pdf",
+      "image": "public_document_ministry00344_page-0004_page.png",
+      "expected_boxes": 40,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00344.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry00344.pdf",
+      "image": "public_document_ministry00344_page-0008_page.png",
+      "expected_boxes": 27,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01083.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "public_document_ministry01083.pdf",
+      "image": "public_document_ministry01083_page-0007_page.png",
+      "expected_boxes": 5,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "website0063.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0063.pdf",
+      "image": "website0063_page-0002_page.png",
+      "expected_boxes": 59,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0063.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "website0063.pdf",
+      "image": "website0063_page-0004_page.png",
+      "expected_boxes": 56,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document00016.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document00016.pdf",
+      "image": "public_document00016_page-0001_page.png",
+      "expected_boxes": 143,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00016.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document00016.pdf",
+      "image": "public_document00016_page-0002_page.png",
+      "expected_boxes": 13,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00680.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry00680.pdf",
+      "image": "public_document_ministry00680_page-0008_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00680.pdf",
+      "page": 16,
+      "split": "train",
+      "split_group": "public_document_ministry00680.pdf",
+      "image": "public_document_ministry00680_page-0016_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00467.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "public_document00467.pdf",
+      "image": "public_document00467_page-0007_page.png",
+      "expected_boxes": 67,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document00467.pdf",
+      "page": 13,
+      "split": "train",
+      "split_group": "public_document00467.pdf",
+      "image": "public_document00467_page-0013_page.png",
+      "expected_boxes": 63,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01079.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01079.pdf",
+      "image": "public_document_ministry01079_page-0004_page.png",
+      "expected_boxes": 75,
+      "expected_dimensions": [
+        1575,
+        2100
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01079.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry01079.pdf",
+      "image": "public_document_ministry01079_page-0008_page.png",
+      "expected_boxes": 24,
+      "expected_dimensions": [
+        1575,
+        2100
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02307.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry02307.pdf",
+      "image": "public_document_ministry02307_page-0003_page.png",
+      "expected_boxes": 3,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02307.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry02307.pdf",
+      "image": "public_document_ministry02307_page-0006_page.png",
+      "expected_boxes": 2,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01699.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01699.pdf",
+      "image": "public_document_ministry01699_page-0002_page.png",
+      "expected_boxes": 58,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01678.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01678.pdf",
+      "image": "public_document_ministry01678_page-0002_page.png",
+      "expected_boxes": 115,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01678.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry01678.pdf",
+      "image": "public_document_ministry01678_page-0003_page.png",
+      "expected_boxes": 115,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document00634.pdf",
+      "page": 45,
+      "split": "train",
+      "split_group": "public_document00634.pdf",
+      "image": "public_document00634_page-0045_page.png",
+      "expected_boxes": 217,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00279.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00279.pdf",
+      "image": "public_document_ministry00279_page-0002_page.png",
+      "expected_boxes": 473,
+      "expected_dimensions": [
+        4430,
+        6265
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00279.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00279.pdf",
+      "image": "public_document_ministry00279_page-0004_page.png",
+      "expected_boxes": 474,
+      "expected_dimensions": [
+        4430,
+        6265
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00300.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00300.pdf",
+      "image": "public_document_ministry00300_page-0002_page.png",
+      "expected_boxes": 7,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00300.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00300.pdf",
+      "image": "public_document_ministry00300_page-0004_page.png",
+      "expected_boxes": 7,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01722.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01722.pdf",
+      "image": "public_document_ministry01722_page-0001_page.png",
+      "expected_boxes": 98,
+      "expected_dimensions": [
+        1755,
+        2482
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01938.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01938.pdf",
+      "image": "public_document_ministry01938_page-0004_page.png",
+      "expected_boxes": 46,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01653.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01653.pdf",
+      "image": "public_document_ministry01653_page-0001_page.png",
+      "expected_boxes": 82,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01653.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01653.pdf",
+      "image": "public_document_ministry01653_page-0002_page.png",
+      "expected_boxes": 38,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01995.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01653.pdf",
+      "image": "public_document_ministry01995_page-0001_page.png",
+      "expected_boxes": 83,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00292.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00292.pdf",
+      "image": "public_document_ministry00292_page-0001_page.png",
+      "expected_boxes": 23,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00628.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry00628.pdf",
+      "image": "public_document_ministry00628_page-0005_page.png",
+      "expected_boxes": 156,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00628.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry00628.pdf",
+      "image": "public_document_ministry00628_page-0009_page.png",
+      "expected_boxes": 292,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document00476.pdf",
+      "page": 14,
+      "split": "train",
+      "split_group": "public_document00476.pdf",
+      "image": "public_document00476_page-0014_page.png",
+      "expected_boxes": 2,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "public_document00476.pdf",
+      "page": 32,
+      "split": "train",
+      "split_group": "public_document00476.pdf",
+      "image": "public_document00476_page-0032_page.png",
+      "expected_boxes": 2,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "website0018.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0018.pdf",
+      "image": "website0018_page-0002_page.png",
+      "expected_boxes": 212,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0018.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "website0018.pdf",
+      "image": "website0018_page-0003_page.png",
+      "expected_boxes": 218,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document00818.pdf",
+      "page": 18,
+      "split": "train",
+      "split_group": "public_document00818.pdf",
+      "image": "public_document00818_page-0018_page.png",
+      "expected_boxes": 118,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01665.pdf",
+      "page": 67,
+      "split": "train",
+      "split_group": "public_document_ministry01665.pdf",
+      "image": "public_document_ministry01665_page-0067_page.png",
+      "expected_boxes": 37,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01665.pdf",
+      "page": 133,
+      "split": "train",
+      "split_group": "public_document_ministry01665.pdf",
+      "image": "public_document_ministry01665_page-0133_page.png",
+      "expected_boxes": 178,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00018.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00018.pdf",
+      "image": "public_document_ministry00018_page-0003_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00018.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry00018.pdf",
+      "image": "public_document_ministry00018_page-0006_page.png",
+      "expected_boxes": 47,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02490.pdf",
+      "page": 17,
+      "split": "train",
+      "split_group": "public_document_ministry02490.pdf",
+      "image": "public_document_ministry02490_page-0017_page.png",
+      "expected_boxes": 105,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02490.pdf",
+      "page": 34,
+      "split": "train",
+      "split_group": "public_document_ministry02490.pdf",
+      "image": "public_document_ministry02490_page-0034_page.png",
+      "expected_boxes": 60,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou01068.pdf",
+      "page": 10,
+      "split": "train",
+      "split_group": "kouhou01068.pdf",
+      "image": "kouhou01068_page-0010_page.png",
+      "expected_boxes": 107,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00799.pdf",
+      "page": 22,
+      "split": "train",
+      "split_group": "public_document00799.pdf",
+      "image": "public_document00799_page-0022_page.png",
+      "expected_boxes": 45,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document00799.pdf",
+      "page": 44,
+      "split": "train",
+      "split_group": "public_document00799.pdf",
+      "image": "public_document00799_page-0044_page.png",
+      "expected_boxes": 34,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02405.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02405.pdf",
+      "image": "public_document_ministry02405_page-0002_page.png",
+      "expected_boxes": 113,
+      "expected_dimensions": [
+        1500,
+        1125
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02405.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry02405.pdf",
+      "image": "public_document_ministry02405_page-0004_page.png",
+      "expected_boxes": 165,
+      "expected_dimensions": [
+        1500,
+        1125
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01498.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry01498.pdf",
+      "image": "public_document_ministry01498_page-0005_page.png",
+      "expected_boxes": 52,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00257.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00257.pdf",
+      "image": "public_document_ministry00257_page-0001_page.png",
+      "expected_boxes": 532,
+      "expected_dimensions": [
+        4510,
+        3190
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00825.pdf",
+      "page": 12,
+      "split": "train",
+      "split_group": "public_document_ministry00825.pdf",
+      "image": "public_document_ministry00825_page-0012_page.png",
+      "expected_boxes": 149,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00825.pdf",
+      "page": 24,
+      "split": "train",
+      "split_group": "public_document_ministry00825.pdf",
+      "image": "public_document_ministry00825_page-0024_page.png",
+      "expected_boxes": 268,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01927.pdf",
+      "page": 12,
+      "split": "train",
+      "split_group": "public_document_ministry00825.pdf",
+      "image": "public_document_ministry01927_page-0012_page.png",
+      "expected_boxes": 164,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01927.pdf",
+      "page": 24,
+      "split": "train",
+      "split_group": "public_document_ministry00825.pdf",
+      "image": "public_document_ministry01927_page-0024_page.png",
+      "expected_boxes": 282,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01362.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01362.pdf",
+      "image": "public_document_ministry01362_page-0001_page.png",
+      "expected_boxes": 74,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02308.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02308.pdf",
+      "image": "public_document_ministry02308_page-0001_page.png",
+      "expected_boxes": 249,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00703.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00703.pdf",
+      "image": "public_document_ministry00703_page-0002_page.png",
+      "expected_boxes": 38,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00703.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry00703.pdf",
+      "image": "public_document_ministry00703_page-0004_page.png",
+      "expected_boxes": 59,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document00505.pdf",
+      "page": 36,
+      "split": "train",
+      "split_group": "public_document00505.pdf",
+      "image": "public_document00505_page-0036_page.png",
+      "expected_boxes": 93,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00505.pdf",
+      "page": 72,
+      "split": "train",
+      "split_group": "public_document00505.pdf",
+      "image": "public_document00505_page-0072_page.png",
+      "expected_boxes": 23,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02301.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02301.pdf",
+      "image": "public_document_ministry02301_page-0001_page.png",
+      "expected_boxes": 261,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01973.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01973.pdf",
+      "image": "public_document_ministry01973_page-0001_page.png",
+      "expected_boxes": 190,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00833.pdf",
+      "page": 31,
+      "split": "train",
+      "split_group": "public_document_ministry00833.pdf",
+      "image": "public_document_ministry00833_page-0031_page.png",
+      "expected_boxes": 43,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00833.pdf",
+      "page": 62,
+      "split": "train",
+      "split_group": "public_document_ministry00833.pdf",
+      "image": "public_document_ministry00833_page-0062_page.png",
+      "expected_boxes": 54,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "website0033.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0033.pdf",
+      "image": "website0033_page-0002_page.png",
+      "expected_boxes": 17,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00028.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00028.pdf",
+      "image": "public_document_ministry00028_page-0001_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00028.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00028.pdf",
+      "image": "public_document_ministry00028_page-0002_page.png",
+      "expected_boxes": 59,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00273.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00028.pdf",
+      "image": "public_document_ministry00273_page-0001_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01221.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00028.pdf",
+      "image": "public_document_ministry01221_page-0001_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01221.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00028.pdf",
+      "image": "public_document_ministry01221_page-0002_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02522.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry02522.pdf",
+      "image": "public_document_ministry02522_page-0005_page.png",
+      "expected_boxes": 67,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01080.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry01080.pdf",
+      "image": "public_document_ministry01080_page-0003_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01080.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry01080.pdf",
+      "image": "public_document_ministry01080_page-0006_page.png",
+      "expected_boxes": 29,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02460.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02460.pdf",
+      "image": "public_document_ministry02460_page-0002_page.png",
+      "expected_boxes": 37,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02460.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry02460.pdf",
+      "image": "public_document_ministry02460_page-0004_page.png",
+      "expected_boxes": 37,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "kouhou00099.pdf",
+      "page": 16,
+      "split": "train",
+      "split_group": "kouhou00099.pdf",
+      "image": "kouhou00099_page-0016_page.png",
+      "expected_boxes": 148,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou00215.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "kouhou00215.pdf",
+      "image": "kouhou00215_page-0007_page.png",
+      "expected_boxes": 75,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou00215.pdf",
+      "page": 14,
+      "split": "train",
+      "split_group": "kouhou00215.pdf",
+      "image": "kouhou00215_page-0014_page.png",
+      "expected_boxes": 109,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02057.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02057.pdf",
+      "image": "public_document_ministry02057_page-0002_page.png",
+      "expected_boxes": 45,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02057.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry02057.pdf",
+      "image": "public_document_ministry02057_page-0003_page.png",
+      "expected_boxes": 60,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00597.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00597.pdf",
+      "image": "public_document_ministry00597_page-0001_page.png",
+      "expected_boxes": 41,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document01099.pdf",
+      "page": 92,
+      "split": "train",
+      "split_group": "public_document01099.pdf",
+      "image": "public_document01099_page-0092_page.png",
+      "expected_boxes": 850,
+      "expected_dimensions": [
+        1754,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document01099.pdf",
+      "page": 108,
+      "split": "train",
+      "split_group": "public_document01099.pdf",
+      "image": "public_document01099_page-0108_page.png",
+      "expected_boxes": 169,
+      "expected_dimensions": [
+        1754,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0071.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "website0071.pdf",
+      "image": "website0071_page-0005_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document00640.pdf",
+      "page": 36,
+      "split": "train",
+      "split_group": "public_document00640.pdf",
+      "image": "public_document00640_page-0036_page.png",
+      "expected_boxes": 23,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00974.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00974.pdf",
+      "image": "public_document_ministry00974_page-0002_page.png",
+      "expected_boxes": 20,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00974.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00974.pdf",
+      "image": "public_document_ministry00974_page-0003_page.png",
+      "expected_boxes": 28,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02387.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02387.pdf",
+      "image": "public_document_ministry02387_page-0001_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02556.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02556.pdf",
+      "image": "public_document_ministry02556_page-0001_page.png",
+      "expected_boxes": 76,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01163.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01163.pdf",
+      "image": "public_document_ministry01163_page-0002_page.png",
+      "expected_boxes": 126,
+      "expected_dimensions": [
+        3190,
+        2256
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01163.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01163.pdf",
+      "image": "public_document_ministry01163_page-0004_page.png",
+      "expected_boxes": 161,
+      "expected_dimensions": [
+        3190,
+        2256
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01674.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01674.pdf",
+      "image": "public_document_ministry01674_page-0002_page.png",
+      "expected_boxes": 517,
+      "expected_dimensions": [
+        4001,
+        5659
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01674.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01674.pdf",
+      "image": "public_document_ministry01674_page-0004_page.png",
+      "expected_boxes": 518,
+      "expected_dimensions": [
+        4001,
+        5659
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02032.pdf",
+      "page": 12,
+      "split": "train",
+      "split_group": "public_document_ministry02032.pdf",
+      "image": "public_document_ministry02032_page-0012_page.png",
+      "expected_boxes": 21,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01709.pdf",
+      "page": 23,
+      "split": "train",
+      "split_group": "public_document_ministry01709.pdf",
+      "image": "public_document_ministry01709_page-0023_page.png",
+      "expected_boxes": 77,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01709.pdf",
+      "page": 46,
+      "split": "train",
+      "split_group": "public_document_ministry01709.pdf",
+      "image": "public_document_ministry01709_page-0046_page.png",
+      "expected_boxes": 77,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01235.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry01235.pdf",
+      "image": "public_document_ministry01235_page-0005_page.png",
+      "expected_boxes": 437,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01235.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry01235.pdf",
+      "image": "public_document_ministry01235_page-0009_page.png",
+      "expected_boxes": 90,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document00518.pdf",
+      "page": 15,
+      "split": "train",
+      "split_group": "public_document00518.pdf",
+      "image": "public_document00518_page-0015_page.png",
+      "expected_boxes": 93,
+      "expected_dimensions": [
+        1125,
+        1623
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01042.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01042.pdf",
+      "image": "public_document_ministry01042_page-0004_page.png",
+      "expected_boxes": 63,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01042.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry01042.pdf",
+      "image": "public_document_ministry01042_page-0008_page.png",
+      "expected_boxes": 19,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou01700.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "kouhou01700.pdf",
+      "image": "kouhou01700_page-0002_page.png",
+      "expected_boxes": 575,
+      "expected_dimensions": [
+        2398,
+        1613
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02029.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02029.pdf",
+      "image": "public_document_ministry02029_page-0001_page.png",
+      "expected_boxes": 62,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document01169.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document01169.pdf",
+      "image": "public_document01169_page-0001_page.png",
+      "expected_boxes": 168,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "website0064.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0064.pdf",
+      "image": "website0064_page-0002_page.png",
+      "expected_boxes": 62,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0027.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0027.pdf",
+      "image": "website0027_page-0002_page.png",
+      "expected_boxes": 33,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00928.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00928.pdf",
+      "image": "public_document_ministry00928_page-0001_page.png",
+      "expected_boxes": 566,
+      "expected_dimensions": [
+        4864,
+        3440
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02775.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02775.pdf",
+      "image": "public_document_ministry02775_page-0001_page.png",
+      "expected_boxes": 531,
+      "expected_dimensions": [
+        4352,
+        3078
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01386.pdf",
+      "page": 16,
+      "split": "train",
+      "split_group": "public_document_ministry01386.pdf",
+      "image": "public_document_ministry01386_page-0016_page.png",
+      "expected_boxes": 69,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document00645.pdf",
+      "page": 34,
+      "split": "train",
+      "split_group": "public_document00645.pdf",
+      "image": "public_document00645_page-0034_page.png",
+      "expected_boxes": 23,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document00645.pdf",
+      "page": 48,
+      "split": "train",
+      "split_group": "public_document00645.pdf",
+      "image": "public_document00645_page-0048_page.png",
+      "expected_boxes": 9,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02017.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02017.pdf",
+      "image": "public_document_ministry02017_page-0001_page.png",
+      "expected_boxes": 84,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document00101.pdf",
+      "page": 19,
+      "split": "train",
+      "split_group": "public_document00101.pdf",
+      "image": "public_document00101_page-0019_page.png",
+      "expected_boxes": 382,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02169.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02169.pdf",
+      "image": "public_document_ministry02169_page-0001_page.png",
+      "expected_boxes": 27,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02169.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02169.pdf",
+      "image": "public_document_ministry02169_page-0002_page.png",
+      "expected_boxes": 30,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document01024.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document01024.pdf",
+      "image": "public_document01024_page-0008_page.png",
+      "expected_boxes": 55,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01696.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01696.pdf",
+      "image": "public_document_ministry01696_page-0002_page.png",
+      "expected_boxes": 6,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01696.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01696.pdf",
+      "image": "public_document_ministry01696_page-0004_page.png",
+      "expected_boxes": 6,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document01036.pdf",
+      "page": 209,
+      "split": "train",
+      "split_group": "public_document01036.pdf",
+      "image": "public_document01036_page-0209_page.png",
+      "expected_boxes": 26,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document01036.pdf",
+      "page": 347,
+      "split": "train",
+      "split_group": "public_document01036.pdf",
+      "image": "public_document01036_page-0347_page.png",
+      "expected_boxes": 24,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document01262.pdf",
+      "page": 19,
+      "split": "train",
+      "split_group": "public_document01262.pdf",
+      "image": "public_document01262_page-0019_page.png",
+      "expected_boxes": 39,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document01262.pdf",
+      "page": 38,
+      "split": "train",
+      "split_group": "public_document01262.pdf",
+      "image": "public_document01262_page-0038_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01265.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01265.pdf",
+      "image": "public_document_ministry01265_page-0001_page.png",
+      "expected_boxes": 164,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01628.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01628.pdf",
+      "image": "public_document_ministry01628_page-0002_page.png",
+      "expected_boxes": 157,
+      "expected_dimensions": [
+        1500,
+        1125
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01628.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry01628.pdf",
+      "image": "public_document_ministry01628_page-0003_page.png",
+      "expected_boxes": 105,
+      "expected_dimensions": [
+        1500,
+        1125
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01578.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry01578.pdf",
+      "image": "public_document_ministry01578_page-0003_page.png",
+      "expected_boxes": 78,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01515.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry01515.pdf",
+      "image": "public_document_ministry01515_page-0003_page.png",
+      "expected_boxes": 34,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01515.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry01515.pdf",
+      "image": "public_document_ministry01515_page-0005_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02322.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry02322.pdf",
+      "image": "public_document_ministry02322_page-0005_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02322.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry02322.pdf",
+      "image": "public_document_ministry02322_page-0009_page.png",
+      "expected_boxes": 97,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02594.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02594.pdf",
+      "image": "public_document_ministry02594_page-0002_page.png",
+      "expected_boxes": 90,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01614.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry01614.pdf",
+      "image": "public_document_ministry01614_page-0005_page.png",
+      "expected_boxes": 122,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01614.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry01614.pdf",
+      "image": "public_document_ministry01614_page-0009_page.png",
+      "expected_boxes": 88,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "website0013.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0013.pdf",
+      "image": "website0013_page-0002_page.png",
+      "expected_boxes": 17,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00271.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00271.pdf",
+      "image": "public_document_ministry00271_page-0003_page.png",
+      "expected_boxes": 65,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00271.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry00271.pdf",
+      "image": "public_document_ministry00271_page-0005_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document00045.pdf",
+      "page": 117,
+      "split": "train",
+      "split_group": "public_document00045.pdf",
+      "image": "public_document00045_page-0117_page.png",
+      "expected_boxes": 60,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01033.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01033.pdf",
+      "image": "public_document_ministry01033_page-0001_page.png",
+      "expected_boxes": 168,
+      "expected_dimensions": [
+        5482,
+        3876
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01643.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01643.pdf",
+      "image": "public_document_ministry01643_page-0001_page.png",
+      "expected_boxes": 24,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "kouhou01283.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "kouhou01283.pdf",
+      "image": "kouhou01283_page-0006_page.png",
+      "expected_boxes": 70,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou01283.pdf",
+      "page": 11,
+      "split": "train",
+      "split_group": "kouhou01283.pdf",
+      "image": "kouhou01283_page-0011_page.png",
+      "expected_boxes": 85,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00603.pdf",
+      "page": 85,
+      "split": "train",
+      "split_group": "public_document00603.pdf",
+      "image": "public_document00603_page-0085_page.png",
+      "expected_boxes": 29,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00603.pdf",
+      "page": 159,
+      "split": "train",
+      "split_group": "public_document00603.pdf",
+      "image": "public_document00603_page-0159_page.png",
+      "expected_boxes": 17,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01960.pdf",
+      "page": 30,
+      "split": "train",
+      "split_group": "public_document_ministry01960.pdf",
+      "image": "public_document_ministry01960_page-0030_page.png",
+      "expected_boxes": 17,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01960.pdf",
+      "page": 60,
+      "split": "train",
+      "split_group": "public_document_ministry01960.pdf",
+      "image": "public_document_ministry01960_page-0060_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01315.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry01315.pdf",
+      "image": "public_document_ministry01315_page-0002_page.png",
+      "expected_boxes": 40,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01315.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01315.pdf",
+      "image": "public_document_ministry01315_page-0004_page.png",
+      "expected_boxes": 25,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01606.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry01606.pdf",
+      "image": "public_document_ministry01606_page-0006_page.png",
+      "expected_boxes": 41,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01606.pdf",
+      "page": 11,
+      "split": "train",
+      "split_group": "public_document_ministry01606.pdf",
+      "image": "public_document_ministry01606_page-0011_page.png",
+      "expected_boxes": 15,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "website0059.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "website0059.pdf",
+      "image": "website0059_page-0002_page.png",
+      "expected_boxes": 56,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0059.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "website0059.pdf",
+      "image": "website0059_page-0004_page.png",
+      "expected_boxes": 51,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01397.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01397.pdf",
+      "image": "public_document_ministry01397_page-0001_page.png",
+      "expected_boxes": 91,
+      "expected_dimensions": [
+        1754,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01102.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01102.pdf",
+      "image": "public_document_ministry01102_page-0001_page.png",
+      "expected_boxes": 45,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02759.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry02759.pdf",
+      "image": "public_document_ministry02759_page-0006_page.png",
+      "expected_boxes": 26,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02573.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry02573.pdf",
+      "image": "public_document_ministry02573_page-0003_page.png",
+      "expected_boxes": 29,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00991.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "public_document_ministry00991.pdf",
+      "image": "public_document_ministry00991_page-0007_page.png",
+      "expected_boxes": 34,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02344.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02344.pdf",
+      "image": "public_document_ministry02344_page-0001_page.png",
+      "expected_boxes": 56,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01724.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01724.pdf",
+      "image": "public_document_ministry01724_page-0001_page.png",
+      "expected_boxes": 84,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02704.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry02704.pdf",
+      "image": "public_document_ministry02704_page-0003_page.png",
+      "expected_boxes": 29,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02704.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document_ministry02704.pdf",
+      "image": "public_document_ministry02704_page-0006_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01289.pdf",
+      "page": 39,
+      "split": "train",
+      "split_group": "public_document_ministry01289.pdf",
+      "image": "public_document_ministry01289_page-0039_page.png",
+      "expected_boxes": 678,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01289.pdf",
+      "page": 78,
+      "split": "train",
+      "split_group": "public_document_ministry01289.pdf",
+      "image": "public_document_ministry01289_page-0078_page.png",
+      "expected_boxes": 541,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01946.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry01946.pdf",
+      "image": "public_document_ministry01946_page-0001_page.png",
+      "expected_boxes": 74,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01467.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document_ministry01467.pdf",
+      "image": "public_document_ministry01467_page-0004_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01467.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document_ministry01467.pdf",
+      "image": "public_document_ministry01467_page-0008_page.png",
+      "expected_boxes": 38,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "kouhou01251.pdf",
+      "page": 7,
+      "split": "train",
+      "split_group": "kouhou01251.pdf",
+      "image": "kouhou01251_page-0007_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document01223.pdf",
+      "page": 15,
+      "split": "train",
+      "split_group": "public_document01223.pdf",
+      "image": "public_document01223_page-0015_page.png",
+      "expected_boxes": 3,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document01223.pdf",
+      "page": 127,
+      "split": "train",
+      "split_group": "public_document01223.pdf",
+      "image": "public_document01223_page-0127_page.png",
+      "expected_boxes": 4,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01566.pdf",
+      "page": 79,
+      "split": "train",
+      "split_group": "public_document_ministry01566.pdf",
+      "image": "public_document_ministry01566_page-0079_page.png",
+      "expected_boxes": 192,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00943.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00943.pdf",
+      "image": "public_document_ministry00943_page-0001_page.png",
+      "expected_boxes": 37,
+      "expected_dimensions": [
+        1625,
+        1125
+      ]
+    },
+    {
+      "source_pdf": "public_document00123.pdf",
+      "page": 36,
+      "split": "train",
+      "split_group": "public_document00123.pdf",
+      "image": "public_document00123_page-0036_page.png",
+      "expected_boxes": 29,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02122.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry02122.pdf",
+      "image": "public_document_ministry02122_page-0005_page.png",
+      "expected_boxes": 8,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02122.pdf",
+      "page": 10,
+      "split": "train",
+      "split_group": "public_document_ministry02122.pdf",
+      "image": "public_document_ministry02122_page-0010_page.png",
+      "expected_boxes": 7,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00308.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00308.pdf",
+      "image": "public_document_ministry00308_page-0003_page.png",
+      "expected_boxes": 21,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00731.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00731.pdf",
+      "image": "public_document_ministry00731_page-0002_page.png",
+      "expected_boxes": 16,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00731.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document_ministry00731.pdf",
+      "image": "public_document_ministry00731_page-0003_page.png",
+      "expected_boxes": 13,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00134.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document00134.pdf",
+      "image": "public_document00134_page-0004_page.png",
+      "expected_boxes": 115,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00134.pdf",
+      "page": 8,
+      "split": "train",
+      "split_group": "public_document00134.pdf",
+      "image": "public_document00134_page-0008_page.png",
+      "expected_boxes": 119,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00656.pdf",
+      "page": 37,
+      "split": "train",
+      "split_group": "public_document_ministry00656.pdf",
+      "image": "public_document_ministry00656_page-0037_page.png",
+      "expected_boxes": 272,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00656.pdf",
+      "page": 73,
+      "split": "train",
+      "split_group": "public_document_ministry00656.pdf",
+      "image": "public_document_ministry00656_page-0073_page.png",
+      "expected_boxes": 470,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00660.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "public_document_ministry00660.pdf",
+      "image": "public_document_ministry00660_page-0005_page.png",
+      "expected_boxes": 3,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00660.pdf",
+      "page": 10,
+      "split": "train",
+      "split_group": "public_document_ministry00660.pdf",
+      "image": "public_document_ministry00660_page-0010_page.png",
+      "expected_boxes": 3,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02246.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02246.pdf",
+      "image": "public_document_ministry02246_page-0001_page.png",
+      "expected_boxes": 15,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "website0070.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "website0070.pdf",
+      "image": "website0070_page-0004_page.png",
+      "expected_boxes": 57,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00717.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00717.pdf",
+      "image": "public_document_ministry00717_page-0001_page.png",
+      "expected_boxes": 41,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00818.pdf",
+      "page": 9,
+      "split": "train",
+      "split_group": "public_document_ministry00818.pdf",
+      "image": "public_document_ministry00818_page-0009_page.png",
+      "expected_boxes": 100,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document00862.pdf",
+      "page": 21,
+      "split": "train",
+      "split_group": "public_document00862.pdf",
+      "image": "public_document00862_page-0021_page.png",
+      "expected_boxes": 33,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00862.pdf",
+      "page": 39,
+      "split": "train",
+      "split_group": "public_document00862.pdf",
+      "image": "public_document00862_page-0039_page.png",
+      "expected_boxes": 55,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02223.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02223.pdf",
+      "image": "public_document_ministry02223_page-0001_page.png",
+      "expected_boxes": 178,
+      "expected_dimensions": [
+        2639,
+        3732
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02223.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry02223.pdf",
+      "image": "public_document_ministry02223_page-0002_page.png",
+      "expected_boxes": 179,
+      "expected_dimensions": [
+        2639,
+        3732
+      ]
+    },
+    {
+      "source_pdf": "website0073.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "website0073.pdf",
+      "image": "website0073_page-0003_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document00001.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document00001.pdf",
+      "image": "public_document00001_page-0001_page.png",
+      "expected_boxes": 77,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02615.pdf",
+      "page": 29,
+      "split": "train",
+      "split_group": "public_document_ministry02615.pdf",
+      "image": "public_document_ministry02615_page-0029_page.png",
+      "expected_boxes": 23,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00180.pdf",
+      "page": 3,
+      "split": "train",
+      "split_group": "public_document00180.pdf",
+      "image": "public_document00180_page-0003_page.png",
+      "expected_boxes": 211,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00180.pdf",
+      "page": 6,
+      "split": "train",
+      "split_group": "public_document00180.pdf",
+      "image": "public_document00180_page-0006_page.png",
+      "expected_boxes": 196,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document01116.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document01116.pdf",
+      "image": "public_document01116_page-0002_page.png",
+      "expected_boxes": 230,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document01116.pdf",
+      "page": 4,
+      "split": "train",
+      "split_group": "public_document01116.pdf",
+      "image": "public_document01116_page-0004_page.png",
+      "expected_boxes": 217,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou01429.pdf",
+      "page": 5,
+      "split": "train",
+      "split_group": "kouhou01429.pdf",
+      "image": "kouhou01429_page-0005_page.png",
+      "expected_boxes": 449,
+      "expected_dimensions": [
+        2398,
+        1613
+      ]
+    },
+    {
+      "source_pdf": "kouhou01429.pdf",
+      "page": 10,
+      "split": "train",
+      "split_group": "kouhou01429.pdf",
+      "image": "kouhou01429_page-0010_page.png",
+      "expected_boxes": 166,
+      "expected_dimensions": [
+        2398,
+        1613
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00123.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00123.pdf",
+      "image": "public_document_ministry00123_page-0001_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1063,
+        1571
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00123.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00123.pdf",
+      "image": "public_document_ministry00123_page-0002_page.png",
+      "expected_boxes": 17,
+      "expected_dimensions": [
+        1063,
+        1571
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02001.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00123.pdf",
+      "image": "public_document_ministry02001_page-0001_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1063,
+        1571
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02494.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00123.pdf",
+      "image": "public_document_ministry02494_page-0001_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02494.pdf",
+      "page": 2,
+      "split": "train",
+      "split_group": "public_document_ministry00123.pdf",
+      "image": "public_document_ministry02494_page-0002_page.png",
+      "expected_boxes": 16,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02500.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry00123.pdf",
+      "image": "public_document_ministry02500_page-0001_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1063,
+        1571
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02735.pdf",
+      "page": 1,
+      "split": "train",
+      "split_group": "public_document_ministry02735.pdf",
+      "image": "public_document_ministry02735_page-0001_page.png",
+      "expected_boxes": 39,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02305.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry02305.pdf",
+      "image": "public_document_ministry02305_page-0001_page.png",
+      "expected_boxes": 15,
+      "expected_dimensions": [
+        2000,
+        1125
+      ]
+    },
+    {
+      "source_pdf": "public_document00218.pdf",
+      "page": 15,
+      "split": "val",
+      "split_group": "public_document00218.pdf",
+      "image": "public_document00218_page-0015_page.png",
+      "expected_boxes": 25,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00218.pdf",
+      "page": 29,
+      "split": "val",
+      "split_group": "public_document00218.pdf",
+      "image": "public_document00218_page-0029_page.png",
+      "expected_boxes": 44,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02348.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry02348.pdf",
+      "image": "public_document_ministry02348_page-0001_page.png",
+      "expected_boxes": 45,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document01029.pdf",
+      "page": 4,
+      "split": "val",
+      "split_group": "public_document01029.pdf",
+      "image": "public_document01029_page-0004_page.png",
+      "expected_boxes": 178,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00423.pdf",
+      "page": 13,
+      "split": "val",
+      "split_group": "public_document_ministry00423.pdf",
+      "image": "public_document_ministry00423_page-0013_page.png",
+      "expected_boxes": 77,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00423.pdf",
+      "page": 24,
+      "split": "val",
+      "split_group": "public_document_ministry00423.pdf",
+      "image": "public_document_ministry00423_page-0024_page.png",
+      "expected_boxes": 32,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01185.pdf",
+      "page": 63,
+      "split": "val",
+      "split_group": "public_document_ministry01185.pdf",
+      "image": "public_document_ministry01185_page-0063_page.png",
+      "expected_boxes": 35,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01185.pdf",
+      "page": 125,
+      "split": "val",
+      "split_group": "public_document_ministry01185.pdf",
+      "image": "public_document_ministry01185_page-0125_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00027.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry00027.pdf",
+      "image": "public_document_ministry00027_page-0001_page.png",
+      "expected_boxes": 46,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01040.pdf",
+      "page": 42,
+      "split": "val",
+      "split_group": "public_document_ministry01040.pdf",
+      "image": "public_document_ministry01040_page-0042_page.png",
+      "expected_boxes": 163,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01040.pdf",
+      "page": 82,
+      "split": "val",
+      "split_group": "public_document_ministry01040.pdf",
+      "image": "public_document_ministry01040_page-0082_page.png",
+      "expected_boxes": 99,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00014.pdf",
+      "page": 3,
+      "split": "val",
+      "split_group": "public_document_ministry00014.pdf",
+      "image": "public_document_ministry00014_page-0003_page.png",
+      "expected_boxes": 22,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00162.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry00162.pdf",
+      "image": "public_document_ministry00162_page-0001_page.png",
+      "expected_boxes": 161,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00895.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry00895.pdf",
+      "image": "public_document_ministry00895_page-0001_page.png",
+      "expected_boxes": 63,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document01034.pdf",
+      "page": 5,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "public_document01034_page-0005_page.png",
+      "expected_boxes": 3,
+      "expected_dimensions": [
+        1240,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document01167.pdf",
+      "page": 11,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "public_document01167_page-0011_page.png",
+      "expected_boxes": 3,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document01167.pdf",
+      "page": 26,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "public_document01167_page-0026_page.png",
+      "expected_boxes": 78,
+      "expected_dimensions": [
+        1754,
+        2480
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00773.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "public_document_ministry00773_page-0001_page.png",
+      "expected_boxes": 430,
+      "expected_dimensions": [
+        3816,
+        2699
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00773.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "public_document_ministry00773_page-0002_page.png",
+      "expected_boxes": 66,
+      "expected_dimensions": [
+        3816,
+        2699
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01208.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "public_document_ministry01208_page-0001_page.png",
+      "expected_boxes": 4,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "website0002.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "website0002_page-0002_page.png",
+      "expected_boxes": 2,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "website0031.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document01034.pdf",
+      "image": "website0031_page-0002_page.png",
+      "expected_boxes": 5,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document00013.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document00013.pdf",
+      "image": "public_document00013_page-0001_page.png",
+      "expected_boxes": 178,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00013.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document00013.pdf",
+      "image": "public_document00013_page-0002_page.png",
+      "expected_boxes": 191,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01421.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document_ministry01421.pdf",
+      "image": "public_document_ministry01421_page-0002_page.png",
+      "expected_boxes": 47,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01421.pdf",
+      "page": 4,
+      "split": "val",
+      "split_group": "public_document_ministry01421.pdf",
+      "image": "public_document_ministry01421_page-0004_page.png",
+      "expected_boxes": 28,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02342.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry02342.pdf",
+      "image": "public_document_ministry02342_page-0001_page.png",
+      "expected_boxes": 59,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00527.pdf",
+      "page": 1,
+      "split": "val",
+      "split_group": "public_document_ministry00527.pdf",
+      "image": "public_document_ministry00527_page-0001_page.png",
+      "expected_boxes": 34,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00527.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document_ministry00527.pdf",
+      "image": "public_document_ministry00527_page-0002_page.png",
+      "expected_boxes": 14,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02015.pdf",
+      "page": 3,
+      "split": "val",
+      "split_group": "public_document_ministry02015.pdf",
+      "image": "public_document_ministry02015_page-0003_page.png",
+      "expected_boxes": 81,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00721.pdf",
+      "page": 2,
+      "split": "val",
+      "split_group": "public_document_ministry00721.pdf",
+      "image": "public_document_ministry00721_page-0002_page.png",
+      "expected_boxes": 43,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00721.pdf",
+      "page": 4,
+      "split": "val",
+      "split_group": "public_document_ministry00721.pdf",
+      "image": "public_document_ministry00721_page-0004_page.png",
+      "expected_boxes": 47,
+      "expected_dimensions": [
+        1125,
+        1625
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01376.pdf",
+      "page": 6,
+      "split": "val",
+      "split_group": "public_document_ministry01376.pdf",
+      "image": "public_document_ministry01376_page-0006_page.png",
+      "expected_boxes": 393,
+      "expected_dimensions": [
+        2482,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01376.pdf",
+      "page": 11,
+      "split": "val",
+      "split_group": "public_document_ministry01376.pdf",
+      "image": "public_document_ministry01376_page-0011_page.png",
+      "expected_boxes": 450,
+      "expected_dimensions": [
+        2482,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "kouhou00206.pdf",
+      "page": 7,
+      "split": "val",
+      "split_group": "kouhou00206.pdf",
+      "image": "kouhou00206_page-0007_page.png",
+      "expected_boxes": 141,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou00206.pdf",
+      "page": 14,
+      "split": "val",
+      "split_group": "kouhou00206.pdf",
+      "image": "kouhou00206_page-0014_page.png",
+      "expected_boxes": 110,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00352.pdf",
+      "page": 70,
+      "split": "val",
+      "split_group": "public_document00352.pdf",
+      "image": "public_document00352_page-0070_page.png",
+      "expected_boxes": 27,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00352.pdf",
+      "page": 140,
+      "split": "val",
+      "split_group": "public_document00352.pdf",
+      "image": "public_document00352_page-0140_page.png",
+      "expected_boxes": 69,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01206.pdf",
+      "page": 3,
+      "split": "test",
+      "split_group": "public_document_ministry01206.pdf",
+      "image": "public_document_ministry01206_page-0003_page.png",
+      "expected_boxes": 111,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01206.pdf",
+      "page": 6,
+      "split": "test",
+      "split_group": "public_document_ministry01206.pdf",
+      "image": "public_document_ministry01206_page-0006_page.png",
+      "expected_boxes": 44,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02645.pdf",
+      "page": 37,
+      "split": "test",
+      "split_group": "public_document_ministry02645.pdf",
+      "image": "public_document_ministry02645_page-0037_page.png",
+      "expected_boxes": 74,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02645.pdf",
+      "page": 72,
+      "split": "test",
+      "split_group": "public_document_ministry02645.pdf",
+      "image": "public_document_ministry02645_page-0072_page.png",
+      "expected_boxes": 47,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00791.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00791.pdf",
+      "image": "public_document_ministry00791_page-0001_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00933.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00933.pdf",
+      "image": "public_document_ministry00933_page-0001_page.png",
+      "expected_boxes": 85,
+      "expected_dimensions": [
+        1241,
+        1755
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02171.pdf",
+      "page": 78,
+      "split": "test",
+      "split_group": "public_document_ministry02171.pdf",
+      "image": "public_document_ministry02171_page-0078_page.png",
+      "expected_boxes": 177,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02261.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry02261.pdf",
+      "image": "public_document_ministry02261_page-0001_page.png",
+      "expected_boxes": 71,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02763.pdf",
+      "page": 3,
+      "split": "test",
+      "split_group": "public_document_ministry02763.pdf",
+      "image": "public_document_ministry02763_page-0003_page.png",
+      "expected_boxes": 15,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02763.pdf",
+      "page": 6,
+      "split": "test",
+      "split_group": "public_document_ministry02763.pdf",
+      "image": "public_document_ministry02763_page-0006_page.png",
+      "expected_boxes": 15,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01012.pdf",
+      "page": 8,
+      "split": "test",
+      "split_group": "public_document_ministry01012.pdf",
+      "image": "public_document_ministry01012_page-0008_page.png",
+      "expected_boxes": 25,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00004.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00004.pdf",
+      "image": "public_document_ministry00004_page-0001_page.png",
+      "expected_boxes": 403,
+      "expected_dimensions": [
+        4430,
+        3133
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00252.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00004.pdf",
+      "image": "public_document_ministry00252_page-0001_page.png",
+      "expected_boxes": 413,
+      "expected_dimensions": [
+        4510,
+        3190
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01633.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry01633.pdf",
+      "image": "public_document_ministry01633_page-0001_page.png",
+      "expected_boxes": 74,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00993.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00993.pdf",
+      "image": "public_document_ministry00993_page-0001_page.png",
+      "expected_boxes": 286,
+      "expected_dimensions": [
+        1755,
+        2482
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00993.pdf",
+      "page": 2,
+      "split": "test",
+      "split_group": "public_document_ministry00993.pdf",
+      "image": "public_document_ministry00993_page-0002_page.png",
+      "expected_boxes": 488,
+      "expected_dimensions": [
+        1755,
+        2482
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02028.pdf",
+      "page": 3,
+      "split": "test",
+      "split_group": "public_document_ministry02028.pdf",
+      "image": "public_document_ministry02028_page-0003_page.png",
+      "expected_boxes": 48,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02028.pdf",
+      "page": 6,
+      "split": "test",
+      "split_group": "public_document_ministry02028.pdf",
+      "image": "public_document_ministry02028_page-0006_page.png",
+      "expected_boxes": 80,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00496.pdf",
+      "page": 3,
+      "split": "test",
+      "split_group": "public_document00496.pdf",
+      "image": "public_document00496_page-0003_page.png",
+      "expected_boxes": 121,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00496.pdf",
+      "page": 6,
+      "split": "test",
+      "split_group": "public_document00496.pdf",
+      "image": "public_document00496_page-0006_page.png",
+      "expected_boxes": 121,
+      "expected_dimensions": [
+        1755,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02537.pdf",
+      "page": 5,
+      "split": "test",
+      "split_group": "public_document_ministry02537.pdf",
+      "image": "public_document_ministry02537_page-0005_page.png",
+      "expected_boxes": 53,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00164.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00164.pdf",
+      "image": "public_document_ministry00164_page-0001_page.png",
+      "expected_boxes": 36,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00164.pdf",
+      "page": 2,
+      "split": "test",
+      "split_group": "public_document_ministry00164.pdf",
+      "image": "public_document_ministry00164_page-0002_page.png",
+      "expected_boxes": 70,
+      "expected_dimensions": [
+        1241,
+        1754
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02766.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry02766.pdf",
+      "image": "public_document_ministry02766_page-0001_page.png",
+      "expected_boxes": 336,
+      "expected_dimensions": [
+        4594,
+        3249
+      ]
+    },
+    {
+      "source_pdf": "public_document00324.pdf",
+      "page": 26,
+      "split": "test",
+      "split_group": "public_document00324.pdf",
+      "image": "public_document00324_page-0026_page.png",
+      "expected_boxes": 74,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "public_document00324.pdf",
+      "page": 51,
+      "split": "test",
+      "split_group": "public_document00324.pdf",
+      "image": "public_document00324_page-0051_page.png",
+      "expected_boxes": 39,
+      "expected_dimensions": [
+        1754,
+        1241
+      ]
+    },
+    {
+      "source_pdf": "kouhou00294.pdf",
+      "page": 4,
+      "split": "test",
+      "split_group": "kouhou00294.pdf",
+      "image": "kouhou00294_page-0004_page.png",
+      "expected_boxes": 208,
+      "expected_dimensions": [
+        2398,
+        1613
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01658.pdf",
+      "page": 4,
+      "split": "test",
+      "split_group": "public_document_ministry01658.pdf",
+      "image": "public_document_ministry01658_page-0004_page.png",
+      "expected_boxes": 26,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01658.pdf",
+      "page": 8,
+      "split": "test",
+      "split_group": "public_document_ministry01658.pdf",
+      "image": "public_document_ministry01658_page-0008_page.png",
+      "expected_boxes": 35,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01493.pdf",
+      "page": 5,
+      "split": "test",
+      "split_group": "public_document_ministry01493.pdf",
+      "image": "public_document_ministry01493_page-0005_page.png",
+      "expected_boxes": 122,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry01493.pdf",
+      "page": 9,
+      "split": "test",
+      "split_group": "public_document_ministry01493.pdf",
+      "image": "public_document_ministry01493_page-0009_page.png",
+      "expected_boxes": 158,
+      "expected_dimensions": [
+        1754,
+        2481
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02648.pdf",
+      "page": 13,
+      "split": "test",
+      "split_group": "public_document_ministry02648.pdf",
+      "image": "public_document_ministry02648_page-0013_page.png",
+      "expected_boxes": 79,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02648.pdf",
+      "page": 24,
+      "split": "test",
+      "split_group": "public_document_ministry02648.pdf",
+      "image": "public_document_ministry02648_page-0024_page.png",
+      "expected_boxes": 39,
+      "expected_dimensions": [
+        1755,
+        1240
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02514.pdf",
+      "page": 4,
+      "split": "test",
+      "split_group": "public_document_ministry02514.pdf",
+      "image": "public_document_ministry02514_page-0004_page.png",
+      "expected_boxes": 29,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02514.pdf",
+      "page": 8,
+      "split": "test",
+      "split_group": "public_document_ministry02514.pdf",
+      "image": "public_document_ministry02514_page-0008_page.png",
+      "expected_boxes": 31,
+      "expected_dimensions": [
+        1125,
+        1500
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry00459.pdf",
+      "page": 1,
+      "split": "test",
+      "split_group": "public_document_ministry00459.pdf",
+      "image": "public_document_ministry00459_page-0001_page.png",
+      "expected_boxes": 30,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02441.pdf",
+      "page": 5,
+      "split": "test",
+      "split_group": "public_document_ministry02441.pdf",
+      "image": "public_document_ministry02441_page-0005_page.png",
+      "expected_boxes": 4,
+      "expected_dimensions": [
+        1125,
+        2000
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02435.pdf",
+      "page": 8,
+      "split": "test",
+      "split_group": "public_document_ministry02435.pdf",
+      "image": "public_document_ministry02435_page-0008_page.png",
+      "expected_boxes": 62,
+      "expected_dimensions": [
+        1575,
+        2100
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02124.pdf",
+      "page": 2,
+      "split": "test",
+      "split_group": "public_document_ministry02124.pdf",
+      "image": "public_document_ministry02124_page-0002_page.png",
+      "expected_boxes": 486,
+      "expected_dimensions": [
+        1755,
+        2482
+      ]
+    },
+    {
+      "source_pdf": "public_document_ministry02124.pdf",
+      "page": 4,
+      "split": "test",
+      "split_group": "public_document_ministry02124.pdf",
+      "image": "public_document_ministry02124_page-0004_page.png",
+      "expected_boxes": 950,
+      "expected_dimensions": [
+        1755,
+        2482
+      ]
+    }
+  ],
+  "quality_holdout_pages": [
+    {
+      "source_pdf": "public_document01029.pdf",
+      "page": 2
+    },
+    {
+      "source_pdf": "public_document_ministry00818.pdf",
+      "page": 5
+    },
+    {
+      "source_pdf": "public_document_ministry01246.pdf",
+      "page": 11
+    },
+    {
+      "source_pdf": "public_document_ministry01597.pdf",
+      "page": 1
+    }
+  ]
+}
