@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from playwright.sync_api import sync_playwright
 from collections import Counter
-from ogura.textdet.synth_jdoc import ROOT, render_html, variation_plan, fixed_page_html, page_source
+from ogura.textdet.synth_jdoc import ROOT, render_html, variation_plan, fixed_page_html, page_source, extract_page
 from ogura.textdet.prepare_synth_texts import excerpt
 
 
@@ -107,6 +107,14 @@ class BrowserLabelTests(unittest.TestCase):
                             self.assertTrue(0 <= a < c <= 600 and 0 <= b < d <= 800)
                             if line['element_id'] != 'title':
                                 self.assertTrue(x0 <= a < c <= x1 and y0 <= b < d <= y1)
+                        saved_html = page.content()
+                        saved_image = page.screenshot()
+                        page.set_content(fixed_page_html(markup))
+                        optimized_lines, optimized_stats = extract_page(page, fraction)
+                        self.assertEqual(optimized_lines, after)
+                        self.assertEqual(optimized_stats, stats)
+                        self.assertEqual(page.content(), saved_html)
+                        self.assertEqual(page.screenshot(), saved_image)
                         page.close()
 
 

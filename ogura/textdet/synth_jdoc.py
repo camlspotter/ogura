@@ -139,6 +139,19 @@ def restore_pages(output, manifest):
     return labels
 
 
+def extract_page(page, fraction=None):
+    """Keep overflow coordinates in Chromium; transfer only final page labels."""
+    extract = (ROOT/'synth_lines.js').read_text()
+    if fraction is None:
+        return page.evaluate(extract), None
+    paginate = (ROOT/'synth_paginate.js').read_text()
+    script = ("fraction => { const extract = (" + extract + "); const paginate = (" + paginate +
+              "); const pagination = paginate({lines: extract(), fraction});"
+              " return {pagination, lines: extract()}; }")
+    result = page.evaluate(script, fraction)
+    return result['lines'], result['pagination']
+
+
 def generate(args):
     records = [json.loads(s) for s in args.input.read_text().splitlines() if s.strip()]
     if not records or any(not r.get('id') or not r.get('paragraphs') or
@@ -245,12 +258,8 @@ def generate(args):
                 page.evaluate('document.fonts.ready')
                 if not page.evaluate("document.fonts.check('20px LocalDocumentFont')"):
                     raise ValueError('Local font did not load')
-                lines = page.evaluate((ROOT/'synth_lines.js').read_text())
-                pagination = None
+                lines, pagination = extract_page(page, fractions[i] if args.fill_page else None)
                 if args.fill_page:
-                    pagination = page.evaluate((ROOT/'synth_paginate.js').read_text(),
-                                               dict(lines=lines, fraction=fractions[i]))
-                    lines = page.evaluate((ROOT/'synth_lines.js').read_text())
                     cx0,cy0,cx1,cy1 = pagination['content_bbox']
                     body_lines = [l for l in lines if l['element_id'] != 'title']
                     if len(body_lines) != pagination['retained_lines'] or any(
