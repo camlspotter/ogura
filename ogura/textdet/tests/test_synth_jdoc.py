@@ -119,3 +119,25 @@ class PageSourceTests(unittest.TestCase):
         self.assertIn('Title0', result['paragraphs'])
         with self.assertRaises(ValueError):
             page_source(records, 0, 10000)
+
+
+@unittest.skipUnless(os.getenv('RUN_SYNTH_BROWSER_TESTS') == '1', 'requires installed Chromium')
+class PaginationBoundaryTests(unittest.TestCase):
+    setUpClass = classmethod(BrowserLabelTests.setUpClass.__func__)
+    tearDownClass = classmethod(BrowserLabelTests.tearDownClass.__func__)
+    def test_subpixel_boundary_does_not_drop_first_line(self):
+        page = self.browser.new_page(viewport={'width':600,'height':800})
+        record = {'title':'Title', 'paragraphs':['日本語の本文です。'*500]}
+        markup, _ = render_html(record, Path('unused'), 12, False, 1, 16,
+                                font_url='data:font/otf;base64,', line_height=1.5)
+        page.set_content(fixed_page_html(markup))
+        lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+        rect = page.locator('.content-body').bounding_box()
+        first = next(l for l in lines if l['element_id'] != 'title')
+        first['bbox'][1] = rect['y'] - .25
+        stats = page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
+        self.assertGreater(stats['retained_lines'], 0)
+        first['bbox'][1] = rect['y'] - 2
+        with self.assertRaisesRegex(Exception, 'No complete body line fits.*first'):
+            page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
+        page.close()

@@ -4,12 +4,12 @@
   const bodyLines = lines.filter(l => l.element_id !== 'title');
   const fits = l => {
     const [x0,y0,x1,y1] = l.bbox;
-    return x0 >= rect.left && y0 >= rect.top && x1 <= rect.right && y1 <= rect.bottom;
+    return x0 >= rect.left - .5 && y0 >= rect.top - .5 && x1 <= rect.right + .5 && y1 <= rect.bottom + .5;
   };
   // Keep a contiguous prefix: never retain later fragments after an overflowing line.
   let count = bodyLines.findIndex(l => !fits(l));
   if (count < 0) throw new Error('Not enough source text to overflow the page');
-  if (!count) throw new Error('No complete body line fits on the page');
+  if (!count) throw new Error('No complete body line fits on the page: ' + JSON.stringify({first: bodyLines[0]?.bbox, content: [rect.left,rect.top,rect.right,rect.bottom]}));
   const capacity = count;
   count = Math.max(1, Math.floor(count * fraction));
   const last = bodyLines[count - 1];

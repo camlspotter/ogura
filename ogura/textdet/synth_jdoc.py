@@ -25,7 +25,9 @@ def sha(path):
 
 
 def write_json(path, obj):
-    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
+    temporary = path.with_suffix(path.suffix + '.tmp')
+    temporary.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
+    temporary.replace(path)
 
 
 def render_html(record, font, seed, vertical, columns, font_size, *, line_height=None,
@@ -99,6 +101,44 @@ def draw_review(image_path, lines, target):
     Image.composite(ImageOps.invert(image), image, mask).save(target)
 
 
+def resume_settings(args):
+    names = ('count', 'seed', 'width', 'height', 'fill_page', 'partial_fraction',
+             'vary_layout', 'vertical_fraction', 'orientation', 'font_sizes',
+             'line_heights', 'letter_spacings')
+    return {name: getattr(args, name) for name in names}
+
+
+def restore_pages(output, manifest):
+    """Recover labels from completed page metadata, without rerendering images."""
+    labels = {}
+    for i, entry in enumerate(manifest['pages']):
+        name = f'synth-{i+1:06d}'
+        if entry['image'] != name+'.png':
+            raise ValueError('Resume manifest is not a contiguous page prefix')
+        metadata = json.loads((output/'metadata'/f'{name}.json').read_text())
+        if any(metadata.get(k) != v for k,v in entry.items()):
+            raise ValueError(f'{name}: manifest/metadata mismatch')
+        path = output/'images'/entry['image']
+        digest = sha(path)
+        if entry.get('image_sha256', digest) != digest:
+            raise ValueError(f'{name}: image checksum mismatch')
+        with Image.open(path) as image:
+            image.load()
+            width, height = image.size
+        lines = metadata['line_labels']
+        if [width,height] != [entry['width'],entry['height']] or len(lines) != entry['lines']:
+            raise ValueError(f'{name}: dimensions or label count mismatch')
+        for line in lines:
+            a,b,c,d = line['bbox']
+            if not (0 <= a < c <= width and 0 <= b < d <= height):
+                raise ValueError(f'{name}: invalid saved bbox')
+        if not (output/'html'/f'{name}.html').is_file() or not (output/'review'/f'{name}_bbox.png').is_file():
+            raise ValueError(f'{name}: missing saved HTML/review')
+        labels[path.name] = dict(img_dimensions=[height,width], img_hash=digest,
+            polygons=[[[a,b],[c,b],[c,d],[a,d]] for a,b,c,d in (l['bbox'] for l in lines)])
+    return labels
+
+
 def generate(args):
     records = [json.loads(s) for s in args.input.read_text().splitlines() if s.strip()]
     if not records or any(not r.get('id') or not r.get('paragraphs') or
@@ -116,9 +156,31 @@ def generate(args):
             raise ValueError(f'{path}: font lacks characters: {sorted(missing)[:20]}')
     plan = variation_plan(args.count, args.seed, fonts, args.font_sizes, args.line_heights,
                           args.letter_spacings, args.vertical_fraction) if args.vary_layout else None
-    args.output.mkdir(parents=True, exist_ok=False)
+    previous = None
+    if args.resume:
+        previous = json.loads((args.output/'manifest.json').read_text())
+        settings = resume_settings(args)
+        legacy = dict(count=5000, seed=20260924, width=1200, height=1600, fill_page=True,
+                      partial_fraction=.2, vary_layout=True, vertical_fraction=.25,
+                      orientation='both', font_sizes=[12,16,20,24], line_heights=[1.5,1.7,2.0],
+                      letter_spacings=[0,.03,.08])
+        if any(previous.get(key) != value for key,value in dict(seed=args.seed,
+            variation=args.vary_layout, fill_page=args.fill_page, partial_fraction=args.partial_fraction,
+            upstream_revision=UPSTREAM_REVISION).items()):
+            raise ValueError('Resume manifest configuration differs')
+        if previous.get('settings', legacy) != settings:
+            raise ValueError('Resume settings differ; legacy runs only support the fixed synth_5000.sh settings')
+        if previous['input_sha256'] != sha(args.input) or previous['fonts'] != {str(p.resolve()):sha(p) for p in fonts}:
+            raise ValueError('Resume input/font hashes differ')
+        if previous.get('settings') is None and [p.name for p in fonts] != [
+            'NotoSansCJKjp-Regular.otf','NotoSansCJKjp-Bold.otf','NotoSerifCJKjp-Regular.otf','NotoSerifCJKjp-Bold.otf']:
+            raise ValueError('Legacy resume requires the original font order')
+        if len(previous['pages']) > args.count:
+            raise ValueError('More saved pages than requested')
+        restored = restore_pages(args.output, previous)
+    args.output.mkdir(parents=True, exist_ok=args.resume)
     for sub in ('images', 'html', 'review', 'metadata', 'fonts'):
-        (args.output/sub).mkdir()
+        (args.output/sub).mkdir(exist_ok=args.resume)
     font_urls = {}
     for path in fonts:
         dest = args.output/'fonts'/(sha(path) + path.suffix)
@@ -132,9 +194,20 @@ def generate(args):
         code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js')},
         fonts={str(p.resolve()):sha(p) for p in fonts}, pages=[],
         role='synthetic_training_candidate', variation=args.vary_layout,
+        settings=resume_settings(args), font_order=[sha(p) for p in fonts],
         fill_page=args.fill_page, partial_fraction=args.partial_fraction,
         note='Plain text only; no image generation, tables, noise, or automatic train/val split')
-    labels = {}
+    labels = restored if previous else {}
+    if previous:
+        if previous.get('font_order', manifest['font_order']) != manifest['font_order']:
+            raise ValueError('Resume font order differs')
+        manifest['pages'] = previous['pages']
+        if 'browser_version' in previous:
+            manifest['browser_version'] = previous['browser_version']
+        manifest['resume_history'] = previous.get('resume_history', []) + [dict(
+            completed_pages=len(labels), code_sha256=previous['code_sha256'],
+            legacy_images_without_checksums=any('image_sha256' not in p for p in previous['pages']))]
+        print(f'Resuming after {len(labels)} verified pages', flush=True)
     fill_rng = random.Random(args.seed + 917)
     fractions = [fill_rng.uniform(.5, .85) if i < round(args.count * args.partial_fraction) else 1.0
                  for i in range(args.count)]
@@ -142,8 +215,10 @@ def generate(args):
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
+            if previous and previous.get('browser_version', browser.version) != browser.version:
+                raise ValueError('Resume Chromium version differs')
             manifest['browser_version'] = browser.version
-            for i in range(args.count):
+            for i in range(len(labels), args.count):
                 record = records[i % len(records)]
                 config = plan[i] if plan else dict(
                     vertical=i % 2 == 1 if args.orientation == 'both' else args.orientation == 'vertical',
@@ -179,8 +254,8 @@ def generate(args):
                     cx0,cy0,cx1,cy1 = pagination['content_bbox']
                     body_lines = [l for l in lines if l['element_id'] != 'title']
                     if len(body_lines) != pagination['retained_lines'] or any(
-                        not (cx0 <= l['bbox'][0] < l['bbox'][2] <= cx1 and
-                             cy0 <= l['bbox'][1] < l['bbox'][3] <= cy1) for l in body_lines):
+                        not (cx0-.5 <= l['bbox'][0] < l['bbox'][2] <= cx1+.5 and
+                             cy0-.5 <= l['bbox'][1] < l['bbox'][3] <= cy1+.5) for l in body_lines):
                         raise ValueError(f'{name}: page layout changed after trimming')
                     # Save the trimmed DOM so opening the HTML reproduces the image.
                     (args.output/'html'/f'{name}.html').write_text(page.content())
@@ -200,7 +275,7 @@ def generate(args):
                         raise ValueError(f'{name}: text outside image; shorten paragraphs or increase viewport')
                 labels[image_path.name] = dict(img_dimensions=[height,width], img_hash=sha(image_path),
                     polygons=[[[a,b],[c,b],[c,d],[a,d]] for a,b,c,d in (line['bbox'] for line in lines)])
-                entry = dict(image=image_path.name, source_id=record['id'], seed=args.seed+i,
+                entry = dict(image=image_path.name, image_sha256=sha(image_path), source_id=record['id'], seed=args.seed+i,
                              orientation='vertical' if vertical else 'horizontal', columns=columns,
                              font_size=font_size, font=config['font'].name,
                              font_sha256=sha(config['font']), line_height=style['line_height'],
@@ -235,6 +310,7 @@ def generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--resume', action='store_true', help='Verify and retain completed pages')
     parser.add_argument('--input', type=Path, default=ROOT/'synth_sample.jsonl')
     parser.add_argument('--font', type=Path, default=ROOT.parents[1]/'corpus/fonts/NotoSansCJKjp-Regular.otf')
     parser.add_argument('--extra-font', type=Path, action='append', default=[])
