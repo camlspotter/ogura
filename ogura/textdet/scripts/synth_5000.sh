@@ -34,6 +34,8 @@ case "${1:-}" in
     model_output=ogura/textdet/outputs/db-resnet34-synth5000-v1
     mkdir -p "$model_output"
     CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" uv run --locked python \
+      -W 'ignore:`torch.cuda.amp.autocast(args...)` is deprecated:FutureWarning' \
+      -W 'ignore:`torch.cuda.amp.GradScaler(args...)` is deprecated:FutureWarning' \
       ogura/textdet/.cache/doctr-v1.0.0/references/detection/train.py \
       db_resnet34 --pretrained --device 0 \
       --train_path "$output" \

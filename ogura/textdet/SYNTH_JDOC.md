@@ -215,3 +215,7 @@ bash ogura/textdet/scripts/synth_5000.sh train
 合成5,000ページを学習に、JDocQAの固定valを検証に使う。
 `CUDA_VISIBLE_DEVICES` は未指定なら0で、指定済みならその値を使う。
 `train` は新規学習の開始であり、`resume` は画像生成の再開専用。
+
+`train` では旧CUDA AMP APIの `autocast`・`GradScaler` の非推奨FutureWarningだけを
+Pythonの警告フィルタで抑制し、進捗バーへの割り込みを防ぐ。他の警告・エラーは表示する。
+docTRの外部コードやAMPの計算方法は変更しない。起動済みの学習には反映されず、次回起動から有効。
