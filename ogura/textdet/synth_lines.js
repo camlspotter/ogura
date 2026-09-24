@@ -3,7 +3,7 @@
   for (const element of document.querySelectorAll('h1, p, figcaption')) {
     const vertical = getComputedStyle(element).writingMode.startsWith('vertical');
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    let node, current = [];
+    let node, current = [], nodeIndex = -1;
     function finish() {
       while (current.length && !current[0].text.trim()) current.shift();
       while (current.length && !current[current.length-1].text.trim()) current.pop();
@@ -19,6 +19,7 @@
       current = [];
     }
     while ((node = walker.nextNode())) {
+      nodeIndex++;
       let offset = 0;
       const combined = node.parentElement.closest('.tcy');
       for (const text of (combined ? [node.textContent] : [...node.textContent])) {
@@ -28,7 +29,7 @@
         // uncombined advances; the inline element has the actual upright box.
         const r = combined ? combined.getBoundingClientRect() : range.getBoundingClientRect();
         if (!r.width || !r.height) continue;
-        const c = {text, x0: r.left + scrollX, y0: r.top + scrollY,
+        const c = {text, node_index: nodeIndex, end_offset: offset, x0: r.left + scrollX, y0: r.top + scrollY,
                          x1: r.right + scrollX, y1: r.bottom + scrollY};
         const previous = current.filter(c => c.text.trim()).at(-1);
         if (previous && text.trim()) {

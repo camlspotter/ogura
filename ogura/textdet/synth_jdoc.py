@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import random
 import re
+import shutil
+from collections import Counter
 
 from fontTools.ttLib import TTFont
 from jinja2 import Template
@@ -26,17 +28,63 @@ def write_json(path, obj):
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
 
 
-def render_html(record, font, seed, vertical, columns, font_size):
+def render_html(record, font, seed, vertical, columns, font_size, *, line_height=None,
+                letter_spacing=0, font_url=None):
     random.seed(seed)
     style = upstream.generate_random_style_config(is_vertical=vertical, column_count=columns,
         font_family="'LocalDocumentFont'", base_font_size=font_size, show_title=True)
+    if line_height is not None:
+        style['line_height'] = line_height
+    style['letter_spacing'] = letter_spacing
     elements = [{'type': 'text', 'content': html.escape(p)} for p in record['paragraphs']]
     rendered = Template(upstream.html_template).render(style=style,
         data={'title': html.escape(record.get('title', ''))}, processed_blocks=upstream.preprocess_elements(elements, vertical))
     # Use an embedded local font, and never depend on Google Fonts at render time.
     rendered = re.sub(r'<link\b[^>]*>', '', rendered)
-    font_css = "<style>@font-face{font-family:LocalDocumentFont;src:url(data:font/otf;base64," + base64.b64encode(font.read_bytes()).decode() + ");font-weight:100 900}</style>"
+    font_url = font_url or ('data:font/otf;base64,' + base64.b64encode(font.read_bytes()).decode())
+    font_css = ("<style>@font-face{font-family:LocalDocumentFont;src:url('" + font_url +
+                "');font-weight:100 900} .content-body{letter-spacing:" + str(letter_spacing) + "em}</style>")
     return rendered.replace('</head>', font_css+'</head>'), style
+
+
+def variation_plan(count, seed, fonts, sizes, heights, spacings, vertical_fraction):
+    rng = random.Random(seed)
+    def balanced(values):
+        result = [values[i % len(values)] for i in range(count)]
+        rng.shuffle(result)
+        return result
+    vertical_count = round(count * vertical_fraction)
+    vertical = [True]*vertical_count + [False]*(count-vertical_count)
+    rng.shuffle(vertical)
+    return [dict(vertical=v, font=f, columns=c, font_size=s, line_height=h, letter_spacing=l)
+            for v,f,c,s,h,l in zip(vertical, balanced(fonts), balanced([1,2,3]),
+                                  balanced(sizes), balanced(heights), balanced(spacings))]
+
+
+def fixed_page_html(markup):
+    return markup.replace('</head>', '<style>html,body{width:100%;height:100%;overflow:hidden}'
+        'body{display:flex;flex-direction:column}h1{flex:none}'
+        '.content-body{flex:1;min-block-size:0;inline-size:100%;block-size:auto;column-fill:auto}'
+        '</style></head>')
+
+
+def page_source(records, start, budget):
+    """Join article excerpts, preserving per-paragraph attribution and natural boundaries."""
+    paragraphs, sources, owners = [], [], []
+    characters = 0
+    for offset in range(len(records)):
+        record = records[(start + offset) % len(records)]
+        parts = ([record.get('title', '')] if offset and record.get('title') else []) + record['paragraphs']
+        paragraphs.extend(parts)
+        owners.extend([record['id']] * len(parts))
+        sources.append(dict(id=record['id'], title=record.get('title', ''), source=record.get('source')))
+        characters += sum(map(len, parts))
+        if characters >= budget:
+            break
+    if characters < budget:
+        raise ValueError('Input corpus is too short to fill a page without repeating articles; add more records')
+    return dict(id=records[start % len(records)]['id'], title=records[start % len(records)].get('title', ''),
+                paragraphs=paragraphs, sources=sources, paragraph_sources=owners)
 
 
 def draw_review(image_path, lines, target):
@@ -58,43 +106,89 @@ def generate(args):
         raise ValueError('Each JSONL record needs id and a non-empty list of paragraphs')
     if len({r['id'] for r in records}) != len(records):
         raise ValueError('Source IDs must be unique')
-    with TTFont(args.font) as font:
-        cmap = font.getBestCmap()
-        missing = {c for r in records for c in (r.get('title','')+''.join(r['paragraphs']))
-                   if not c.isspace() and ord(c) not in cmap}
-    if missing:
-        raise ValueError(f'Font lacks characters: {sorted(missing)[:20]}')
+    fonts = [args.font] + args.extra_font
+    for path in fonts:
+        with TTFont(path) as font:
+            cmap = font.getBestCmap()
+            missing = {c for r in records for c in (r.get('title','')+''.join(r['paragraphs']))
+                       if not c.isspace() and ord(c) not in cmap}
+        if missing:
+            raise ValueError(f'{path}: font lacks characters: {sorted(missing)[:20]}')
+    plan = variation_plan(args.count, args.seed, fonts, args.font_sizes, args.line_heights,
+                          args.letter_spacings, args.vertical_fraction) if args.vary_layout else None
     args.output.mkdir(parents=True, exist_ok=False)
-    for sub in ('images', 'html', 'review', 'metadata'):
+    for sub in ('images', 'html', 'review', 'metadata', 'fonts'):
         (args.output/sub).mkdir()
+    font_urls = {}
+    for path in fonts:
+        dest = args.output/'fonts'/(sha(path) + path.suffix)
+        shutil.copyfile(path, dest)
+        font_urls[path] = '../fonts/'+dest.name
+        for license_file in path.parent.glob('LICENSE*'):
+            if license_file.is_file():
+                shutil.copyfile(license_file, args.output/'fonts'/license_file.name)
     manifest = dict(status='running', label_status='candidate_needs_visual_review',
         upstream_revision=UPSTREAM_REVISION, seed=args.seed, input_sha256=sha(args.input),
-        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js')},
-        font_sha256=sha(args.font), font=str(args.font.resolve()), pages=[],
+        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js')},
+        fonts={str(p.resolve()):sha(p) for p in fonts}, pages=[],
+        role='synthetic_training_candidate', variation=args.vary_layout,
+        fill_page=args.fill_page, partial_fraction=args.partial_fraction,
         note='Plain text only; no image generation, tables, noise, or automatic train/val split')
     labels = {}
+    fill_rng = random.Random(args.seed + 917)
+    fractions = [fill_rng.uniform(.5, .85) if i < round(args.count * args.partial_fraction) else 1.0
+                 for i in range(args.count)]
+    fill_rng.shuffle(fractions)
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
             manifest['browser_version'] = browser.version
             for i in range(args.count):
                 record = records[i % len(records)]
-                vertical = i % 2 == 1 if args.orientation == 'both' else args.orientation == 'vertical'
-                columns = 1 + (i // 2) % 3
-                font_size = args.font_sizes[(i // 6) % len(args.font_sizes)]
-                markup, style = render_html(record, args.font, args.seed+i, vertical, columns, font_size)
+                config = plan[i] if plan else dict(
+                    vertical=i % 2 == 1 if args.orientation == 'both' else args.orientation == 'vertical',
+                    columns=1+(i//2)%3, font_size=args.font_sizes[(i//6)%len(args.font_sizes)],
+                    font=fonts[i % len(fonts)], line_height=None, letter_spacing=0)
+                vertical, columns, font_size = (config[k] for k in ('vertical','columns','font_size'))
+                if args.fill_page:
+                    budget = int(2 * args.width * args.height / font_size**2)
+                    record = page_source(records, i, budget)
+                markup, style = render_html(record, config['font'], args.seed+i, vertical, columns, font_size,
+                    line_height=config['line_height'], letter_spacing=config['letter_spacing'],
+                    font_url=font_urls[config['font']])
+                if args.fill_page:
+                    markup = fixed_page_html(markup)
                 name = f'synth-{i+1:06d}'
                 (args.output/'html'/f'{name}.html').write_text(markup)
                 # A fixed viewport avoids the negative overflow of narrow vertical viewports.
                 page = browser.new_page(viewport={'width': args.width, 'height': args.height}, device_scale_factor=1)
-                page.route('**/*', lambda route: route.abort())
-                page.set_content(markup, wait_until='load')
+                # Only the saved HTML and shared local fonts can be loaded.
+                allowed_root = args.output.resolve().as_uri()+'/'
+                page.route('**/*', lambda route: route.continue_() if
+                           route.request.url.startswith(allowed_root) else route.abort())
+                page.goto((args.output/'html'/f'{name}.html').resolve().as_uri(), wait_until='load')
                 page.evaluate('document.fonts.ready')
                 if not page.evaluate("document.fonts.check('20px LocalDocumentFont')"):
                     raise ValueError('Local font did not load')
                 lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+                pagination = None
+                if args.fill_page:
+                    pagination = page.evaluate((ROOT/'synth_paginate.js').read_text(),
+                                               dict(lines=lines, fraction=fractions[i]))
+                    lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+                    cx0,cy0,cx1,cy1 = pagination['content_bbox']
+                    body_lines = [l for l in lines if l['element_id'] != 'title']
+                    if len(body_lines) != pagination['retained_lines'] or any(
+                        not (cx0 <= l['bbox'][0] < l['bbox'][2] <= cx1 and
+                             cy0 <= l['bbox'][1] < l['bbox'][3] <= cy1) for l in body_lines):
+                        raise ValueError(f'{name}: page layout changed after trimming')
+                    # Save the trimmed DOM so opening the HTML reproduces the image.
+                    (args.output/'html'/f'{name}.html').write_text(page.content())
+                expected = page.locator('h1, p, figcaption').all_text_contents()
+                if re.sub(r'\s', '', ''.join(expected)) != re.sub(r'\s', '', ''.join(l['text'] for l in lines)):
+                    raise ValueError(f'{name}: extracted text does not match rendered text')
                 image_path = args.output/'images'/f'{name}.png'
-                page.screenshot(path=str(image_path), full_page=True)
+                page.screenshot(path=str(image_path), full_page=not args.fill_page)
                 page.close()
                 with Image.open(image_path) as image:
                     width, height = image.size
@@ -108,14 +202,29 @@ def generate(args):
                     polygons=[[[a,b],[c,b],[c,d],[a,d]] for a,b,c,d in (line['bbox'] for line in lines)])
                 entry = dict(image=image_path.name, source_id=record['id'], seed=args.seed+i,
                              orientation='vertical' if vertical else 'horizontal', columns=columns,
-                             font_size=font_size, lines=len(lines), width=width, height=height)
-                write_json(args.output/'metadata'/f'{name}.json', dict(**entry, style=style, line_labels=lines))
+                             font_size=font_size, font=config['font'].name,
+                             font_sha256=sha(config['font']), line_height=style['line_height'],
+                             letter_spacing=style['letter_spacing'], paragraphs=len(record['paragraphs']),
+                             characters=sum(len(p) for p in record['paragraphs']),
+                             lines=len(lines), width=width, height=height)
+                if pagination:
+                    entry['pagination'] = pagination
+                    entry['visible_characters'] = sum(len(l['text']) for l in lines)
+                    visible_ids = {record['paragraph_sources'][int(l['element_id'])] for l in lines
+                                   if l['element_id'] != 'title'}
+                    entry['source_ids'] = [r['id'] for r in record['sources'] if r['id'] in visible_ids]
+                write_json(args.output/'metadata'/f'{name}.json', dict(**entry, style=style, line_labels=lines,
+                           source=record.get('source'), sources=record.get('sources'),
+                           paragraph_sources=record.get('paragraph_sources'), title=record.get('title','')))
                 draw_review(image_path, lines, args.output/'review'/f'{name}_bbox.png')
                 manifest['pages'].append(entry)
                 write_json(args.output/'manifest.json', manifest)
                 print(f'{i+1}/{args.count}: {name} {entry["orientation"]}, {len(lines)} lines', flush=True)
             browser.close()
         write_json(args.output/'labels.json', labels)
+        manifest['distributions'] = {key:dict(Counter(str(p[key]) for p in manifest['pages']))
+                                    for key in ('orientation','font','font_size','columns','line_height','letter_spacing')}
+        manifest['unique_sources'] = len({sid for p in manifest['pages'] for sid in p.get('source_ids', [p['source_id']])})
         manifest['status'] = 'complete'
     except Exception as exc:
         manifest.update(status='failed', error=str(exc))
@@ -128,6 +237,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, default=ROOT/'synth_sample.jsonl')
     parser.add_argument('--font', type=Path, default=ROOT.parents[1]/'corpus/fonts/NotoSansCJKjp-Regular.otf')
+    parser.add_argument('--extra-font', type=Path, action='append', default=[])
+    parser.add_argument('--fill-page', action='store_true', help='Join articles and retain only the first page')
+    parser.add_argument('--partial-fraction', type=float, default=.2, help='Fraction of filled pages ending early')
+    parser.add_argument('--vary-layout', action='store_true')
+    parser.add_argument('--vertical-fraction', type=float, default=.25)
+    parser.add_argument('--line-heights', type=float, nargs='+', default=[1.5,1.7,2.0])
+    parser.add_argument('--letter-spacings', type=float, nargs='+', default=[0,.03,.08])
     parser.add_argument('--output', type=Path, default=ROOT/'outputs/synth-jdoc-pilot')
     parser.add_argument('--count', type=int, default=6)
     parser.add_argument('--seed', type=int, default=20260924)
@@ -138,6 +254,12 @@ def main():
     args = parser.parse_args()
     if min(args.count,args.width,args.height,*args.font_sizes) <= 0:
         parser.error('Counts, dimensions and font sizes must be positive')
+    if not 0 <= args.partial_fraction <= 1:
+        parser.error('partial-fraction must be between 0 and 1')
+    if not 0 <= args.vertical_fraction <= 1 or min(args.line_heights) <= 0 or min(args.letter_spacings) < 0:
+        parser.error('Invalid vertical fraction, line height or letter spacing')
+    if args.vary_layout and args.orientation != 'both':
+        parser.error('Use --vertical-fraction with --vary-layout')
     if not args.output.resolve().is_relative_to(ROOT):
         parser.error('Output must be under ogura/textdet')
     generate(args)
