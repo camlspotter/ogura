@@ -199,3 +199,19 @@ OS・Chromium版・フォントが異なる場合は描画差があり得るの�
 高速化前の出力にも上記 `resume` を使える。実行中の生成を切り替える場合は、
 先にCtrl+Cで停止し、終了を確認してからコードを更新して `resume` を実行する。
 同じ出力先で2つの生成処理を同時に動かさない。
+
+
+## 合成5,000ページでの学習
+
+生成完了後、公式docTR v1.0.0の学習スクリプトを配置済みのGPUマシンで実行する。
+初回の取得方法は [EXPERIMENT.md](EXPERIMENT.md) を参照。
+
+```sh
+bash ogura/textdet/scripts/synth_5000.sh train
+```
+
+モデル保存先 `ogura/textdet/outputs/db-resnet34-synth5000-v1` を学習開始前に作成する。
+設定は事前学習済みdb_resnet34、5 epoch、batch 2、入力1024、学習率0.0001、AMP。
+合成5,000ページを学習に、JDocQAの固定valを検証に使う。
+`CUDA_VISIBLE_DEVICES` は未指定なら0で、指定済みならその値を使う。
+`train` は新規学習の開始であり、`resume` は画像生成の再開専用。

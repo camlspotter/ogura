@@ -30,5 +30,17 @@ case "${1:-}" in
       --font "${fonts[0]}" --extra-font "${fonts[1]}" \
       --extra-font "${fonts[2]}" --extra-font "${fonts[3]}"
     ;;
-  *) echo "Usage: bash ogura/textdet/scripts/synth_5000.sh prepare|generate|resume" >&2; exit 2 ;;
+  train)
+    model_output=ogura/textdet/outputs/db-resnet34-synth5000-v1
+    mkdir -p "$model_output"
+    CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" uv run --locked python \
+      ogura/textdet/.cache/doctr-v1.0.0/references/detection/train.py \
+      db_resnet34 --pretrained --device 0 \
+      --train_path "$output" \
+      --val_path ogura/textdet/outputs/experiment-v1-regenerated/val \
+      --output_dir "$model_output" --name synth5000-db-resnet34-v1 \
+      --epochs 5 --batch_size 2 --input_size 1024 --lr 0.0001 \
+      --workers 2 --amp --save-interval-epoch
+    ;;
+  *) echo "Usage: bash ogura/textdet/scripts/synth_5000.sh prepare|generate|resume|train" >&2; exit 2 ;;
 esac
