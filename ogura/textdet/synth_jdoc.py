@@ -15,6 +15,7 @@ from jinja2 import Template
 from PIL import Image, ImageDraw, ImageOps
 from playwright.sync_api import sync_playwright
 from .vendor import synth_jdoc_generator as upstream
+from .synth_tables import render_table, TABLE_TEXT
 
 ROOT = Path(__file__).resolve().parent
 UPSTREAM_REVISION = '06d27a594b5680e73f3b1308a5ff86261365903d'
@@ -31,7 +32,7 @@ def write_json(path, obj):
 
 
 def render_html(record, font, seed, vertical, columns, font_size, *, line_height=None,
-                letter_spacing=0, font_url=None):
+                letter_spacing=0, font_url=None, tables=False, table_position="top"):
     random.seed(seed)
     style = upstream.generate_random_style_config(is_vertical=vertical, column_count=columns,
         font_family="'LocalDocumentFont'", base_font_size=font_size, show_title=True)
@@ -46,6 +47,20 @@ def render_html(record, font, seed, vertical, columns, font_size, *, line_height
     font_url = font_url or ('data:font/otf;base64,' + base64.b64encode(font.read_bytes()).decode())
     font_css = ("<style>@font-face{font-family:LocalDocumentFont;src:url('" + font_url +
                 "');font-weight:100 900} .content-body{letter-spacing:" + str(letter_spacing) + "em}</style>")
+    if tables:
+        if vertical:
+            raise ValueError('Table pilot requires horizontal writing')
+        table_css, table_html, table_config = render_table(seed)
+        if table_position not in ('top', 'bottom'):
+            raise ValueError('Table position must be top or bottom')
+        table_config['position'] = table_position
+        if table_position == 'top':
+            rendered = rendered.replace('</h1>', '</h1>'+table_html, 1)
+        else:
+            rendered = rendered.replace('</body>', table_html+'</body>', 1)
+            table_css += '<style>.table-block{margin:22px 0 0}</style>'
+        font_css += table_css
+        style['table'] = table_config
     return rendered.replace('</head>', font_css+'</head>'), style
 
 
@@ -61,6 +76,12 @@ def variation_plan(count, seed, fonts, sizes, heights, spacings, vertical_fracti
     return [dict(vertical=v, font=f, columns=c, font_size=s, line_height=h, letter_spacing=l)
             for v,f,c,s,h,l in zip(vertical, balanced(fonts), balanced([1,2,3]),
                                   balanced(sizes), balanced(heights), balanced(spacings))]
+
+
+def table_positions(count, seed, mode):
+    positions = [mode] * count if mode != 'both' else ['top' if i % 2 == 0 else 'bottom' for i in range(count)]
+    random.Random(seed + 4817).shuffle(positions)
+    return positions
 
 
 def fixed_page_html(markup):
@@ -105,7 +126,11 @@ def resume_settings(args):
     names = ('count', 'seed', 'width', 'height', 'fill_page', 'partial_fraction',
              'vary_layout', 'vertical_fraction', 'orientation', 'font_sizes',
              'line_heights', 'letter_spacings')
-    return {name: getattr(args, name) for name in names}
+    settings = {name: getattr(args, name) for name in names}
+    if args.tables:
+        settings['tables'] = True
+        settings['table_position'] = args.table_position
+    return settings
 
 
 def restore_pages(output, manifest):
@@ -165,10 +190,13 @@ def generate(args):
             cmap = font.getBestCmap()
             missing = {c for r in records for c in (r.get('title','')+''.join(r['paragraphs']))
                        if not c.isspace() and ord(c) not in cmap}
+            if args.tables:
+                missing.update(c for c in TABLE_TEXT+'0123456789.,%()-（）：　' if not c.isspace() and ord(c) not in cmap)
         if missing:
             raise ValueError(f'{path}: font lacks characters: {sorted(missing)[:20]}')
     plan = variation_plan(args.count, args.seed, fonts, args.font_sizes, args.line_heights,
                           args.letter_spacings, args.vertical_fraction) if args.vary_layout else None
+    positions = table_positions(args.count, args.seed, args.table_position)
     previous = None
     if args.resume:
         previous = json.loads((args.output/'manifest.json').read_text())
@@ -181,7 +209,10 @@ def generate(args):
             variation=args.vary_layout, fill_page=args.fill_page, partial_fraction=args.partial_fraction,
             upstream_revision=UPSTREAM_REVISION).items()):
             raise ValueError('Resume manifest configuration differs')
-        if previous.get('settings', legacy) != settings:
+        previous_settings = dict(previous.get('settings', legacy))
+        if previous_settings.get('tables'):
+            previous_settings.setdefault('table_position', 'top')
+        if previous_settings != settings:
             raise ValueError('Resume settings differ; legacy runs only support the fixed synth_5000.sh settings')
         if previous['input_sha256'] != sha(args.input) or previous['fonts'] != {str(p.resolve()):sha(p) for p in fonts}:
             raise ValueError('Resume input/font hashes differ')
@@ -204,12 +235,12 @@ def generate(args):
                 shutil.copyfile(license_file, args.output/'fonts'/license_file.name)
     manifest = dict(status='running', label_status='candidate_needs_visual_review',
         upstream_revision=UPSTREAM_REVISION, seed=args.seed, input_sha256=sha(args.input),
-        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js')},
+        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js', 'synth_tables.py')},
         fonts={str(p.resolve()):sha(p) for p in fonts}, pages=[],
         role='synthetic_training_candidate', variation=args.vary_layout,
         settings=resume_settings(args), font_order=[sha(p) for p in fonts],
         fill_page=args.fill_page, partial_fraction=args.partial_fraction,
-        note='Plain text only; no image generation, tables, noise, or automatic train/val split')
+        note='Text and optional fictional tables; no image generation, noise, or automatic train/val split')
     labels = restored if previous else {}
     if previous:
         if previous.get('font_order', manifest['font_order']) != manifest['font_order']:
@@ -243,7 +274,7 @@ def generate(args):
                     record = page_source(records, i, budget)
                 markup, style = render_html(record, config['font'], args.seed+i, vertical, columns, font_size,
                     line_height=config['line_height'], letter_spacing=config['letter_spacing'],
-                    font_url=font_urls[config['font']])
+                    font_url=font_urls[config['font']], tables=args.tables, table_position=positions[i])
                 if args.fill_page:
                     markup = fixed_page_html(markup)
                 name = f'synth-{i+1:06d}'
@@ -261,7 +292,7 @@ def generate(args):
                 lines, pagination = extract_page(page, fractions[i] if args.fill_page else None)
                 if args.fill_page:
                     cx0,cy0,cx1,cy1 = pagination['content_bbox']
-                    body_lines = [l for l in lines if l['element_id'] != 'title']
+                    body_lines = [l for l in lines if l['element_id'].isdigit()]
                     if len(body_lines) != pagination['retained_lines'] or any(
                         not (cx0-.5 <= l['bbox'][0] < l['bbox'][2] <= cx1+.5 and
                              cy0-.5 <= l['bbox'][1] < l['bbox'][3] <= cy1+.5) for l in body_lines):
@@ -291,11 +322,16 @@ def generate(args):
                              letter_spacing=style['letter_spacing'], paragraphs=len(record['paragraphs']),
                              characters=sum(len(p) for p in record['paragraphs']),
                              lines=len(lines), width=width, height=height)
+                if args.tables:
+                    entry['table'] = style['table']
+                    entry['table_lines'] = sum(l['element_id'].startswith('table-') for l in lines)
+                    if not entry['table_lines']:
+                        raise ValueError(f'{name}: missing table labels')
                 if pagination:
                     entry['pagination'] = pagination
                     entry['visible_characters'] = sum(len(l['text']) for l in lines)
                     visible_ids = {record['paragraph_sources'][int(l['element_id'])] for l in lines
-                                   if l['element_id'] != 'title'}
+                                   if l['element_id'].isdigit()}
                     entry['source_ids'] = [r['id'] for r in record['sources'] if r['id'] in visible_ids]
                 write_json(args.output/'metadata'/f'{name}.json', dict(**entry, style=style, line_labels=lines,
                            source=record.get('source'), sources=record.get('sources'),
@@ -309,6 +345,9 @@ def generate(args):
         manifest['distributions'] = {key:dict(Counter(str(p[key]) for p in manifest['pages']))
                                     for key in ('orientation','font','font_size','columns','line_height','letter_spacing')}
         manifest['unique_sources'] = len({sid for p in manifest['pages'] for sid in p.get('source_ids', [p['source_id']])})
+        if args.tables:
+            manifest['table_distributions'] = {key: dict(Counter(str(p['table'].get(key, 'top') if key == 'position' else p['table'][key]) for p in manifest['pages']))
+                                               for key in ('border','merged','rows','font_size','header_background','position')}
         manifest['status'] = 'complete'
     except Exception as exc:
         manifest.update(status='failed', error=str(exc))
@@ -319,6 +358,9 @@ def generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--table-position', choices=['top','bottom','both'], default='both',
+                        help='Position of tables; both balances top and bottom across pages')
+    parser.add_argument('--tables', action='store_true', help='Add a fictional table to horizontal body text')
     parser.add_argument('--resume', action='store_true', help='Verify and retain completed pages')
     parser.add_argument('--input', type=Path, default=ROOT/'synth_sample.jsonl')
     parser.add_argument('--font', type=Path, default=ROOT.parents[1]/'corpus/fonts/NotoSansCJKjp-Regular.otf')
@@ -343,6 +385,9 @@ def main():
         parser.error('partial-fraction must be between 0 and 1')
     if not 0 <= args.vertical_fraction <= 1 or min(args.line_heights) <= 0 or min(args.letter_spacings) < 0:
         parser.error('Invalid vertical fraction, line height or letter spacing')
+    if args.tables and (not args.fill_page or (args.vary_layout and args.vertical_fraction != 0) or
+                        (not args.vary_layout and args.orientation != 'horizontal')):
+        parser.error('--tables requires --fill-page and horizontal pages (--vertical-fraction 0 with --vary-layout)')
     if args.vary_layout and args.orientation != 'both':
         parser.error('Use --vertical-fraction with --vary-layout')
     if not args.output.resolve().is_relative_to(ROOT):

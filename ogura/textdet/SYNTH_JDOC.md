@@ -45,7 +45,7 @@ GPU、SSH、APIキーは不要。既存出力先は上書きしない。別の `
 DOMの文字範囲は字体の黒画素そのものではなくフォントのレイアウト上の範囲。
 先頭末尾の空白と空白のみの行を除外し、段落・段組みを越えて結合しない。
 縦中横はブラウザのspanの位置で扱い、行の中に含める。
-図表・挿絵・ノイズはまだ対象外。位置を変えるノイズを追加する場合はbboxも同時変換する必要がある。
+表は `--tables` で追加できる。グラフ・挿絵・ノイズはまだ対象外。位置を変えるノイズを追加する場合はbboxも同時変換する必要がある。
 
 ## 自分の文章を使う
 
@@ -116,7 +116,7 @@ uv run python -m ogura.textdet.synth_jdoc \
 すべての組み合わせを網羅する設計ではない。実際の分布はmanifestのdistributionsで確認する。
 文字抽出結果が描画した本文と一致すること、すべてのbboxが画像内にあることを生成時に検査する。
 ただし目視確認の代わりではなく、bboxは引き続きブラウザのレイアウト座標。
-見出し・本文以外の表や注記専用配置、スキャン風ノイズは次段階とする。
+本文のみの生成に加えて、下記の表付き試作モードを利用できる。注記専用配置、スキャン風ノイズは未対応。
 
 
 ## 紙面を埋める生成
@@ -219,3 +219,74 @@ bash ogura/textdet/scripts/synth_5000.sh train
 `train` では旧CUDA AMP APIの `autocast`・`GradScaler` の非推奨FutureWarningだけを
 Pythonの警告フィルタで抑制し、進捗バーへの割り込みを防ぐ。他の警告・エラーは表示する。
 docTRの外部コードやAMPの計算方法は変更しない。起動済みの学習には反映されず、次回起動から有効。
+
+
+## 表付き文書の試作
+
+`--tables` で横書きの表を1つ配置する。既定の `--table-position both` は上部・下部をほぼ半数ずつにし、seedで配置順をシャッフルする。
+`--table-position top` または `bottom` で片側に固定できる。下部の場合は本文を上に流し、表の高さを先に確保する。
+この段階では横書きの表付きページだけを生成する。既存の縦書き本文ページとは別の出力先を使う。
+
+```sh
+uv run --locked python -m ogura.textdet.synth_jdoc \
+  --input ogura/textdet/outputs/synth-texts-5000-v1.jsonl \
+  --output ogura/textdet/outputs/synth-tables-pilot-v2 \
+  --count 16 --vary-layout --fill-page --tables --table-position both --vertical-fraction 0 \
+  --font-sizes 12 16 20 24 \
+  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf
+```
+
+Chromiumの設定は本文生成と共通。表のラベル・数値は自作の架空データであり、本文記事の統計ではない。
+本文の出典は従来どおり記録する。
+
+- 罫線: 格子・横線・外枠のみ・なし。
+- セル結合: 見出しの列結合、区分欄の行結合。結合なしの例も作る。
+- 色付き見出し（濃色背景の白文字も含む）、右寄せの整数・小数・負数・割合。
+- 空セル、複数行の備考。表の文字サイズ12・14・16・18px、本文は従来のサイズ指定。
+- 6列固定、6・10・14行。配置・列構成は試作用の限定的なもの。
+
+正解は各セルの文字行単位で、セルや表全体の矩形ではない。
+空セル・罫線にはbboxを付けず、セルをまたいで行を結合しない。
+表のすべての文字を抽出し、本文だけをページに収まるように切り詰める。
+表が収まらない設定では、画像内のbbox検査でエラーにする。
+metadataの `table`・`table_lines` とmanifestの `table_distributions` に表の条件を記録する。
+`--resume` に同じ引数を追加すれば中断から再開でき、本文のみの生成との取り違えは設定検査で拒否する。
+
+まず確認画像をレビューしてから大量生成へ進む。既存5,000ページや学習モデルは変更しない。
+
+表は本文とは別領域に置くため、本文が途中で終わる例でも下部の表はページ下部に残る。
+配置はmetadataの `table.position` とmanifestの `table_distributions.position` に記録する。
+以前の上部のみの表データを再開する場合は `--table-position top` を明示する。
+上下混在へ切り替える場合は新しい出力先を使う。
+
+## 既存5,000ページ＋表付き2,000ページの実験
+
+既存の `synth-jdoc-5000-v1` はそのまま保存し、次の手順を生成先のマシンで実行する。
+既存の本文JSONL・フォント・Chromium・JDocQA検証データを使うため、本文抽出をやり直す必要はない。
+表付きページの本文は既存と同じ記事集から取り、seedを20260925に変えて表と本文を組版する。
+別の2,000記事を取得する処理ではなく、学習画像の追加である。
+
+```sh
+bash ogura/textdet/scripts/synth_tables_2000.sh generate
+bash ogura/textdet/scripts/synth_tables_2000.sh combine
+bash ogura/textdet/scripts/synth_tables_2000.sh train
+```
+
+生成が中断した場合だけ、最初のコマンドを `resume` に置き換える。
+
+- 表付き2,000ページ: `outputs/synth-tables-2000-v1`。上部1,000・下部1,000、4書体各500。全て横書き。
+- 結合した7,000ページ: `outputs/synth-mixed-7000-v1`。既存5,000＋追加2,000をそのまま各1回含める。
+- 学習モデル: `outputs/db-resnet34-synth7000-v1/synth7000-db-resnet34-v1.pt`。
+
+`combine` は両セットの完了状態・枚数・ページ種別を検査し、原画像だけをコピーする。
+ファイル名に `text-` / `table-` を付けて同名衝突を避け、画像ハッシュを確認する。
+元データの移動・変更は行わず、確認画像・詳細metadata・HTMLは複製しない。
+結合先には原画像7,000枚分の追加容量が必要。学習ラベルと元ファイルの対応は結合先に保存する。
+既存出力先への上書きと結合の途中再開は未対応。失敗した結合先は `status: failed` となり、学習を開始しない。
+
+学習は元の事前学習済みモデルから5 epoch、1024入力で開始する。
+JDocQAの固定val/testは維持し、既存の学習済みモデルは上書きしない。
+1 epochの学習枚数が5,000から7,000へ増えるため、5 epoch同士の比較では更新回数も増える点に注意する。
+本文のみのページと表付きページの混合比は5:2（表付き約28.6%）。

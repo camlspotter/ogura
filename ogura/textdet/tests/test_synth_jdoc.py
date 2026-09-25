@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from playwright.sync_api import sync_playwright
 from collections import Counter
-from ogura.textdet.synth_jdoc import ROOT, render_html, variation_plan, fixed_page_html, page_source, extract_page
+from ogura.textdet.synth_jdoc import ROOT, render_html, variation_plan, fixed_page_html, page_source, extract_page, table_positions
 from ogura.textdet.prepare_synth_texts import excerpt
 
 
@@ -149,3 +149,60 @@ class PaginationBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'No complete body line fits.*first'):
             page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
         page.close()
+
+
+@unittest.skipUnless(os.getenv('RUN_SYNTH_BROWSER_TESTS') == '1', 'requires installed Chromium')
+class TableLabelTests(unittest.TestCase):
+    setUpClass = classmethod(BrowserLabelTests.setUpClass.__func__)
+    tearDownClass = classmethod(BrowserLabelTests.tearDownClass.__func__)
+
+    def test_cells_keep_independent_lines_and_survive_body_trimming(self):
+        for position in ("top", "bottom"):
+            for seed in range(20260924, 20260932):
+                with self.subTest(seed=seed, position=position):
+                    record = {'title':'集計結果', 'paragraphs':['日本語の本文です。'*400]*3}
+                    markup, style = render_html(record, Path('unused'), seed, False, 2, 16,
+                        font_url='data:font/otf;base64,', line_height=1.7, tables=True, table_position=position)
+                    page = self.browser.new_page(viewport={'width':900,'height':1400})
+                    page.set_content(fixed_page_html(markup))
+                    original_table = page.locator('.table-block').inner_html()
+                    lines, pagination = extract_page(page, .6)
+                    self.assertEqual(page.locator('.table-block').inner_html(), original_table)
+                    table_rect = page.locator('.table-block').bounding_box()
+                    body_rect = page.locator('.content-body').bounding_box()
+                    if position == 'top':
+                        self.assertLessEqual(table_rect['y']+table_rect['height'], body_rect['y'])
+                    else:
+                        self.assertLessEqual(body_rect['y']+body_rect['height'], table_rect['y'])
+                    self.assertEqual(style['table']['position'], position)
+                    table_lines = [l for l in lines if l['element_id'].startswith('table-cell-')]
+                    self.assertGreater(len(table_lines), style['table']['rows']*4)
+                    counts = Counter(l['element_id'] for l in table_lines)
+                    self.assertGreater(max(counts.values()), 1)  # multiline cells remain separate lines
+                    cell_info = page.locator('td p, th p').evaluate_all('''ps => ps.map(p => {
+                        const r=p.parentElement.getBoundingClientRect();
+                        return {id:p.dataset.id,text:p.textContent,box:[r.left,r.top,r.right,r.bottom]};
+                    })''')
+                    cells = {c['id']:c for c in cell_info}
+                    for line in table_lines:
+                        a,b,c,d = cells[line['element_id']]['box']
+                        x0,y0,x1,y1 = line['bbox']
+                        self.assertTrue(a-.5 <= x0 < x1 <= c+.5 and b-.5 <= y0 < y1 <= d+.5)
+                    self.assertTrue(any(not c['text'].strip() for c in cells.values()))
+                    for cell in cells.values():
+                        if not cell['text'].strip():
+                            self.assertNotIn(cell['id'], counts)
+                    expected = ''.join(page.locator('h1, p, figcaption').all_text_contents())
+                    self.assertEqual(''.join(expected.split()), ''.join(''.join(l['text'] for l in lines).split()))
+                    for line in lines:
+                        x0,y0,x1,y1 = line['bbox']
+                        self.assertTrue(0 <= x0 < x1 <= 900 and 0 <= y0 < y1 <= 1400)
+                    page.close()
+
+
+class TablePositionTests(unittest.TestCase):
+    def test_balanced_and_reproducible_positions(self):
+        plan = table_positions(16, 1234, 'both')
+        self.assertEqual(Counter(plan), {'top':8, 'bottom':8})
+        self.assertEqual(plan, table_positions(16, 1234, 'both'))
+        self.assertEqual(table_positions(5, 1234, 'bottom'), ['bottom']*5)

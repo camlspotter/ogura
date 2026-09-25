@@ -1,7 +1,8 @@
 ({lines, fraction}) => {
   const content = document.querySelector('.content-body');
   const rect = content.getBoundingClientRect();
-  const bodyLines = lines.filter(l => l.element_id !== 'title');
+  const bodyIds = new Set([...content.querySelectorAll('p')].map(p => p.dataset.id));
+  const bodyLines = lines.filter(l => bodyIds.has(l.element_id));
   const fits = l => {
     const [x0,y0,x1,y1] = l.bbox;
     return x0 >= rect.left - .5 && y0 >= rect.top - .5 && x1 <= rect.right + .5 && y1 <= rect.bottom + .5;
