@@ -1,10 +1,10 @@
-{"id": "leaves", "category": "植物", "prompt": "緑の葉の接写写真。葉脈、細い茎、水滴が複雑に重なる。自然光、背景はぼけた森。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "wood", "category": "木目", "prompt": "古い木材の接写写真。曲がった木目と節、小さな亀裂が見える。斜めから柔らかい光。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "fabric", "category": "布", "prompt": "織物の接写写真。紺と白の糸が交差し、細かな織り目と折り目がある。印刷柄のない布。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "stone", "category": "岩石", "prompt": "川辺の岩と小石の写真。粒状の表面、細い鉱物の筋、濡れた部分の反射。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "machine", "category": "機械", "prompt": "露出した金属の歯車と配管の写真。さまざまな太さの管とボルト、磨かれた金属の反射。銘板も表示器もない。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "building", "category": "建物", "prompt": "窓と手すりが規則的に並ぶ無人の建物外壁の写真。斜めから見た構図。看板や広告のない外観。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "forest", "category": "風景", "prompt": "細い枝が重なる落葉樹の林の写真。地面には落ち葉、遠くに柔らかい霧。建物や標識のない自然。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "food", "category": "食品", "prompt": "白い器に盛った野菜と果物の写真。切り口、皮、葉の細かな質感。包装や食器の模様はない。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "birds", "category": "イラスト", "prompt": "二羽の小鳥が枝に止まっているカラーイラスト。細い羽毛の線、葉や小枝がある。無地の明るい背景。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
-{"id": "tools", "category": "イラスト", "prompt": "机に置かれたはさみ、定規のない無地の工具、筆と無地の容器のイラスト。輪郭線と柔らかい陰影。目盛りはない。 文字、数字、記号、ラベル、看板、ロゴ、署名、透かしを一切含めない。説明文や枠付きキャプションを付けず、画像だけを描く。"}
+{"id": "leaves", "category": "植物", "prompt": "Macro photograph of overlapping green leaves with delicate veins, slender stems and tiny water droplets. Soft natural daylight and a blurred woodland background. Leaf surfaces fill the frame."}
+{"id": "wood", "category": "木目", "prompt": "Close-up photograph of weathered natural wood with curved grain, knots and fine cracks. Gentle side lighting reveals the uneven texture. Wood fills the entire frame."}
+{"id": "fabric", "category": "布", "prompt": "Macro photograph of navy and white woven fabric, with interlaced threads and soft folds. Diffuse daylight reveals the fine fibers. Fabric fills the entire frame."}
+{"id": "stone", "category": "岩石", "prompt": "Close-up photograph of natural river rocks and pebbles with granular surfaces, thin mineral veins and reflections on wet patches. Soft outdoor light. Rocks fill the frame."}
+{"id": "machine", "category": "機械", "prompt": "Close-up photograph of exposed metal gears, pipes of varying thickness, bolts and polished steel shafts. Tight framing around the mechanical parts, with realistic metallic reflections."}
+{"id": "building", "category": "建物", "prompt": "Architectural photograph of a plain concrete building facade with repeating windows and metal railings, viewed at an oblique angle. Soft daylight and realistic weathered surfaces."}
+{"id": "forest", "category": "風景", "prompt": "Landscape photograph of a deciduous woodland with intricate overlapping bare branches, fallen leaves covering the ground and gentle mist in the distance. Quiet natural atmosphere."}
+{"id": "food", "category": "食品", "prompt": "Still-life photograph of fresh vegetables and fruit arranged in a plain white ceramic bowl. Detailed cut surfaces, peels and green leaves, lit by soft window light."}
+{"id": "birds", "category": "イラスト", "prompt": "Color illustration of two small birds perched on a leafy branch. Delicate feather strokes, slender twigs and soft shading against a plain pale background. Centered composition."}
+{"id": "tools", "category": "イラスト", "prompt": "Color illustration of scissors, plain metal pliers, a wooden-handled paintbrush and a plain ceramic cup resting on a desk. Clean contours and soft shadows, with a close view of the objects."}

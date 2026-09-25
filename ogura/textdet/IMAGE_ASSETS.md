@@ -3,6 +3,9 @@
 本文と混在させるための、文字を含まない写真・イラスト素材の候補を10枚生成する。
 葉・木目・布・岩石・機械・建物・林・食品・小鳥・道具を用意した。
 プロンプトは `prompts/image_assets_sample.jsonl`。内容と本文の対応は不要。
+生成モデルへのプロンプトは英語で、被写体・質感・構図を記述する。
+日本語版で文字の混入が多かったため、長い禁止事項の列挙も外して比較する。
+言語だけを変えた比較ではなく、改善の有無は生成画像の目視で確認する。
 
 Synth-JDocが使用するZ-Image-Turboを、公式Diffusers APIで呼び出すローカル用スクリプト。
 Synth-JDoc本体は変更しない。Flash Attentionは必須にせず、標準SDPAを使用する。
@@ -32,6 +35,8 @@ GPUメモリに余裕がない場合は `--cpu-offload` を追加する（CPUへ
 中断後は同じ引数に `--resume` を追加。設定・プロンプト・生成済み画像のハッシュを検証する。
 以前の1024×1024の出力は512×512として再開できないため、
 `--output ogura/textdet/outputs/image-assets-512-v1` など別の出力先を指定する。
+英語プロンプトでの再生成も、日本語版とは別の出力先
+（例: `--output ogura/textdet/outputs/image-assets-512-en-v1`）を指定する。
 生成処理はCUDAとbfloat16対応を必須とし、CPUでの意図しない長時間生成を行わない。
 
 出力 `ogura/textdet/outputs/image-assets-sample-v1/`:
