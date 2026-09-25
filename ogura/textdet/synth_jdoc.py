@@ -19,6 +19,51 @@ from .synth_tables import render_table, TABLE_TEXT
 
 ROOT = Path(__file__).resolve().parent
 UPSTREAM_REVISION = '06d27a594b5680e73f3b1308a5ff86261365903d'
+TEXT_COLORS = ('#244b70', '#345b40', '#743e35', '#59416d')
+TITLE_STYLES = ('outline', 'dashed', 'double', 'tinted', 'dark')
+
+
+
+def random_heading_decoration(rng):
+    accent, tint = rng.choice([('#244b70', '#e4edf5'), ('#345b40', '#e7f0e5'),
+                               ('#743e35', '#f5e6e1'), ('#59416d', '#eee7f4'),
+                               ('#555555', '#eeeeee')])
+    background_mode = rng.choice(['plain', 'light', 'dark'])
+    background = {'plain': 'transparent', 'light': tint, 'dark': accent}[background_mode]
+    foreground = '#ffffff' if background_mode == 'dark' else rng.choice(('#222222', *TEXT_COLORS))
+    line_color = '#ffffff' if background_mode == 'dark' else accent
+    frame = rng.choice(['none', 'solid', 'dashed', 'double'])
+    width = rng.choice([3, 5]) if frame == 'double' else rng.choice([1, 2, 3])
+    border = 'none' if frame == 'none' else f'{width}px {frame} {line_color}'
+    band = rng.choice(['none', 'inline-start', 'block-end'])
+    band_width = rng.choice([3, 5, 7])
+    radius = rng.choice([0, .2, .4, .6])
+    css = f'background:{background};color:{foreground};border:{border};border-radius:{radius}em;'
+    if band != 'none':
+        css += f'border-{band}:{band_width}px solid {line_color};'
+    return css, dict(background=background, foreground=foreground, border=border,
+                     band=band, band_width=band_width if band != 'none' else 0,
+                     line_color=line_color, border_radius_em=radius)
+
+
+def title_box_css(mode, seed):
+    """Decorate the existing h1; its text nodes remain the label source."""
+    if mode == 'upstream':
+        return '', None
+    if mode == 'mixed':
+        decoration, config = random_heading_decoration(random.Random(seed + 5309))
+        return ('<style>h1{box-sizing:border-box;margin:0 0 24px 0;padding:16px 20px;'
+                + decoration + 'line-height:1.5;overflow-wrap:anywhere}</style>'), dict(kind='mixed', **config)
+    colors = {'outline': ('#ffffff', '#222222', '2px solid #244b70'),
+              'dashed': ('#ffffff', '#222222', '2px dashed #555555'),
+              'double': ('#ffffff', '#222222', '5px double #244b70'),
+              'tinted': ('#e4edf5', '#172f46', 'none'),
+              'dark': ('#244b70', '#ffffff', '2px solid #244b70')}
+    background, foreground, border = colors[mode]
+    css = ('<style>h1{box-sizing:border-box;margin:0 0 24px 0;padding:16px 20px;'
+           f'border:{border};background:{background};color:{foreground};'
+           'line-height:1.5;overflow-wrap:anywhere}</style>')
+    return css, dict(kind=mode, background=background, foreground=foreground, border=border)
 
 
 def sha(path):
@@ -32,21 +77,49 @@ def write_json(path, obj):
 
 
 def render_html(record, font, seed, vertical, columns, font_size, *, line_height=None,
-                letter_spacing=0, font_url=None, tables=False, table_position="top"):
+                letter_spacing=0, font_url=None, tables=False, table_position="top", title_style='upstream', colored_text=False):
     random.seed(seed)
     style = upstream.generate_random_style_config(is_vertical=vertical, column_count=columns,
         font_family="'LocalDocumentFont'", base_font_size=font_size, show_title=True)
+    if colored_text:
+        color_rng = random.Random(seed + 8317)
+        if color_rng.random() < .3:
+            style['text_color'] = color_rng.choice(TEXT_COLORS)
     if line_height is not None:
         style['line_height'] = line_height
     style['letter_spacing'] = letter_spacing
     elements = [{'type': 'text', 'content': html.escape(p)} for p in record['paragraphs']]
     rendered = Template(upstream.html_template).render(style=style,
         data={'title': html.escape(record.get('title', ''))}, processed_blocks=upstream.preprocess_elements(elements, vertical))
+    levels = record.get('heading_levels', [0] * len(record['paragraphs']))
+    if len(levels) != len(record['paragraphs']) or any(level not in (0, 2, 3) for level in levels):
+        raise ValueError('heading_levels must align with paragraphs and contain only 0, 2, 3')
+    def heading_tag(match):
+        level = levels[int(match[1])]
+        return f'<h{level} data-id="{match[1]}">{match[2]}</h{level}>' if level else match[0]
+    rendered = re.sub(r'<p data-id="(\d+)">(.*?)</p>', heading_tag, rendered, flags=re.DOTALL)
     # Use an embedded local font, and never depend on Google Fonts at render time.
     rendered = re.sub(r'<link\b[^>]*>', '', rendered)
     font_url = font_url or ('data:font/otf;base64,' + base64.b64encode(font.read_bytes()).decode())
     font_css = ("<style>@font-face{font-family:LocalDocumentFont;src:url('" + font_url +
                 "');font-weight:100 900} .content-body{letter-spacing:" + str(letter_spacing) + "em}</style>")
+    if any(levels):
+        font_css += ('<style>.content-body h2,.content-body h3{line-height:1.5;'
+                     'text-indent:0;break-inside:avoid;break-after:avoid;'
+                     'margin-block:1em .5em;padding:.3em .5em;overflow-wrap:anywhere}'
+                     '.content-body h2{font-size:1.3em}.content-body h3{font-size:1.1em}')
+        rng = random.Random(seed + 7309)
+        style['section_headings'] = {}
+        for index, level in enumerate(levels):
+            if level:
+                decoration, config = random_heading_decoration(rng)
+                font_css += f'.content-body h{level}[data-id="{index}"]' + '{' + decoration + '}'
+                style['section_headings'][str(index)] = dict(level=level, **config)
+        font_css += '</style>'
+    title_css, title_config = title_box_css(title_style, seed)
+    font_css += title_css
+    if title_config:
+        style['title_box'] = title_config
     if tables:
         if vertical:
             raise ValueError('Table pilot requires horizontal writing')
@@ -91,13 +164,17 @@ def fixed_page_html(markup):
         '</style></head>')
 
 
-def page_source(records, start, budget):
+def page_source(records, start, budget, section_headings=False):
     """Join article excerpts, preserving per-paragraph attribution and natural boundaries."""
     paragraphs, sources, owners = [], [], []
+    levels = []
     characters = 0
     for offset in range(len(records)):
         record = records[(start + offset) % len(records)]
         parts = ([record.get('title', '')] if offset and record.get('title') else []) + record['paragraphs']
+        prefix = len(parts) - len(record['paragraphs'])
+        levels.extend(([2 if offset % 2 else 3] if prefix and section_headings else [0] * prefix)
+                      + record.get('heading_levels', [0] * len(record['paragraphs'])))
         paragraphs.extend(parts)
         owners.extend([record['id']] * len(parts))
         sources.append(dict(id=record['id'], title=record.get('title', ''), source=record.get('source')))
@@ -107,7 +184,7 @@ def page_source(records, start, budget):
     if characters < budget:
         raise ValueError('Input corpus is too short to fill a page without repeating articles; add more records')
     return dict(id=records[start % len(records)]['id'], title=records[start % len(records)].get('title', ''),
-                paragraphs=paragraphs, sources=sources, paragraph_sources=owners)
+                paragraphs=paragraphs, sources=sources, paragraph_sources=owners, heading_levels=levels)
 
 
 def draw_review(image_path, lines, target):
@@ -127,6 +204,12 @@ def resume_settings(args):
              'vary_layout', 'vertical_fraction', 'orientation', 'font_sizes',
              'line_heights', 'letter_spacings')
     settings = {name: getattr(args, name) for name in names}
+    if getattr(args, 'title_style', 'upstream') != 'upstream':
+        settings['title_style'] = args.title_style
+    if getattr(args, 'colored_text', False):
+        settings['colored_text'] = True
+    if getattr(args, 'section_headings', False):
+        settings['section_headings'] = True
     if args.tables:
         settings['tables'] = True
         settings['table_position'] = args.table_position
@@ -271,10 +354,11 @@ def generate(args):
                 vertical, columns, font_size = (config[k] for k in ('vertical','columns','font_size'))
                 if args.fill_page:
                     budget = int(2 * args.width * args.height / font_size**2)
-                    record = page_source(records, i, budget)
+                    record = page_source(records, i, budget, args.section_headings)
                 markup, style = render_html(record, config['font'], args.seed+i, vertical, columns, font_size,
                     line_height=config['line_height'], letter_spacing=config['letter_spacing'],
-                    font_url=font_urls[config['font']], tables=args.tables, table_position=positions[i])
+                    font_url=font_urls[config['font']], tables=args.tables, table_position=positions[i],
+                    title_style=args.title_style, colored_text=args.colored_text)
                 if args.fill_page:
                     markup = fixed_page_html(markup)
                 name = f'synth-{i+1:06d}'
@@ -299,7 +383,7 @@ def generate(args):
                         raise ValueError(f'{name}: page layout changed after trimming')
                     # Save the trimmed DOM so opening the HTML reproduces the image.
                     (args.output/'html'/f'{name}.html').write_text(page.content())
-                expected = page.locator('h1, p, figcaption').all_text_contents()
+                expected = page.locator('h1, h2, h3, p, figcaption').all_text_contents()
                 if re.sub(r'\s', '', ''.join(expected)) != re.sub(r'\s', '', ''.join(l['text'] for l in lines)):
                     raise ValueError(f'{name}: extracted text does not match rendered text')
                 image_path = args.output/'images'/f'{name}.png'
@@ -335,7 +419,7 @@ def generate(args):
                     entry['source_ids'] = [r['id'] for r in record['sources'] if r['id'] in visible_ids]
                 write_json(args.output/'metadata'/f'{name}.json', dict(**entry, style=style, line_labels=lines,
                            source=record.get('source'), sources=record.get('sources'),
-                           paragraph_sources=record.get('paragraph_sources'), title=record.get('title','')))
+                           paragraph_sources=record.get('paragraph_sources'), heading_levels=record.get('heading_levels'), title=record.get('title','')))
                 draw_review(image_path, lines, args.output/'review'/f'{name}_bbox.png')
                 manifest['pages'].append(entry)
                 write_json(args.output/'manifest.json', manifest)
@@ -358,6 +442,12 @@ def generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--colored-text', action='store_true',
+                        help='Use dark colored body text on approximately 30 percent of pages')
+    parser.add_argument('--section-headings', action='store_true',
+                        help='Style joined article titles as alternating h2/h3 headings (requires --fill-page)')
+    parser.add_argument('--title-style', choices=['upstream', 'mixed', *TITLE_STYLES], default='upstream',
+                        help='Optional title textbox decoration; mixed randomizes background, frame, and band')
     parser.add_argument('--table-position', choices=['top','bottom','both'], default='both',
                         help='Position of tables; both balances top and bottom across pages')
     parser.add_argument('--tables', action='store_true', help='Add a fictional table to horizontal body text')
@@ -385,6 +475,8 @@ def main():
         parser.error('partial-fraction must be between 0 and 1')
     if not 0 <= args.vertical_fraction <= 1 or min(args.line_heights) <= 0 or min(args.letter_spacings) < 0:
         parser.error('Invalid vertical fraction, line height or letter spacing')
+    if args.section_headings and not args.fill_page:
+        parser.error('--section-headings requires --fill-page')
     if args.tables and (not args.fill_page or (args.vary_layout and args.vertical_fraction != 0) or
                         (not args.vary_layout and args.orientation != 'horizontal')):
         parser.error('--tables requires --fill-page and horizontal pages (--vertical-fraction 0 with --vary-layout)')

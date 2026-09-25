@@ -8,6 +8,26 @@ from ogura.textdet.combine_synthetic import combine
 
 
 class CombineTests(unittest.TestCase):
+    def test_add_heading_sets_without_name_collisions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = self.source(root, 'text', False)
+            tables = self.source(root, 'tables', True)
+            headings = self.source(root, 'headings', False)
+            heading_tables = self.source(root, 'heading-tables', True)
+            with self.assertRaisesRegex(ValueError, 'decoration settings'):
+                combine(text, tables, root/'invalid', 1, 1, headings, heading_tables, 1)
+            for source in (headings, heading_tables):
+                path = source/'manifest.json'
+                manifest = json.loads(path.read_text())
+                manifest['settings'] = dict(section_headings=True, colored_text=True, title_style='mixed')
+                path.write_text(json.dumps(manifest))
+            report = combine(text, tables, root/'mixed', 1, 1, headings, heading_tables, 1)
+            self.assertEqual(report['counts'], {'text':1, 'table':1, 'heading':1, 'heading-table':1, 'total':4})
+            labels = json.loads((root/'mixed/labels.json').read_text())
+            self.assertEqual(len(labels), 4)
+            self.assertIn('heading-table-synth-000001.png', labels)
+
     def source(self, root, name, table):
         source = root/name
         (source/'images').mkdir(parents=True)

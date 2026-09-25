@@ -1,6 +1,6 @@
 () => {
   const lines = [];
-  for (const element of document.querySelectorAll('h1, p, figcaption')) {
+  for (const element of document.querySelectorAll('h1, h2, h3, p, figcaption')) {
     const vertical = getComputedStyle(element).writingMode.startsWith('vertical');
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     let node, current = [], nodeIndex = -1;

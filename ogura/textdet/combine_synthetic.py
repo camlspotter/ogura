@@ -19,13 +19,22 @@ def write_json(path, value):
     temporary.replace(path)
 
 
-def combine(text, tables, output, text_count=5000, table_count=2000):
+def combine(text, tables, output, text_count=5000, table_count=2000, headings=None, heading_tables=None, heading_count=1000):
     if output.exists():
         raise FileExistsError(output)
     sources = []
-    for prefix, source, expected, has_tables in [('text',text,text_count,False), ('table',tables,table_count,True)]:
+    specs = [('text',text,text_count,False), ('table',tables,table_count,True)]
+    if (headings is None) != (heading_tables is None):
+        raise ValueError('Both heading datasets are required')
+    if headings is not None:
+        specs += [('heading',headings,heading_count,False), ('heading-table',heading_tables,heading_count,True)]
+    total = sum(item[2] for item in specs)
+    for prefix, source, expected, has_tables in specs:
         manifest = json.loads((source/'manifest.json').read_text())
         labels = json.loads((source/'labels.json').read_text())
+        if prefix.startswith('heading') and not all(manifest.get('settings', {}).get(k) == v
+                for k,v in dict(section_headings=True, colored_text=True, title_style='mixed').items()):
+            raise ValueError(f'{source}: heading decoration settings missing')
         pages = manifest.get('pages', [])
         if manifest.get('status') != 'complete' or len(pages) != expected or len(labels) != expected:
             raise ValueError(f'{source}: expected {expected} complete pages')
@@ -55,11 +64,12 @@ def combine(text, tables, output, text_count=5000, table_count=2000):
                 combined[target_name] = label
                 report['pages'].append(dict(image=target_name, source=prefix, source_image=name))
                 if len(combined) % 100 == 0:
-                    print(f'Copied and verified {len(combined)}/{text_count+table_count} images', flush=True)
+                    print(f'Copied and verified {len(combined)}/{total} images', flush=True)
                     write_json(output/'manifest.json', report)
         write_json(output/'labels.json', combined)
         report['status'] = 'complete'
-        report['counts'] = dict(text=text_count, table=table_count, total=len(combined))
+        report['counts'] = {prefix:expected for prefix, _, expected, _ in specs}
+        report['counts']['total'] = len(combined)
     except Exception as exc:
         report.update(status='failed', error=str(exc))
         raise
@@ -76,12 +86,16 @@ def main():
     parser.add_argument('--output', type=Path, default=ROOT/'outputs/synth-mixed-7000-v1')
     parser.add_argument('--text-count', type=int, default=5000)
     parser.add_argument('--table-count', type=int, default=2000)
+    parser.add_argument('--headings', type=Path)
+    parser.add_argument('--heading-tables', type=Path)
+    parser.add_argument('--heading-count', type=int, default=1000)
     args = parser.parse_args()
-    if min(args.text_count,args.table_count) < 1:
+    if min(args.text_count,args.table_count,args.heading_count) < 1:
         parser.error('Counts must be positive')
     if not args.output.resolve().is_relative_to(ROOT):
         parser.error('Output must be under ogura/textdet')
-    combine(args.text,args.tables,args.output,args.text_count,args.table_count)
+    combine(args.text,args.tables,args.output,args.text_count,args.table_count,
+            args.headings,args.heading_tables,args.heading_count)
 
 
 if __name__ == '__main__':

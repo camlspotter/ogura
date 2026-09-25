@@ -290,3 +290,84 @@ bash ogura/textdet/scripts/synth_tables_2000.sh train
 JDocQAの固定val/testは維持し、既存の学習済みモデルは上書きしない。
 1 epochの学習枚数が5,000から7,000へ増えるため、5 epoch同士の比較では更新回数も増える点に注意する。
 本文のみのページと表付きページの混合比は5:2（表付き約28.6%）。
+
+## タイトルのテキストボックス
+
+生成コマンドに `--title-style mixed` を付けると、背景（なし・淡色・濃色）、枠（なし・実線・破線・二重線）、
+帯（なし・書き出し側・末尾側）と配色・線幅をseedに従ってランダムに選ぶ。固定スタイルの個別指定は
+`outline`, `dashed`, `double`, `tinted`, `dark`。
+標準値 `upstream` は従来の見出し装飾を使うため、既存スクリプトの出力は変わらない。
+
+これは本リポジトリ側のCSS追加で、Synth-JDoc本体は変更しない。
+横書き・縦書き、表付きページにも使用可能。正解は既存のh1テキストから取得し、
+枠・背景・内側余白をbboxに含めない。スタイル設定はページmetadataの
+`style.title_box` と再開用manifest設定に記録する。
+既存データとは別の出力先で生成し、再開時には同じ `--title-style` を指定する。
+
+## 本文中の h2 / h3
+
+`--fill-page --section-headings` で、つなぎ合わせる後続記事のタイトルを
+h2/h3交互の見出しとして配置する。これは見た目の学習用の階層であり、
+元の記事間に意味上の親子関係があることを示さない。
+h2は本文の1.3倍、h3は1.1倍。背景・枠・帯・配色・線幅は見出しごとに
+ランダムに選び、同じseedで再現する。濃色背景には白文字を使う。
+選んだ装飾はmetadataの `style.section_headings` に段落IDごとに記録する。
+`--title-style mixed` や `--tables` と併用できる。
+
+入力JSONLに `heading_levels` を指定すれば、段落ごとの種別も指定できる。
+`paragraphs` と同じ長さで、0は本文、2はh2、3はh3。省略時は全て本文。
+例: `{"id":"example","title":"文書名","paragraphs":["節見出し","説明文","小見出し","詳細"],"heading_levels":[2,0,3,0]}`。
+見出しの文字も行bboxを抽出する。ページ末尾に見出しだけ残る場合は除き、
+枠線や背景はラベルに含めない。段落IDと出典対応は維持する。
+
+見出しのランダム装飾では、角の半径も `0 / 0.2 / 0.4 / 0.6em` から選ぶ。
+角のある枠と角丸の枠を混在させ、metadataには `border_radius_em` を保存する。
+タイトルは `--title-style mixed`、h2/h3は見出しごとに適用する。
+
+見出しの淡色・透明背景では、黒・紺・深緑・えんじ・紫の文字色をランダムに使う。
+濃色背景では白文字を維持する。`--colored-text` を追加すると、本文もページ単位で
+約30%を濃い有彩色、残りを従来の黒系にする。seedで再現でき、本文色は
+metadataの `style.text_color` に保存する。
+
+## 装飾付き見出し2,000枚の追加実験（合計9,000枚）
+
+GPUマシンの `~/ogura` で実行する。既存の5,000枚・表2,000枚、入力JSONL、
+JDocQAの固定val、docTR v1.0.0の学習コードを前提とする。追加のモデルや画像素材は不要。
+
+```bash
+uv sync
+bash ogura/textdet/scripts/synth_headings_2000.sh generate
+bash ogura/textdet/scripts/synth_headings_2000.sh combine
+bash ogura/textdet/scripts/synth_headings_2000.sh train
+bash ogura/textdet/scripts/synth_headings_2000.sh evaluate
+bash ogura/textdet/scripts/synth_headings_2000.sh package
+```
+
+初回は `bash ogura/textdet/scripts/synth_headings_2000.sh all` でも順次実行できる。
+生成中断時は `resume`（両セットを確認し、未着手のセットは新規生成）。
+結合はコピー方式で約9,000枚分の追加容量が必要。結合の途中再開は未対応。
+既存出力は上書きせず、学習先にcheckpointがあれば学習も停止する。
+
+- 本文＋見出し1,000枚: `outputs/synth-headings-1000-v1`。縦書き25%。
+- 表＋見出し1,000枚: `outputs/synth-heading-tables-1000-v1`。横書き、表は上部・下部各半数。
+- 結合先: `outputs/synth-mixed-9000-v1`。既存7,000枚を保持する。
+- 4フォント、文字サイズ12/16/20/24、段組み・行間・字間、見出し装飾・角丸・文字色を変える。
+- h2/h3は後続記事がページ内に現れた場合に入る。長い本文ではh1のみのページも残る。
+- 学習: 既存実験と同じ公式事前学習済み重みから5 epoch、入力1024。
+  `outputs/db-resnet34-synth9000-v1/synth9000-db-resnet34-v1.pt` が最良valの重み。
+- 検証: その重みを1024/1536入力で固定JDocQA valに評価。testは使わない。
+  学習ページが増えるため、同じ5 epochでも更新回数は以前より多い。
+- 検証の片方だけ実行する場合は `evaluate 1024` / `evaluate 1536`。
+  既存評価先は上書きしないため、失敗した出力は内容を確認してから別名に退避する。
+- `package` は完了済みの両検証ディレクトリを `outputs/validation-synth9000-v1.tar.gz`
+  にまとめる。正解・予測・比較PNG、`summary.json`、`pages.csv`、`predictions.json`を含む。
+  学習画像・モデル重みは含めない。
+
+Mac側でダウンロード・展開する（スクリプト自身はSSHやscpを実行しない）。
+
+```bash
+scp dgx:~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz ~/ogura/ogura/textdet/outputs/
+tar -xzf ~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura/ogura/textdet/outputs/
+```
+
+`download-command` でも上記コマンドを表示する。生成データ・検証画像はGit対象外。

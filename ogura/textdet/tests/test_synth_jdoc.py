@@ -10,6 +10,18 @@ from ogura.textdet.prepare_synth_texts import excerpt
 
 
 class TemplateTests(unittest.TestCase):
+    def test_heading_styles_are_reproducible_and_vary_within_page(self):
+        record = dict(title='Title', paragraphs=['Heading'] * 20, heading_levels=[2,3] * 10)
+        args = (record, Path('unused'), 42, False, 2, 20)
+        first, style = render_html(*args, font_url='unused', title_style='mixed')
+        self.assertEqual((first, style), render_html(*args, font_url='unused', title_style='mixed'))
+        configs = list(style['section_headings'].values())
+        self.assertGreater(len({c['background'] for c in configs}), 1)
+        self.assertGreater(len({c['border'] for c in configs}), 1)
+        self.assertGreater(len({c['band'] for c in configs}), 1)
+        _, other = render_html(record, Path('unused'), 43, False, 2, 20, font_url='unused', title_style='mixed')
+        self.assertNotEqual(style['section_headings'], other['section_headings'])
+
     def test_balanced_reproducible_variations(self):
         args = (120, 42, ['sans','sans-bold','serif','serif-bold'], [12,16,20,24], [1.5,1.7,2], [0,.03,.08], .25)
         plan = variation_plan(*args)
@@ -70,6 +82,29 @@ class BrowserLabelTests(unittest.TestCase):
         page.close()
         return lines
 
+    def test_title_boxes_label_only_text_including_wrapped_titles(self):
+        from ogura.textdet.synth_jdoc import TITLE_STYLES
+        for mode in TITLE_STYLES:
+            with self.subTest(mode=mode):
+                markup, _ = render_html({'title': 'TITLE ' * 12, 'paragraphs': ['Body text']},
+                    Path('unused'), 1, False, 1, 20, font_url='unused', title_style=mode)
+                page = self.browser.new_page(viewport={'width': 400, 'height': 1000})
+                try:
+                    page.set_content(markup)
+                    lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+                    rect = page.locator('h1').bounding_box()
+                    title_lines = [line for line in lines if 'TITLE' in line['text']]
+                    self.assertGreater(len(title_lines), 1)
+                    self.assertEqual(''.join(l['text'] for l in title_lines).replace(' ', ''), 'TITLE' * 12)
+                    for line in title_lines:
+                        x0, y0, x1, y1 = line['bbox']
+                        self.assertGreater(x0, rect['x'])
+                        self.assertGreater(y0, rect['y'])
+                        self.assertLess(x1, rect['x'] + rect['width'])
+                        self.assertLess(y1, rect['y'] + rect['height'])
+                finally:
+                    page.close()
+
     def test_horizontal_wrap_and_edge_space(self):
         rows = self.extract('<p style="font:20px monospace;width:60px;word-break:break-all;white-space:pre-wrap">  ABCDEFGHIJKL  </p><p>   </p>')
         self.assertGreater(len(rows), 1)
@@ -119,6 +154,13 @@ class BrowserLabelTests(unittest.TestCase):
 
 
 class PageSourceTests(unittest.TestCase):
+    def test_joined_titles_become_headings_with_source_alignment(self):
+        records = [dict(id=str(i), title=f'Title{i}', paragraphs=['本文'*30]) for i in range(5)]
+        result = page_source(records, 0, 190, section_headings=True)
+        self.assertEqual(result['heading_levels'][:5], [0, 2, 0, 3, 0])
+        self.assertEqual(len(result['paragraphs']), len(result['heading_levels']))
+        self.assertEqual(result['paragraph_sources'][:5], ['0', '1', '1', '2', '2'])
+
     def test_combines_distinct_articles_and_retains_provenance(self):
         records = [dict(id=str(i), title=f'Title{i}', paragraphs=['本文'*30], source={'url':str(i)}) for i in range(5)]
         result = page_source(records, 4, 150)
@@ -133,6 +175,29 @@ class PageSourceTests(unittest.TestCase):
 class PaginationBoundaryTests(unittest.TestCase):
     setUpClass = classmethod(BrowserLabelTests.setUpClass.__func__)
     tearDownClass = classmethod(BrowserLabelTests.tearDownClass.__func__)
+    def test_headings_are_labeled_and_trailing_heading_is_removed(self):
+        for vertical in (False, True):
+            page = self.browser.new_page(viewport={'width':600,'height':800})
+            try:
+                record = dict(title='Title', paragraphs=['本文です。', '節見出し', '説明です。',
+                              '小見出し', '続く文章です。'*500], heading_levels=[0,2,0,3,0])
+                markup, _ = render_html(record, Path('unused'), 12, vertical, 1, 16,
+                                        font_url='data:font/otf;base64,')
+                page.set_content(fixed_page_html(markup))
+                before = page.evaluate((ROOT/'synth_lines.js').read_text())
+                self.assertEqual([l['text'] for l in before if l['element_id'] in ('1','3')],
+                                 ['節見出し', '小見出し'])
+                # Force the first body line after h3 to be beyond the page boundary.
+                next(l for l in before if l['element_id'] == '4')['bbox'] = [0, 900, 10, 920]
+                stats = page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=before, fraction=1))
+                after = page.evaluate((ROOT/'synth_lines.js').read_text())
+                self.assertEqual(page.locator('h3').count(), 0)
+                self.assertEqual(page.locator('h2').count(), 1)
+                self.assertEqual(after[-1]['element_id'], '2')
+                self.assertEqual(len(after)-1, stats['retained_lines'])
+            finally:
+                page.close()
+
     def test_subpixel_boundary_does_not_drop_first_line(self):
         page = self.browser.new_page(viewport={'width':600,'height':800})
         record = {'title':'Title', 'paragraphs':['日本語の本文です。'*500]}
