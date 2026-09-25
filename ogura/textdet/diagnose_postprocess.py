@@ -1,4 +1,4 @@
-"""Save DBNet probability maps and compare postprocessing on two dense-table pages."""
+"""Save DBNet probability maps and compare postprocessing on selected pages or a full dataset."""
 import argparse
 import csv
 import hashlib
@@ -47,6 +47,30 @@ def sweep(probability, gt, image, output, thresholds, ratios, box_threshold):
     return rows
 
 
+def aggregate(rows):
+    """Micro-average counts across pages; never average per-page F1."""
+    groups = {}
+    for row in rows:
+        key = (row['model'], row['bin_thresh'], row['unclip_ratio'], row['box_thresh'])
+        result = groups.setdefault(key, dict(zip(('model','bin_thresh','unclip_ratio','box_thresh'), key),
+                                            pages=0, matches=0, ground_truth=0, predictions=0))
+        result['pages'] += 1
+        for name in ('matches', 'ground_truth', 'predictions'):
+            result[name] += row[name]
+    for result in groups.values():
+        m, g, p = (result[k] for k in ('matches', 'ground_truth', 'predictions'))
+        result.update(recall=m/g if g else 0., precision=m/p if p else 0.,
+                      f1=2*m/(g+p) if g+p else 0.)
+    return sorted(groups.values(), key=lambda r: (-r['f1'], r['model'], r['bin_thresh'], r['unclip_ratio']))
+
+
+def write_csv(path, rows):
+    with path.open('w', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def run(args):
     import torch
     import doctr
@@ -63,16 +87,24 @@ def run(args):
     if dataset.class_names != ['words']:
         raise ValueError('Expected words labels')
     inventory = {item[0]: i for i, item in enumerate(dataset.data)}
-    if any(name not in inventory for name in args.images):
+    images = list(inventory) if args.all_pages else (args.images or PAGES)
+    if not images or len(images) != len(set(images)):
+        raise ValueError('Expected a nonempty list of unique pages')
+    if args.expected_pages is not None and len(images) != args.expected_pages:
+        raise ValueError(f'Expected {args.expected_pages} pages, got {len(images)}')
+    if any(name not in inventory for name in images):
         raise ValueError('Requested page missing from dataset')
     checkpoints = {'synth7000': args.previous, 'synth9000': args.current}
+    if args.model != 'both':
+        checkpoints = {args.model: checkpoints[args.model]}
     hashes = {name: sha(path) for name, path in checkpoints.items()}
     args.output.mkdir(parents=True, exist_ok=False)
-    report = dict(status='running', input_size=args.input_size, images=args.images,
+    report = dict(status='running', input_size=args.input_size, images=images, pages=len(images),
+                  all_pages=args.all_pages, data=str(args.data.resolve()),
                   labels_sha256=sha(args.data/'labels.json'), checkpoints=hashes,
                   bin_thresholds=args.thresholds, unclip_ratios=args.ratios, box_thresh=args.box_threshold,
                   amp=args.amp, device=args.device, versions=dict(torch=torch.__version__, doctr=doctr.__version__),
-                  note='Diagnostic subset only; unclip=0 means no polygon expansion, not no postprocessing')
+                  note='unclip=0 means no polygon expansion, not no postprocessing; select settings on validation only')
     rows = []
     normalize = Normalize(mean=(.798, .785, .772), std=(.264, .2749, .287))
     try:
@@ -81,7 +113,7 @@ def run(args):
                                           assume_straight_pages=True, class_names=['words'])
             model.load_state_dict(torch.load(checkpoint, map_location='cpu', weights_only=True), strict=True)
             model = model.to(args.device).eval()
-            for filename in args.images:
+            for filename in images:
                 tensor, target = dataset[inventory[filename]]
                 with torch.inference_mode(), (torch.amp.autocast('cuda') if args.amp else nullcontext()):
                     result = model(normalize(tensor.unsqueeze(0).to(args.device)), return_model_output=True)
@@ -100,10 +132,9 @@ def run(args):
             del model
             if args.device.startswith('cuda'):
                 torch.cuda.empty_cache()
-        with (args.output/'metrics.csv').open('w', newline='') as stream:
-            writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
-            writer.writeheader()
-            writer.writerows(rows)
+        write_csv(args.output/'metrics.csv', rows)
+        report['aggregate'] = aggregate(rows)
+        write_csv(args.output/'ranking.csv', report['aggregate'])
         report['status'] = 'complete'
     except Exception as exc:
         report.update(status='failed', error=str(exc))
@@ -118,7 +149,11 @@ def main():
     parser.add_argument('--previous', type=Path, default=ROOT/'outputs/db-resnet34-synth7000-v1/synth7000-db-resnet34-v1.pt')
     parser.add_argument('--current', type=Path, default=ROOT/'outputs/db-resnet34-synth9000-v1/synth9000-db-resnet34-v1.pt')
     parser.add_argument('--output', type=Path, default=ROOT/'outputs/postprocess-diagnosis-v1')
-    parser.add_argument('--images', nargs='+', default=PAGES)
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--images', nargs='+')
+    selection.add_argument('--all-pages', action='store_true')
+    parser.add_argument('--expected-pages', type=int)
+    parser.add_argument('--model', choices=['both','synth7000','synth9000'], default='both')
     parser.add_argument('--input-size', type=int, default=1536)
     parser.add_argument('--thresholds', type=float, nargs='+', default=[.2, .3, .4, .5])
     parser.add_argument('--ratios', type=float, nargs='+', default=[0, 1, 1.5])

@@ -4,10 +4,23 @@ import tempfile
 import unittest
 import numpy as np
 from PIL import Image
-from ogura.textdet.diagnose_postprocess import sweep
+from ogura.textdet.diagnose_postprocess import sweep, aggregate
 
 
 class PostprocessTests(unittest.TestCase):
+    def test_aggregate_uses_counts_and_keeps_models_and_settings_separate(self):
+        base = dict(model='synth7000', bin_thresh=.3, unclip_ratio=0, box_thresh=.1)
+        rows = [dict(base, matches=1, ground_truth=1, predictions=1),
+                dict(base, matches=0, ground_truth=9, predictions=9),
+                dict(base, model='synth9000', matches=8, ground_truth=10, predictions=10),
+                dict(base, unclip_ratio=1.5, matches=2, ground_truth=10, predictions=10)]
+        results = aggregate(rows)
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0]['model'], 'synth9000')
+        self.assertEqual(results[0]['f1'], .8)
+        self.assertEqual(results[-1]['pages'], 2)
+        self.assertEqual(results[-1]['f1'], .1)
+
     def test_threshold_separates_bridge_and_expansion_changes_boxes(self):
         probability = np.zeros((128,128), dtype=np.float32)
         probability[20:30,20:100] = .9

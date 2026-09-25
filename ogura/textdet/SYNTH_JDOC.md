@@ -394,3 +394,33 @@ box thresholdは従来の0.1、IoU閾値は0.5のまま。
 unclip=0も輪郭の矩形化などは行うため、後処理を全て無効にした画像ではない。
 この2ページは原因診断用であり、設定採用には固定val全体での再評価が必要。
 スクリプトはリモート接続を行わない。生成結果はGit対象外。
+
+## 検証全体での後処理パラメーター選択
+
+```bash
+bash ogura/textdet/scripts/postprocess_validation.sh run
+bash ogura/textdet/scripts/postprocess_validation.sh package
+bash ogura/textdet/scripts/postprocess_validation.sh download-command
+```
+
+固定val全39ページ・両モデル・1536入力で、二値化閾値0.3/0.4/0.5と
+unclip比0/0.5/1/1.5を比較する。各モデル・各画像の推論は1回だけで、
+確率マップを共有して後処理12通りを計算する。前回の2ページ診断は保持する。
+出力先は `outputs/postprocess-validation-v1`。
+
+`ranking.csv` はモデル・設定ごとに全ページの一致数と正解数・予測数を合算した
+Recall/Precision/F1を高い順に並べる（ページごとのF1の平均ではない）。
+`metrics.csv` はページ単位の指標。各モデル／ページディレクトリに条件別bbox画像、
+確率・二値画像と予測JSONを保存する。アーカイブにはPNGとJSON/CSVを含み、
+容量の大きいfloat32 `.npy` はGPU側に残す。既存出力先への上書き・再開は未対応。
+
+val全体の指標と通常本文・表・見出し・縦書きの画像を見て共通設定を1つ選んだ後、
+次の形式でtest全40ページを一度評価する。MODEL、BIN_THRESHOLD、UNCLIP_RATIOは
+選んだ値に置き換える。スクリプトはvalで実行済みの組合せだけ受け付ける。
+
+```text
+bash ogura/textdet/scripts/postprocess_validation.sh test MODEL BIN_THRESHOLD UNCLIP_RATIO
+```
+
+test出力は `outputs/postprocess-test-v1`。test評価で設定探索は行わない。
+低いunclipで改善する細字だけでなく、大きな文字の枠が小さくなりすぎないかも確認する。
