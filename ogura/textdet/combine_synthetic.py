@@ -19,7 +19,8 @@ def write_json(path, value):
     temporary.replace(path)
 
 
-def combine(text, tables, output, text_count=5000, table_count=2000, headings=None, heading_tables=None, heading_count=1000):
+def combine(text, tables, output, text_count=5000, table_count=2000, headings=None, heading_tables=None, heading_count=1000,
+            image_text=None, image_tables=None, image_text_count=1334, image_table_count=666):
     if output.exists():
         raise FileExistsError(output)
     sources = []
@@ -28,6 +29,10 @@ def combine(text, tables, output, text_count=5000, table_count=2000, headings=No
         raise ValueError('Both heading datasets are required')
     if headings is not None:
         specs += [('heading',headings,heading_count,False), ('heading-table',heading_tables,heading_count,True)]
+    if (image_text is None) != (image_tables is None):
+        raise ValueError('Both image datasets are required')
+    if image_text is not None:
+        specs += [('image',image_text,image_text_count,False), ('image-table',image_tables,image_table_count,True)]
     total = sum(item[2] for item in specs)
     for prefix, source, expected, has_tables in specs:
         manifest = json.loads((source/'manifest.json').read_text())
@@ -43,6 +48,14 @@ def combine(text, tables, output, text_count=5000, table_count=2000, headings=No
             raise ValueError(f'{source}: manifest and label inventory differ')
         if any(bool(p.get('table')) != has_tables for p in pages):
             raise ValueError(f'{source}: wrong page type for {prefix} set')
+        if prefix.startswith('image'):
+            settings = manifest.get('settings', {})
+            if not settings.get('image_assets') or settings.get('image_float_fraction') != .5:
+                raise ValueError(f'{source}: expected reviewed image assets and half float layouts')
+            if any(p.get('image_asset', {}).get('layout') not in ('float', 'block') for p in pages):
+                raise ValueError(f'{source}: missing image layout metadata')
+            if sum(p['image_asset']['layout'] == 'float' for p in pages) != round(expected * .5):
+                raise ValueError(f'{source}: wrong float layout count')
         for name in names:
             if Path(name).name != name or not (source/'images'/name).is_file():
                 raise ValueError(f'{source}: invalid or missing image {name}')
@@ -89,13 +102,18 @@ def main():
     parser.add_argument('--headings', type=Path)
     parser.add_argument('--heading-tables', type=Path)
     parser.add_argument('--heading-count', type=int, default=1000)
+    parser.add_argument('--image-text', type=Path)
+    parser.add_argument('--image-tables', type=Path)
+    parser.add_argument('--image-text-count', type=int, default=1334)
+    parser.add_argument('--image-table-count', type=int, default=666)
     args = parser.parse_args()
-    if min(args.text_count,args.table_count,args.heading_count) < 1:
+    if min(args.text_count,args.table_count,args.heading_count,args.image_text_count,args.image_table_count) < 1:
         parser.error('Counts must be positive')
     if not args.output.resolve().is_relative_to(ROOT):
         parser.error('Output must be under ogura/textdet')
     combine(args.text,args.tables,args.output,args.text_count,args.table_count,
-            args.headings,args.heading_tables,args.heading_count)
+            args.headings,args.heading_tables,args.heading_count,
+            args.image_text,args.image_tables,args.image_text_count,args.image_table_count)
 
 
 if __name__ == '__main__':

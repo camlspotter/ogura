@@ -97,6 +97,12 @@ def run(args):
     checkpoints = {'synth7000': args.previous, 'synth9000': args.current}
     if args.model != 'both':
         checkpoints = {args.model: checkpoints[args.model]}
+    names = {'synth7000': getattr(args, 'previous_name', 'synth7000'),
+             'synth9000': getattr(args, 'current_name', 'synth9000')}
+    if len(set(names.values())) != 2 or any(not name or not name.isascii() or
+            not all(c.isalnum() or c in '_-' for c in name) for name in names.values()):
+        raise ValueError('Model names must be distinct safe directory names')
+    checkpoints = {names[name]: path for name, path in checkpoints.items()}
     hashes = {name: sha(path) for name, path in checkpoints.items()}
     args.output.mkdir(parents=True, exist_ok=False)
     report = dict(status='running', input_size=args.input_size, images=images, pages=len(images),
@@ -154,6 +160,8 @@ def main():
     selection.add_argument('--all-pages', action='store_true')
     parser.add_argument('--expected-pages', type=int)
     parser.add_argument('--model', choices=['both','synth7000','synth9000'], default='both')
+    parser.add_argument('--previous-name', default='synth7000')
+    parser.add_argument('--current-name', default='synth9000')
     parser.add_argument('--input-size', type=int, default=1536)
     parser.add_argument('--thresholds', type=float, nargs='+', default=[.2, .3, .4, .5])
     parser.add_argument('--ratios', type=float, nargs='+', default=[0, 1, 1.5])

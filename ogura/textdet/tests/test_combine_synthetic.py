@@ -8,6 +8,34 @@ from ogura.textdet.combine_synthetic import combine
 
 
 class CombineTests(unittest.TestCase):
+    def test_image_sets_require_layout_metadata_and_distinct_prefixes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            text = self.source(root, 'text', False)
+            tables = self.source(root, 'tables', True)
+            image_text = self.source(root, 'image', False)
+            image_tables = self.source(root, 'image-table', True)
+            kwargs = dict(image_text=image_text, image_tables=image_tables,
+                          image_text_count=1, image_table_count=1)
+            with self.assertRaisesRegex(ValueError, 'reviewed image assets'):
+                combine(text, tables, root/'invalid', 1, 1, **kwargs)
+            for source in (image_text, image_tables):
+                path = source/'manifest.json'
+                manifest = json.loads(path.read_text())
+                manifest['settings'] = dict(image_assets={'leaf.png':'hash'}, image_float_fraction=.5)
+                manifest['pages'][0]['image_asset'] = dict(layout='block')
+                path.write_text(json.dumps(manifest))
+            report = combine(text, tables, root/'mixed', 1, 1, **kwargs)
+            self.assertEqual(report['counts'], dict(text=1, table=1, image=1, **{'image-table':1}, total=4))
+            labels = json.loads((root/'mixed/labels.json').read_text())
+            self.assertIn('image-table-synth-000001.png', labels)
+            path = image_text/'manifest.json'
+            manifest = json.loads(path.read_text())
+            manifest['pages'][0]['image_asset']['layout'] = 'float'
+            path.write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError, 'float layout count'):
+                combine(text, tables, root/'wrong-float', 1, 1, **kwargs)
+
     def test_add_heading_sets_without_name_collisions(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

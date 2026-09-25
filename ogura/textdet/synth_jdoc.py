@@ -8,6 +8,7 @@ from pathlib import Path
 import random
 import re
 import shutil
+from urllib.parse import quote
 from collections import Counter
 
 from fontTools.ttLib import TTFont
@@ -16,6 +17,7 @@ from PIL import Image, ImageDraw, ImageOps
 from playwright.sync_api import sync_playwright
 from .vendor import synth_jdoc_generator as upstream
 from .synth_tables import render_table, TABLE_TEXT
+from .synth_images import add_image, image_plan, size_float_image
 
 ROOT = Path(__file__).resolve().parent
 UPSTREAM_REVISION = '06d27a594b5680e73f3b1308a5ff86261365903d'
@@ -213,6 +215,10 @@ def resume_settings(args):
     if args.tables:
         settings['tables'] = True
         settings['table_position'] = args.table_position
+    if getattr(args, 'image_assets', None):
+        settings['image_assets'] = {p.name: sha(p) for p in sorted(args.image_assets.glob('*.png'))}
+        settings['image_position'] = args.image_position
+        settings['image_float_fraction'] = args.image_float_fraction
     return settings
 
 
@@ -261,6 +267,11 @@ def extract_page(page, fraction=None):
 
 
 def generate(args):
+    assets = sorted(args.image_assets.glob('*.png')) if getattr(args, 'image_assets', None) else []
+    if getattr(args, 'image_assets', None) and not assets:
+        raise ValueError('No PNG assets found in --image-assets')
+    images = image_plan([p.name for p in assets], args.count, args.seed, args.height,
+                        args.image_position, args.image_float_fraction) if assets else None
     records = [json.loads(s) for s in args.input.read_text().splitlines() if s.strip()]
     if not records or any(not r.get('id') or not r.get('paragraphs') or
                           not all(isinstance(p, str) for p in r['paragraphs']) for r in records):
@@ -308,6 +319,10 @@ def generate(args):
     args.output.mkdir(parents=True, exist_ok=args.resume)
     for sub in ('images', 'html', 'review', 'metadata', 'fonts'):
         (args.output/sub).mkdir(exist_ok=args.resume)
+    if assets:
+        (args.output/'assets').mkdir(exist_ok=args.resume)
+        for name in sorted({entry['file'] for entry in images}):
+            shutil.copyfile(args.image_assets/name, args.output/'assets'/name)
     font_urls = {}
     for path in fonts:
         dest = args.output/'fonts'/(sha(path) + path.suffix)
@@ -318,12 +333,12 @@ def generate(args):
                 shutil.copyfile(license_file, args.output/'fonts'/license_file.name)
     manifest = dict(status='running', label_status='candidate_needs_visual_review',
         upstream_revision=UPSTREAM_REVISION, seed=args.seed, input_sha256=sha(args.input),
-        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js', 'synth_tables.py')},
+        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js', 'synth_tables.py', 'synth_images.py')},
         fonts={str(p.resolve()):sha(p) for p in fonts}, pages=[],
         role='synthetic_training_candidate', variation=args.vary_layout,
         settings=resume_settings(args), font_order=[sha(p) for p in fonts],
         fill_page=args.fill_page, partial_fraction=args.partial_fraction,
-        note='Text and optional fictional tables; no image generation, noise, or automatic train/val split')
+        note='Text, optional fictional tables and reviewed local images; no image generation or automatic train/val split')
     labels = restored if previous else {}
     if previous:
         if previous.get('font_order', manifest['font_order']) != manifest['font_order']:
@@ -359,6 +374,11 @@ def generate(args):
                     line_height=config['line_height'], letter_spacing=config['letter_spacing'],
                     font_url=font_urls[config['font']], tables=args.tables, table_position=positions[i],
                     title_style=args.title_style, colored_text=args.colored_text)
+                if images:
+                    asset = dict(images[i], src='../assets/'+quote(images[i]['file']),
+                                 sha256=manifest['settings']['image_assets'][images[i]['file']])
+                    markup = add_image(markup, style, asset)
+                    style['image_asset'] = asset
                 if args.fill_page:
                     markup = fixed_page_html(markup)
                 name = f'synth-{i+1:06d}'
@@ -371,6 +391,10 @@ def generate(args):
                            route.request.url.startswith(allowed_root) else route.abort())
                 page.goto((args.output/'html'/f'{name}.html').resolve().as_uri(), wait_until='load')
                 page.evaluate('document.fonts.ready')
+                if images and not page.evaluate("[...document.images].every(img => img.complete && img.naturalWidth > 0)"):
+                    raise ValueError('Local image asset did not load')
+                if images and asset['layout'] == 'float':
+                    asset['float_size'] = size_float_image(page, asset['height'])
                 if not page.evaluate("document.fonts.check('20px LocalDocumentFont')"):
                     raise ValueError('Local font did not load')
                 lines, pagination = extract_page(page, fractions[i] if args.fill_page else None)
@@ -387,6 +411,16 @@ def generate(args):
                 if re.sub(r'\s', '', ''.join(expected)) != re.sub(r'\s', '', ''.join(l['text'] for l in lines)):
                     raise ValueError(f'{name}: extracted text does not match rendered text')
                 image_path = args.output/'images'/f'{name}.png'
+                if images:
+                    asset_bbox = page.locator('.asset-figure img').evaluate(
+                        'img => {const r=img.getBoundingClientRect();return [r.left,r.top,r.right,r.bottom]}')
+                    a,b,c,d = asset_bbox
+                    if not (0 <= a < c <= args.width and 0 <= b < d <= args.height):
+                        raise ValueError(f'{name}: asset outside page')
+                    if any(min(c, l['bbox'][2]) > max(a, l['bbox'][0]) and
+                           min(d, l['bbox'][3]) > max(b, l['bbox'][1]) for l in lines):
+                        raise ValueError(f'{name}: text overlaps image asset')
+                    asset['bbox'] = asset_bbox
                 page.screenshot(path=str(image_path), full_page=not args.fill_page)
                 page.close()
                 with Image.open(image_path) as image:
@@ -411,6 +445,8 @@ def generate(args):
                     entry['table_lines'] = sum(l['element_id'].startswith('table-') for l in lines)
                     if not entry['table_lines']:
                         raise ValueError(f'{name}: missing table labels')
+                if images:
+                    entry['image_asset'] = asset
                 if pagination:
                     entry['pagination'] = pagination
                     entry['visible_characters'] = sum(len(l['text']) for l in lines)
@@ -442,6 +478,10 @@ def generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--image-assets', type=Path, help='Directory of reviewed text-free PNG assets')
+    parser.add_argument('--image-position', choices=['top', 'bottom', 'both'], default='both')
+    parser.add_argument('--image-float-fraction', type=float, default=.5,
+                        help='Fraction of image pages using text wrapping instead of a separate image band')
     parser.add_argument('--colored-text', action='store_true',
                         help='Use dark colored body text on approximately 30 percent of pages')
     parser.add_argument('--section-headings', action='store_true',
@@ -477,6 +517,10 @@ def main():
         parser.error('Invalid vertical fraction, line height or letter spacing')
     if args.section_headings and not args.fill_page:
         parser.error('--section-headings requires --fill-page')
+    if args.image_assets and not args.fill_page:
+        parser.error('--image-assets requires --fill-page')
+    if not 0 <= args.image_float_fraction <= 1:
+        parser.error('--image-float-fraction must be between 0 and 1')
     if args.tables and (not args.fill_page or (args.vary_layout and args.vertical_fraction != 0) or
                         (not args.vary_layout and args.orientation != 'horizontal')):
         parser.error('--tables requires --fill-page and horizontal pages (--vertical-fraction 0 with --vary-layout)')
