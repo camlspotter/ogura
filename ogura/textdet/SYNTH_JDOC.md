@@ -371,3 +371,26 @@ tar -xzf ~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura
 ```
 
 `download-command` でも上記コマンドを表示する。生成データ・検証画像はGit対象外。
+
+## 細かい表の後処理診断
+
+```bash
+bash ogura/textdet/scripts/diagnose_postprocess.sh run
+bash ogura/textdet/scripts/diagnose_postprocess.sh package
+bash ogura/textdet/scripts/diagnose_postprocess.sh download-command
+```
+
+7,000枚・9,000枚モデルの最良checkpointを使い、JDocQA valの
+`public_document_ministry01376` の6・11ページを1536入力で比較する。
+推論は各モデル・各ページにつき1回で、同じ確率マップに二値化閾値
+0.2/0.3/0.4/0.5とunclip比0/1/1.5の12通りを適用する。
+box thresholdは従来の0.1、IoU閾値は0.5のまま。
+
+出力 `outputs/postprocess-diagnosis-v1` にはモデル／ページごとに
+`probability.npy`（float32）、`probability.png`（白いほど高確率）、
+`binary-*.png`（二値化直後）、`opened-*.png`（docTRのノイズ除去後）、
+各条件のbbox画像と予測JSON、正解JSON、入力画像を保存する。
+全条件の指標は `metrics.csv`、checkpoint・正解ハッシュは `summary.json`。
+unclip=0も輪郭の矩形化などは行うため、後処理を全て無効にした画像ではない。
+この2ページは原因診断用であり、設定採用には固定val全体での再評価が必要。
+スクリプトはリモート接続を行わない。生成結果はGit対象外。
