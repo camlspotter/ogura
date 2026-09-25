@@ -50,6 +50,27 @@ GPUメモリに余裕がない場合は `--cpu-offload` を追加する（CPUへ
 一覧画像に付けたIDは確認用で、学習に使う画像は `images/` 内の原画像。
 モデルと出力はGit対象外。SSHなどのリモート接続は行わない。
 
+## 200枚の素材集
+
+`prompts/image_assets_200.jsonl` は20種類×10パターンの英語プロンプト。
+葉・花・樹皮・岩石・水面・雲・鳥・魚・昆虫・毛並み・食品・布・陶器・工具・
+機械部品・建物外壁・室内・街並み・植物イラスト・日用品イラストを含む。
+各種類で被写体の具体例も変え、構図・照明・背景・描画スタイルを組み合わせる。
+写真180枚とイラスト20枚。細かい質感と余白のある構図の両方を含む。
+既存の10枚用プロンプトと出力はそのまま残す。
+
+```bash
+uv run --locked python -m ogura.textdet.generate_image_assets generate \
+  --prompts ogura/textdet/prompts/image_assets_200.jsonl \
+  --size 512 \
+  --output ogura/textdet/outputs/image-assets-200-v1
+```
+
+モデルは最初に一度読み込む。CUDAの先行初期化はスクリプト内で行う。
+中断時は同じコマンドに `--resume` を追加する。
+画像名は `leaves-01.png` から `object_illustrations-10.png` のように種類と番号を含む。
+この素材集も生成後に文字・数字・ロゴの混入を目視確認してから採用する。
+
 Mac側へのコピー例:
 
 ```bash

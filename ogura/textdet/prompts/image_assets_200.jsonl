@@ -1,0 +1,200 @@
+{"id": "leaves-01", "category": "葉", "prompt": "Photograph of overlapping maple leaves with fine veins. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "leaves-02", "category": "葉", "prompt": "Photograph of broad lotus leaves with round water droplets. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "leaves-03", "category": "葉", "prompt": "Photograph of slender bamboo leaves on thin stems. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "leaves-04", "category": "葉", "prompt": "Photograph of curled dry oak leaves. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "leaves-05", "category": "葉", "prompt": "Photograph of fern fronds with intricate leaflets. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "leaves-06", "category": "葉", "prompt": "Photograph of thick succulent leaves arranged in a rosette. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "leaves-07", "category": "葉", "prompt": "Photograph of young ginkgo leaves on a branch. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "leaves-08", "category": "葉", "prompt": "Photograph of variegated tropical leaves. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "leaves-09", "category": "葉", "prompt": "Photograph of pine needles clustered around twigs. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "leaves-10", "category": "葉", "prompt": "Photograph of ivy leaves spreading over rough stone. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "flowers-01", "category": "花", "prompt": "Photograph of a single white camellia with layered petals. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "flowers-02", "category": "花", "prompt": "Photograph of yellow wildflowers among grasses. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "flowers-03", "category": "花", "prompt": "Photograph of purple hydrangea florets. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "flowers-04", "category": "花", "prompt": "Photograph of pink cherry blossoms on a slender branch. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "flowers-05", "category": "花", "prompt": "Photograph of orange marigolds with ruffled petals. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "flowers-06", "category": "花", "prompt": "Photograph of a sunflower with a dense seed center. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "flowers-07", "category": "花", "prompt": "Photograph of blue irises with folded petals. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "flowers-08", "category": "花", "prompt": "Photograph of white daisies in a loose cluster. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "flowers-09", "category": "花", "prompt": "Photograph of red poppies with delicate petals. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "flowers-10", "category": "花", "prompt": "Photograph of dried flower heads with fine seed structures. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "bark-01", "category": "樹皮", "prompt": "Photograph of deeply ridged oak bark. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "bark-02", "category": "樹皮", "prompt": "Photograph of peeling white birch bark. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "bark-03", "category": "樹皮", "prompt": "Photograph of smooth gray beech bark. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "bark-04", "category": "樹皮", "prompt": "Photograph of reddish pine bark plates. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "bark-05", "category": "樹皮", "prompt": "Photograph of moss growing in cedar bark grooves. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "bark-06", "category": "樹皮", "prompt": "Photograph of a weathered tree knot with concentric grain. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "bark-07", "category": "樹皮", "prompt": "Photograph of lichen scattered over dark bark. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "bark-08", "category": "樹皮", "prompt": "Photograph of thin curled eucalyptus bark. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "bark-09", "category": "樹皮", "prompt": "Photograph of a cracked old tree stump. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "bark-10", "category": "樹皮", "prompt": "Photograph of wet bark with small reflective patches. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "rocks-01", "category": "岩石", "prompt": "Photograph of rounded river pebbles. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "rocks-02", "category": "岩石", "prompt": "Photograph of layered slate fragments. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "rocks-03", "category": "岩石", "prompt": "Photograph of pale granite with dark mineral grains. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "rocks-04", "category": "岩石", "prompt": "Photograph of porous volcanic stones. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "rocks-05", "category": "岩石", "prompt": "Photograph of a quartz seam across dark rock. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "rocks-06", "category": "岩石", "prompt": "Photograph of smooth sandstone with curved bands. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "rocks-07", "category": "岩石", "prompt": "Photograph of jagged limestone with small cavities. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "rocks-08", "category": "岩石", "prompt": "Photograph of wet beach stones. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "rocks-09", "category": "岩石", "prompt": "Photograph of a moss-covered boulder surface. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "rocks-10", "category": "岩石", "prompt": "Photograph of crystalline mineral clusters. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "water-01", "category": "水面", "prompt": "Photograph of gentle ripples across a quiet lake. A wide composition in soft morning light, with a clear foreground and distant background."}
+{"id": "water-02", "category": "水面", "prompt": "Photograph of concentric raindrop rings on a pond. An oblique view in diffuse overcast daylight, with subdued colors."}
+{"id": "water-03", "category": "水面", "prompt": "Photograph of a shallow stream flowing over pebbles. A layered composition with gentle depth and warm late-afternoon illumination."}
+{"id": "water-04", "category": "水面", "prompt": "Photograph of small sea waves washing over sand. A closer view emphasizing repeating shapes and surface textures in soft light."}
+{"id": "water-05", "category": "水面", "prompt": "Photograph of foam swirling beside a coastal rock. A spacious composition with broad simple areas and a few detailed elements."}
+{"id": "water-06", "category": "水面", "prompt": "Photograph of reflections of reeds on still water. A diagonal composition with soft shadows and neutral natural colors."}
+{"id": "water-07", "category": "水面", "prompt": "Photograph of sunlight sparkling on a river. A view from a slightly elevated position in cool diffuse daylight."}
+{"id": "water-08", "category": "水面", "prompt": "Photograph of a small waterfall over layered stone. A low viewpoint with fine foreground detail and a softer distant background."}
+{"id": "water-09", "category": "水面", "prompt": "Photograph of thin ice patterns at a pond edge. An asymmetrical composition with gentle backlighting and quiet colors."}
+{"id": "water-10", "category": "水面", "prompt": "Photograph of clear water flowing around submerged branches. A balanced wide view with realistic detail and even daylight."}
+{"id": "clouds-01", "category": "雲", "prompt": "Photograph of a solitary cumulus cloud in blue sky. A wide composition in soft morning light, with a clear foreground and distant background."}
+{"id": "clouds-02", "category": "雲", "prompt": "Photograph of thin cirrus streaks across pale sky. An oblique view in diffuse overcast daylight, with subdued colors."}
+{"id": "clouds-03", "category": "雲", "prompt": "Photograph of layered gray rain clouds. A layered composition with gentle depth and warm late-afternoon illumination."}
+{"id": "clouds-04", "category": "雲", "prompt": "Photograph of pink clouds above a distant horizon. A closer view emphasizing repeating shapes and surface textures in soft light."}
+{"id": "clouds-05", "category": "雲", "prompt": "Photograph of towering white thunderclouds. A spacious composition with broad simple areas and a few detailed elements."}
+{"id": "clouds-06", "category": "雲", "prompt": "Photograph of small scattered cotton-like clouds. A diagonal composition with soft shadows and neutral natural colors."}
+{"id": "clouds-07", "category": "雲", "prompt": "Photograph of a smooth blanket of low cloud over hills. A view from a slightly elevated position in cool diffuse daylight."}
+{"id": "clouds-08", "category": "雲", "prompt": "Photograph of sun rays passing through broken clouds. A low viewpoint with fine foreground detail and a softer distant background."}
+{"id": "clouds-09", "category": "雲", "prompt": "Photograph of dark storm clouds above open sea. An asymmetrical composition with gentle backlighting and quiet colors."}
+{"id": "clouds-10", "category": "雲", "prompt": "Photograph of wisps of cloud around a mountain peak. A balanced wide view with realistic detail and even daylight."}
+{"id": "birds-01", "category": "鳥", "prompt": "Photograph of a sparrow perched on a twig. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "birds-02", "category": "鳥", "prompt": "Photograph of a kingfisher resting on a branch. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "birds-03", "category": "鳥", "prompt": "Photograph of a white egret beside reeds. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "birds-04", "category": "鳥", "prompt": "Photograph of a pigeon with iridescent neck feathers. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "birds-05", "category": "鳥", "prompt": "Photograph of a robin among fallen leaves. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "birds-06", "category": "鳥", "prompt": "Photograph of a duck floating beside aquatic plants. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "birds-07", "category": "鳥", "prompt": "Photograph of an owl perched against a tree trunk. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "birds-08", "category": "鳥", "prompt": "Photograph of a finch beside grass seed heads. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "birds-09", "category": "鳥", "prompt": "Photograph of a gull standing on a coastal rock. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "birds-10", "category": "鳥", "prompt": "Photograph of two small swallows resting on a branch. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "fish-01", "category": "魚", "prompt": "Photograph of a goldfish with flowing fins in clear water. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "fish-02", "category": "魚", "prompt": "Photograph of silver fish swimming over river gravel. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "fish-03", "category": "魚", "prompt": "Photograph of a striped tropical fish beside coral. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "fish-04", "category": "魚", "prompt": "Photograph of a small blue fish among aquatic plants. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "fish-05", "category": "魚", "prompt": "Photograph of a flatfish resting on sand. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "fish-06", "category": "魚", "prompt": "Photograph of a carp beside submerged leaves. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "fish-07", "category": "魚", "prompt": "Photograph of a school of small fish in open water. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "fish-08", "category": "魚", "prompt": "Photograph of an orange clownfish among anemone tentacles. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "fish-09", "category": "魚", "prompt": "Photograph of a spotted fish beside a reef rock. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "fish-10", "category": "魚", "prompt": "Photograph of a translucent freshwater fish among stems. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "insects-01", "category": "昆虫", "prompt": "Photograph of a dragonfly resting on a reed. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "insects-02", "category": "昆虫", "prompt": "Photograph of a ladybird on a green leaf. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "insects-03", "category": "昆虫", "prompt": "Photograph of a butterfly resting on a flower. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "insects-04", "category": "昆虫", "prompt": "Photograph of a beetle walking over bark. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "insects-05", "category": "昆虫", "prompt": "Photograph of a grasshopper on a stem. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "insects-06", "category": "昆虫", "prompt": "Photograph of a honeybee beside flower petals. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "insects-07", "category": "昆虫", "prompt": "Photograph of a cicada clinging to a tree. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "insects-08", "category": "昆虫", "prompt": "Photograph of a moth with intricate wing patterns. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "insects-09", "category": "昆虫", "prompt": "Photograph of an ant on a small twig. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "insects-10", "category": "昆虫", "prompt": "Photograph of a praying mantis among leaves. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "fur-01", "category": "毛並み", "prompt": "Photograph of the striped fur of a resting tabby cat. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "fur-02", "category": "毛並み", "prompt": "Photograph of the soft white coat of a rabbit. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "fur-03", "category": "毛並み", "prompt": "Photograph of curly brown dog fur. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "fur-04", "category": "毛並み", "prompt": "Photograph of the thick wool of a sheep. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "fur-05", "category": "毛並み", "prompt": "Photograph of the spotted coat of a deer. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "fur-06", "category": "毛並み", "prompt": "Photograph of the reddish coat of a fox. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "fur-07", "category": "毛並み", "prompt": "Photograph of the coarse mane of a horse. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "fur-08", "category": "毛並み", "prompt": "Photograph of the dense gray fur of a chinchilla. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "fur-09", "category": "毛並み", "prompt": "Photograph of the black and white coat of a resting cat. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "fur-10", "category": "毛並み", "prompt": "Photograph of the fine golden fur of a hamster. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "food-01", "category": "食品", "prompt": "Photograph of sliced citrus fruit in a plain ceramic bowl. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "food-02", "category": "食品", "prompt": "Photograph of fresh broccoli and carrots on a plain plate. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "food-03", "category": "食品", "prompt": "Photograph of a cluster of purple grapes. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "food-04", "category": "食品", "prompt": "Photograph of halved figs with detailed seed interiors. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "food-05", "category": "食品", "prompt": "Photograph of mushrooms arranged on a wooden board. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "food-06", "category": "食品", "prompt": "Photograph of a loose pile of walnuts and almonds. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "food-07", "category": "食品", "prompt": "Photograph of a rustic bread loaf with a torn edge. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "food-08", "category": "食品", "prompt": "Photograph of red tomatoes with green stems. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "food-09", "category": "食品", "prompt": "Photograph of a bowl of mixed leafy vegetables. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "food-10", "category": "食品", "prompt": "Photograph of sliced strawberries beside whole berries. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "fabric-01", "category": "布", "prompt": "Photograph of navy and white woven cotton. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "fabric-02", "category": "布", "prompt": "Photograph of coarse tan burlap fibers. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "fabric-03", "category": "布", "prompt": "Photograph of soft folds of blue linen. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "fabric-04", "category": "布", "prompt": "Photograph of thick cream knitted wool. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "fabric-05", "category": "布", "prompt": "Photograph of fine gray herringbone weave. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "fabric-06", "category": "布", "prompt": "Photograph of smooth green silk folds. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "fabric-07", "category": "布", "prompt": "Photograph of red and brown plaid woven fabric. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "fabric-08", "category": "布", "prompt": "Photograph of white lace with repeating loops. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "fabric-09", "category": "布", "prompt": "Photograph of dark indigo denim texture. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "fabric-10", "category": "布", "prompt": "Photograph of a plain purple towel with dense loops. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "ceramics-01", "category": "陶器", "prompt": "Photograph of a plain white ceramic bowl. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "ceramics-02", "category": "陶器", "prompt": "Photograph of a small blue glazed vase. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "ceramics-03", "category": "陶器", "prompt": "Photograph of a rough terracotta pot. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "ceramics-04", "category": "陶器", "prompt": "Photograph of a pale green crackle-glazed cup. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "ceramics-05", "category": "陶器", "prompt": "Photograph of stacked plain earthenware plates. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "ceramics-06", "category": "陶器", "prompt": "Photograph of a rounded matte black vessel. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "ceramics-07", "category": "陶器", "prompt": "Photograph of a shallow cream-colored dish. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "ceramics-08", "category": "陶器", "prompt": "Photograph of a handmade brown clay jug. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "ceramics-09", "category": "陶器", "prompt": "Photograph of a small pale pink ceramic teapot. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "ceramics-10", "category": "陶器", "prompt": "Photograph of three plain porcelain cups. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "tools-01", "category": "工具", "prompt": "Photograph of plain metal pliers with dark handles. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "tools-02", "category": "工具", "prompt": "Photograph of a wooden-handled hammer. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "tools-03", "category": "工具", "prompt": "Photograph of steel scissors resting open. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "tools-04", "category": "工具", "prompt": "Photograph of a cluster of plain metal hex keys. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "tools-05", "category": "工具", "prompt": "Photograph of a paintbrush with a smooth wooden handle. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "tools-06", "category": "工具", "prompt": "Photograph of a plain adjustable wrench. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "tools-07", "category": "工具", "prompt": "Photograph of a small woodworking clamp. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "tools-08", "category": "工具", "prompt": "Photograph of a hand trowel with a wooden handle. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "tools-09", "category": "工具", "prompt": "Photograph of plain steel nuts and bolts. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "tools-10", "category": "工具", "prompt": "Photograph of a pair of simple metal tweezers. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "machinery-01", "category": "機械部品", "prompt": "Photograph of interlocking polished metal gears. Close framing with fine surface detail, soft side lighting and a gently blurred background."}
+{"id": "machinery-02", "category": "機械部品", "prompt": "Photograph of copper pipes joined by curved elbows. An oblique view in diffuse daylight, with muted natural colors and a shallow depth of field."}
+{"id": "machinery-03", "category": "機械部品", "prompt": "Photograph of a steel bearing with exposed balls. A slightly wider composition with surrounding material visible, under soft morning light."}
+{"id": "machinery-04", "category": "機械部品", "prompt": "Photograph of a coiled metal spring. A close view from a low angle, with gentle backlighting outlining the edges."}
+{"id": "machinery-05", "category": "機械部品", "prompt": "Photograph of a chain wrapped around a sprocket. A tight composition emphasizing overlapping shapes and fine textures, in neutral light."}
+{"id": "machinery-06", "category": "機械部品", "prompt": "Photograph of parallel metal cooling fins. A sparse composition with a broad softly blurred background and warm side lighting."}
+{"id": "machinery-07", "category": "機械部品", "prompt": "Photograph of a cluster of polished steel shafts. A diagonal composition with crisp foreground detail fading into a soft background."}
+{"id": "machinery-08", "category": "機械部品", "prompt": "Photograph of a circular fan with curved blades. A close view with gentle shadows, cool diffuse light and realistic surface imperfections."}
+{"id": "machinery-09", "category": "機械部品", "prompt": "Photograph of braided metal hoses with plain fittings. An asymmetrical composition with room around the subject, lit by soft late-afternoon light."}
+{"id": "machinery-10", "category": "機械部品", "prompt": "Photograph of a cutaway arrangement of pistons and connecting rods. A detailed view with balanced natural colors and even soft illumination."}
+{"id": "facades-01", "category": "建物外壁", "prompt": "Photograph of a plain concrete facade with repeating windows. A wide composition in soft morning light, with a clear foreground and distant background."}
+{"id": "facades-02", "category": "建物外壁", "prompt": "Photograph of a brick wall with arched windows. An oblique view in diffuse overcast daylight, with subdued colors."}
+{"id": "facades-03", "category": "建物外壁", "prompt": "Photograph of a white stucco facade with deep window recesses. A layered composition with gentle depth and warm late-afternoon illumination."}
+{"id": "facades-04", "category": "建物外壁", "prompt": "Photograph of a timber-clad facade with vertical slats. A closer view emphasizing repeating shapes and surface textures in soft light."}
+{"id": "facades-05", "category": "建物外壁", "prompt": "Photograph of glass windows reflecting trees. A spacious composition with broad simple areas and a few detailed elements."}
+{"id": "facades-06", "category": "建物外壁", "prompt": "Photograph of a stone facade with narrow windows. A diagonal composition with soft shadows and neutral natural colors."}
+{"id": "facades-07", "category": "建物外壁", "prompt": "Photograph of repeating balcony railings on a plain building. A view from a slightly elevated position in cool diffuse daylight."}
+{"id": "facades-08", "category": "建物外壁", "prompt": "Photograph of a corrugated metal building wall. A low viewpoint with fine foreground detail and a softer distant background."}
+{"id": "facades-09", "category": "建物外壁", "prompt": "Photograph of a weathered plaster wall with a wooden shutter. An asymmetrical composition with gentle backlighting and quiet colors."}
+{"id": "facades-10", "category": "建物外壁", "prompt": "Photograph of a tiled facade with a regular grid of windows. A balanced wide view with realistic detail and even daylight."}
+{"id": "interiors-01", "category": "室内", "prompt": "Photograph of an empty room with a plain sofa and low table. A wide composition in soft morning light, with a clear foreground and distant background."}
+{"id": "interiors-02", "category": "室内", "prompt": "Photograph of sunlight falling across wooden floorboards. An oblique view in diffuse overcast daylight, with subdued colors."}
+{"id": "interiors-03", "category": "室内", "prompt": "Photograph of plain kitchen cabinets beside a sink. A layered composition with gentle depth and warm late-afternoon illumination."}
+{"id": "interiors-04", "category": "室内", "prompt": "Photograph of a quiet room with a chair and potted plant. A closer view emphasizing repeating shapes and surface textures in soft light."}
+{"id": "interiors-05", "category": "室内", "prompt": "Photograph of a staircase with a simple metal railing. A spacious composition with broad simple areas and a few detailed elements."}
+{"id": "interiors-06", "category": "室内", "prompt": "Photograph of a plain bedroom with folded bedding. A diagonal composition with soft shadows and neutral natural colors."}
+{"id": "interiors-07", "category": "室内", "prompt": "Photograph of an empty tiled hallway. A view from a slightly elevated position in cool diffuse daylight."}
+{"id": "interiors-08", "category": "室内", "prompt": "Photograph of a window alcove with a small cushion. A low viewpoint with fine foreground detail and a softer distant background."}
+{"id": "interiors-09", "category": "室内", "prompt": "Photograph of a room with woven baskets and plain shelves. An asymmetrical composition with gentle backlighting and quiet colors."}
+{"id": "interiors-10", "category": "室内", "prompt": "Photograph of a dining room with an empty wooden table. A balanced wide view with realistic detail and even daylight."}
+{"id": "streets-01", "category": "街並み", "prompt": "Photograph of a quiet residential lane between plain plaster houses. A wide composition in soft morning light, with a clear foreground and distant background."}
+{"id": "streets-02", "category": "街並み", "prompt": "Photograph of a narrow cobbled passage between stone walls. An oblique view in diffuse overcast daylight, with subdued colors."}
+{"id": "streets-03", "category": "街並み", "prompt": "Photograph of a tree-lined pedestrian path beside low homes. A layered composition with gentle depth and warm late-afternoon illumination."}
+{"id": "streets-04", "category": "街並み", "prompt": "Photograph of a curved alley with wooden fences. A closer view emphasizing repeating shapes and surface textures in soft light."}
+{"id": "streets-05", "category": "街並み", "prompt": "Photograph of a stepped walkway between hillside houses. A spacious composition with broad simple areas and a few detailed elements."}
+{"id": "streets-06", "category": "街並み", "prompt": "Photograph of a canal-side path with brick walls. A diagonal composition with soft shadows and neutral natural colors."}
+{"id": "streets-07", "category": "街並み", "prompt": "Photograph of a village lane bordered by hedges. A view from a slightly elevated position in cool diffuse daylight."}
+{"id": "streets-08", "category": "街並み", "prompt": "Photograph of a rain-wet residential courtyard. A low viewpoint with fine foreground detail and a softer distant background."}
+{"id": "streets-09", "category": "街並み", "prompt": "Photograph of a shaded passage under plain building arches. An asymmetrical composition with gentle backlighting and quiet colors."}
+{"id": "streets-10", "category": "街並み", "prompt": "Photograph of a wide paved walkway between modern residential buildings. A balanced wide view with realistic detail and even daylight."}
+{"id": "botanical_illustrations-01", "category": "植物イラスト", "prompt": "Color illustration of a fern frond with many small leaflets. Delicate watercolor washes and fine brush strokes on a plain pale background."}
+{"id": "botanical_illustrations-02", "category": "植物イラスト", "prompt": "Color illustration of a branch of maple leaves. Colored pencil shading with visible paper grain and a centered composition."}
+{"id": "botanical_illustrations-03", "category": "植物イラスト", "prompt": "Color illustration of three white daisies with slender stems. Flat color shapes with clean contours and ample plain background."}
+{"id": "botanical_illustrations-04", "category": "植物イラスト", "prompt": "Color illustration of a pine twig with a cone. Soft gouache colors with subtle texture and an oblique composition."}
+{"id": "botanical_illustrations-05", "category": "植物イラスト", "prompt": "Color illustration of a blooming camellia branch. Fine ink outlines with restrained watercolor shading."}
+{"id": "botanical_illustrations-06", "category": "植物イラスト", "prompt": "Color illustration of a cluster of mushrooms with textured caps. Pastel colors with gentle shadows and a sparse arrangement."}
+{"id": "botanical_illustrations-07", "category": "植物イラスト", "prompt": "Color illustration of a succulent with layered leaves. Detailed colored pencil strokes with an asymmetrical composition."}
+{"id": "botanical_illustrations-08", "category": "植物イラスト", "prompt": "Color illustration of a bamboo stem with narrow leaves. Simple rounded shapes, muted colors and soft painted edges."}
+{"id": "botanical_illustrations-09", "category": "植物イラスト", "prompt": "Color illustration of a spray of wild grasses with seed heads. A realistic painted study with detailed surfaces and a plain cream background."}
+{"id": "botanical_illustrations-10", "category": "植物イラスト", "prompt": "Color illustration of an oak branch with leaves and acorns. Bold clean silhouettes with fine interior details and a pale blue background."}
+{"id": "object_illustrations-01", "category": "日用品イラスト", "prompt": "Color illustration of a plain ceramic cup beside a spoon. Delicate watercolor washes and fine brush strokes on a plain pale background."}
+{"id": "object_illustrations-02", "category": "日用品イラスト", "prompt": "Color illustration of a folded umbrella with a curved handle. Colored pencil shading with visible paper grain and a centered composition."}
+{"id": "object_illustrations-03", "category": "日用品イラスト", "prompt": "Color illustration of a woven basket containing folded cloth. Flat color shapes with clean contours and ample plain background."}
+{"id": "object_illustrations-04", "category": "日用品イラスト", "prompt": "Color illustration of a pair of plain scissors and a paintbrush. Soft gouache colors with subtle texture and an oblique composition."}
+{"id": "object_illustrations-05", "category": "日用品イラスト", "prompt": "Color illustration of a small watering can beside a flowerpot. Fine ink outlines with restrained watercolor shading."}
+{"id": "object_illustrations-06", "category": "日用品イラスト", "prompt": "Color illustration of a plain desk lamp with a curved shade. Pastel colors with gentle shadows and a sparse arrangement."}
+{"id": "object_illustrations-07", "category": "日用品イラスト", "prompt": "Color illustration of a wooden chair with a woven seat. Detailed colored pencil strokes with an asymmetrical composition."}
+{"id": "object_illustrations-08", "category": "日用品イラスト", "prompt": "Color illustration of a glass pitcher beside a plain bowl. Simple rounded shapes, muted colors and soft painted edges."}
+{"id": "object_illustrations-09", "category": "日用品イラスト", "prompt": "Color illustration of a pair of plain shoes with tied laces. A realistic painted study with detailed surfaces and a plain cream background."}
+{"id": "object_illustrations-10", "category": "日用品イラスト", "prompt": "Color illustration of a coiled rope beside a smooth wooden box. Bold clean silhouettes with fine interior details and a pale blue background."}
