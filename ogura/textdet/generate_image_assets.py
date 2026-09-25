@@ -84,6 +84,16 @@ def generate(args, rows):
     save_json(manifest_path, manifest)
     try:
         if len(done) < len(rows):
+            # Establish a real CUDA context before CPU weights and file cache
+            # consume shared DRAM on GB10. Availability checks alone are not enough.
+            print('Initializing CUDA before loading model weights...', flush=True)
+            torch.cuda.init()
+            probe = torch.empty(1, device='cuda')
+            torch.cuda.synchronize()
+            del probe
+            free, total = torch.cuda.mem_get_info()
+            print(f'CUDA memory before loading: {free / 2**30:.1f} GiB free / '
+                  f'{total / 2**30:.1f} GiB total', flush=True)
             snapshot = download(args.cache)
             pipe = ZImagePipeline.from_pretrained(snapshot, torch_dtype=torch.bfloat16,
                                                   local_files_only=True)
@@ -122,7 +132,7 @@ def main():
     parser.add_argument('--prompts', type=Path, default=ROOT/'prompts/image_assets_sample.jsonl')
     parser.add_argument('--cache', type=Path, default=ROOT/'.cache/z-image-turbo')
     parser.add_argument('--output', type=Path, default=ROOT/'outputs/image-assets-sample-v1')
-    parser.add_argument('--size', type=int, default=1024)
+    parser.add_argument('--size', type=int, default=512)
     parser.add_argument('--seed', type=int, default=20260928)
     parser.add_argument('--limit', type=int)
     parser.add_argument('--resume', action='store_true')

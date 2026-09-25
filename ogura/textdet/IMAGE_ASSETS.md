@@ -8,6 +8,7 @@ Synth-JDocが使用するZ-Image-Turboを、公式Diffusers APIで呼び出す�
 Synth-JDoc本体は変更しない。Flash Attentionは必須にせず、標準SDPAを使用する。
 公式モデル: https://huggingface.co/Tongyi-MAI/Z-Image-Turbo
 モデルrevisionはスクリプト内で固定。9 steps・guidance_scale=0、bfloat16を使用する。
+生成サイズの既定値は512×512ピクセル。`--size` で変更できる。
 依存パッケージは共通のルートpyproject.toml/uv.lockに含む。
 
 GPU側の `~/ogura` で:
@@ -29,6 +30,8 @@ CUDA_VISIBLE_DEVICES=0 uv run --locked python -m ogura.textdet.generate_image_as
 モデルキャッシュは `ogura/textdet/.cache/z-image-turbo/`。
 GPUメモリに余裕がない場合は `--cpu-offload` を追加する（CPUへの退避で速度は低下）。
 中断後は同じ引数に `--resume` を追加。設定・プロンプト・生成済み画像のハッシュを検証する。
+以前の1024×1024の出力は512×512として再開できないため、
+`--output ogura/textdet/outputs/image-assets-512-v1` など別の出力先を指定する。
 生成処理はCUDAとbfloat16対応を必須とし、CPUでの意図しない長時間生成を行わない。
 
 出力 `ogura/textdet/outputs/image-assets-sample-v1/`:
