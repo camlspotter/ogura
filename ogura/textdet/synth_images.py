@@ -38,7 +38,7 @@ def add_image(markup, style, config):
         css = ('<style>.asset-figure{'
                f'float:{config["float_side"]};'
                'writing-mode:inherit;box-sizing:border-box;break-inside:avoid;'
-               'padding:0!important;margin:0 10px 10px!important;background:transparent!important;}'
+               'padding:0!important;margin:10px!important;background:transparent!important;}'
                '.asset-figure .content-image{width:100%!important;height:auto!important;'
                'max-height:none!important;max-width:100%!important;margin:0!important;}</style>')
         markup = markup.replace('<div class="content-body">', '<div class="content-body">' + figure, 1)

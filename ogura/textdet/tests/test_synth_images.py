@@ -23,6 +23,33 @@ class ImagePlanTests(unittest.TestCase):
 
 @unittest.skipUnless(os.getenv('RUN_SYNTH_BROWSER_TESTS') == '1', 'requires Chromium')
 class ImageLayoutTests(unittest.TestCase):
+    def test_vertical_end_float_has_gap_for_bold_glyph_bounds(self):
+        font = Path(__file__).resolve().parents[3]/'corpus/fonts/NotoSansCJKjp-Bold.otf'
+        if not font.is_file():
+            self.skipTest('requires NotoSansCJKjp-Bold.otf')
+        buf = io.BytesIO()
+        Image.new('RGB', (32, 32), 'green').save(buf, format='PNG')
+        src = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+        markup, style = render_html(dict(title='確認', paragraphs=['日本語の本文です。' * 200] * 8),
+            font, 20260930 + 216, True, 1, 24, line_height=1.5)
+        markup = add_image(markup, style, dict(src=src, height=352, alignment='center',
+            position='top', layout='float', float_side='inline-end'))
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch()
+            try:
+                page = browser.new_page(viewport=dict(width=1200, height=1600))
+                page.set_content(fixed_page_html(markup))
+                page.evaluate('document.fonts.ready')
+                size_float_image(page, 352)
+                lines, _ = extract_page(page, 1)
+                r = page.locator('.asset-figure img').bounding_box()
+                above = [l for l in lines if l['element_id'].isdigit() and
+                         min(l['bbox'][2], r['x']+r['width']) > max(l['bbox'][0], r['x'])]
+                self.assertTrue(above)
+                self.assertGreater(min(r['y'] - l['bbox'][3] for l in above), 1)
+            finally:
+                browser.close()
+
     def test_visible_image_and_text_labels_do_not_overlap(self):
         buf = io.BytesIO()
         Image.new('RGB', (32, 32), 'green').save(buf, format='PNG')
