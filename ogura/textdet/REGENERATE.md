@@ -5,33 +5,32 @@ PDF自体をコピーする必要はなく、別マシンにある同一内容�
 
 ## 転送するもの
 
-- 最新の `ogura/textdet/` のコードと `requirements.txt`（Git対象）。
-- `ogura/textdet/outputs/experiment-v1-recipe.json`（約159KB、Git管理外）。
+- 最新の `ogura/textdet/` のコードとリポジトリルートの `pyproject.toml`・`uv.lock`（Git対象）。
+- `ogura/textdet/outputs/experiment-v1-recipe.json`（Git管理対象）。
 
 レシピは387ページの明示的な採用一覧と分割、PDF内容ハッシュを含む。
 train 308、val 39、test 40。手動除外・重複除外・品質保留ページは含まない。
-PDF・画像・ラベル・レシピはコミットしない。転送とGPUマシンへのアクセスはユーザーが行う。
+PDF・画像・ラベルはコミットしない。再生成用レシピはGitで管理する。転送とGPUマシンへのアクセスはユーザーが行う。
 
 ## GPUマシン側の準備
 
 リポジトリルートで実行する。Python 3.12以上を使用する。
-既存のtextrec環境を変更せず、textdet専用環境にインストールする。
+textrecとtextdetでルートの `.venv` を共用し、通常の `uv sync` で画像生成・学習の依存関係をまとめてインストールする。
 
 ```sh
-python3 -m venv ogura/textdet/.venv
-ogura/textdet/.venv/bin/python -m pip install -r ogura/textdet/requirements.txt
+uv sync
 ```
 
 この再生成にはPoppler / pdffontsやCUDAは不要。PDF一次フィルタは再実行しない。
 
 ## 画像生成
 
-転送したレシピを `ogura/textdet/outputs/experiment-v1-recipe.json` に置く。
+Gitで取得した `ogura/textdet/outputs/experiment-v1-recipe.json` を使用する。
 `/path/to/JDocQA_pdf_files` をPDFがあるディレクトリに置き換える。
 PDFはそのディレクトリ直下に、元のファイル名で必要。
 
 ```sh
-ogura/textdet/.venv/bin/python -m ogura.textdet.regenerate_dataset generate \
+uv run --locked python -m ogura.textdet.regenerate_dataset generate \
   --recipe ogura/textdet/outputs/experiment-v1-recipe.json \
   --pdf-root /path/to/JDocQA_pdf_files \
   --output ogura/textdet/outputs/experiment-v1-regenerated \
@@ -52,7 +51,7 @@ experiment-v1-regenerated/
 ```
 
 PDF内容、抽出コード、PyMuPDF/Pillowの版を照合し、不一致なら停止する。
-版は `requirements.txt` の指定に合わせる。PDFはファイル内容で照合するので、パス・更新日時は異なってもよい。
+版は `pyproject.toml` と `uv.lock` で固定する。PDFはファイル内容で照合するので、パス・更新日時は異なってもよい。
 全対象PDFを確認してから画像生成を開始し、既存の出力先は上書きしない。
 途中失敗時はmanifestが `failed` となる。原因を解消し、別の出力先でやり直す。
 
@@ -65,7 +64,7 @@ PDF内容、抽出コード、PyMuPDF/Pillowの版を照合し、不一致なら
 選別から実験データを再エクスポートした後、新しいファイル名のレシピを生成する。
 
 ```sh
-ogura/textdet/.venv/bin/python -m ogura.textdet.regenerate_dataset pack \
+uv run --locked python -m ogura.textdet.regenerate_dataset pack \
   --experiment ogura/textdet/outputs/experiment-v1 \
   --pdf-root JDocQA_pdf_files \
   --output ogura/textdet/outputs/experiment-v1-recipe.json

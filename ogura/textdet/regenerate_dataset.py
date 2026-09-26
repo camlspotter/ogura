@@ -126,7 +126,7 @@ def generate(recipe_path, pdf_root, output, workers=2, limit=None):
     if recipe['code_sha256'] != code_hashes():
         raise ValueError('Extraction code differs from recipe; use the matching code or pack again')
     if recipe['versions'] != {'pymupdf':fitz.VersionBind,'pillow':PIL.__version__}:
-        raise ValueError('Install the exact versions in textdet/requirements.txt')
+        raise ValueError('Install the locked dependencies: uv sync')
     pages = recipe['pages'][:limit] if limit else recipe['pages']
     grouped = {}
     for row in pages:

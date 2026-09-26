@@ -10,7 +10,7 @@ CNNで横方向の特徴列を作り、CTCで学習する。モデルはラン�
 ## 準備
 
 ```sh
-uv sync --frozen --extra train
+uv sync
 ```
 
 GPUマシンへはコード・uv.lockと、少なくとも次のファイルをコピーする。

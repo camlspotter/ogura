@@ -1,28 +1,31 @@
 # PDFからtextdetの正解候補を作る
 
-一次フィルタリングをPDF単位で行い、通過したPDFの**全ページ**について、原画像・行bbox付き画像・文字座標を保存するバッチツールです。Webアプリや二次選別UIはありません。元PDFと既存のtextrec環境は変更しません。
+一次フィルタリングをPDF単位で行い、通過したPDFの**全ページ**について、原画像・行bbox付き画像・文字座標を保存するバッチツールです。Webアプリや二次選別UIはありません。元PDFは変更しません。
 
 ## セットアップ・実行
 
 リポジトリのルートで実行します。Popplerの `pdffonts` が必要です（macOSでは `brew install poppler`）。
 
+依存関係はtextrecと共通で、ルートの `pyproject.toml` と `uv.lock` で管理します。
+`uv sync` で両方の依存関係がルートの `.venv` に入ります。
+GPU学習の実行例は [EXPERIMENT.md](EXPERIMENT.md) を参照してください。
+
 ```sh
-UV_CACHE_DIR=ogura/textdet/.cache/uv uv venv ogura/textdet/.venv
-UV_CACHE_DIR=ogura/textdet/.cache/uv uv pip install --python ogura/textdet/.venv/bin/python -r ogura/textdet/requirements.txt
-ogura/textdet/.venv/bin/python -m ogura.textdet.prepare \
+uv sync
+uv run --locked python -m ogura.textdet.prepare \
   --source ~/mocrdown/tests/data \
   --min-chars 100 \
   --dpi 150
 ```
 
-既定の出力先は `ogura/textdet/outputs/YYYYMMDD-HHMMSS/`。`--output ogura/textdet/outputs/名前` でも指定できます。混在を防ぐため、既存の出力ディレクトリは上書きしません。入力は指定ディレクトリ直下の `*.pdf` です。出力・仮想環境・キャッシュはすべてtextdet配下に置き、Git管理外にします。
+既定の出力先は `ogura/textdet/outputs/YYYYMMDD-HHMMSS/`。`--output ogura/textdet/outputs/名前` でも指定できます。混在を防ぐため、既存の出力ディレクトリは上書きしません。入力は指定ディレクトリ直下の `*.pdf` です。出力はtextdet配下に置き、Git管理外にします。仮想環境はルートの `.venv` を共用します。
 
 ## 一次フィルタリング
 
 **画像・bboxを一切作らず一次フィルタだけを実行する場合**:
 
 ```sh
-ogura/textdet/.venv/bin/python -m ogura.textdet.filter_only \
+uv run --locked python -m ogura.textdet.filter_only \
   --source ~/ogura/JDocQA_pdf_files \
   --min-chars 100 --workers 2
 ```
@@ -45,7 +48,7 @@ ogura/textdet/.venv/bin/python -m ogura.textdet.filter_only \
 一次フィルタ通過一覧から、抽出文字数が0のページを除き、残ったページの約1/3・2/3の位置を選んで画像化する場合:
 
 ```sh
-ogura/textdet/.venv/bin/python -m ogura.textdet.sample_pages \
+uv run --locked python -m ogura.textdet.sample_pages \
   --list ogura/textdet/outputs/jdocqa-filter-only/passed.json \
   --output ogura/textdet/outputs/jdocqa-latest
 ```
@@ -75,7 +78,7 @@ bboxとIDは、原画像のRGB値をXOR反転（各チャンネルを255から�
 ## 検証
 
 ```sh
-ogura/textdet/.venv/bin/python -m unittest discover -s ogura/textdet/tests
+uv run --locked python -m unittest discover -s ogura/textdet/tests
 ```
 
 PyMuPDFはAGPL／商用ライセンスです。元PDFの権利は別です。
