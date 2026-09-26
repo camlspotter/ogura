@@ -1,4 +1,6 @@
 """Compare saved OCR predictions against visually reviewed real-image references."""
+from ogura.training.scoring import allow_punctuation_space
+
 import argparse
 from collections import Counter
 import hashlib
@@ -39,6 +41,7 @@ def score(references, predictions, model_aliases, evaluation_aliases, preprocess
     rows = []; confusions = Counter()
     for key, row in refs.items():
         ref, pred = normalize(row['reference']), normalize(preds[key]['prediction'])
+        pred = allow_punctuation_space(ref, pred)
         if not ref: raise ValueError('Normalization produced empty reference')
         edits = align_errors(ref, pred)
         confusions.update((e['kind'], e['reference'], e['prediction']) for e in edits)

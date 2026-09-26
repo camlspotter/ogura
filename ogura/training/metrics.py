@@ -1,5 +1,6 @@
 """Greedy CTC accuracy, sample-weighted epoch totals and rollback-safe JSONL."""
 import json
+from .scoring import allow_punctuation_space
 import math
 from datetime import datetime
 import time
@@ -124,9 +125,10 @@ def empty_totals():
 
 def evaluation_texts(references, predictions, aliases=None):
     """Normalize copies for scoring only; never changes CTC targets or images."""
-    if aliases is None:
-        return references, predictions
-    return ([aliases.normalize(t) for t in references], [aliases.normalize(t) for t in predictions])
+    if aliases is not None:
+        references = [aliases.normalize(t) for t in references]
+        predictions = [aliases.normalize(t) for t in predictions]
+    return references, [allow_punctuation_space(r, p) for r, p in zip(references, predictions)]
 
 
 def batch_totals(predictions, references, loss, seconds, evaluation_aliases=None):

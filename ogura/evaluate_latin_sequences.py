@@ -1,4 +1,6 @@
 """Compare checkpoints on identical images, including per-sequence deletion rates."""
+from ogura.training.scoring import allow_punctuation_space
+
 import argparse
 from collections import Counter
 from dataclasses import asdict
@@ -87,6 +89,7 @@ def main():
                     predictions=decode(model(images),model.output_lengths(batch.image_widths),vocabulary)
                     for index,(raw_ref,raw_pred) in enumerate(zip(batch.texts,predictions)):
                         ref=aliases.normalize(raw_ref);pred=aliases.normalize(raw_pred)
+                        pred=allow_punctuation_space(ref,pred)
                         c,edits=sequence_counts(ref,pred)
                         for pattern in PATTERNS:counts[k][pattern].update(c[pattern])
                         totals[k].update(samples=1,exact_matches=int(ref==pred),reference_characters=len(ref),

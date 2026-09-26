@@ -1,4 +1,6 @@
 """Render fixed validation errors and count aligned substitutions/deletions/insertions."""
+from ogura.training.scoring import allow_punctuation_space
+
 import argparse
 from collections import Counter
 from dataclasses import asdict
@@ -106,6 +108,7 @@ def diagnose(model, datasets, vocabulary, batch_size, device, output, top=20, ev
                     for k,(ref,pred) in enumerate(zip(batch.texts,predictions)):
                         raw_ref,raw_pred=ref,pred
                         ref,pred=evaluation_aliases.normalize(ref),evaluation_aliases.normalize(pred)
+                        pred=allow_punctuation_space(ref,pred)
                         if raw_ref != raw_pred and ref == pred:accepted_by_aliases+=1
                         occurrences.update(ref);characters+=len(ref)
                         weighted = weighted_edit_distance(ref,pred);weighted_errors += weighted
