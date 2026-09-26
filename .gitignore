@@ -9,3 +9,11 @@ runs/
 
 # JDocQA source PDFs are local training data.
 /JDocQA_pdf_files/
+
+# Local assets are never versioned.
+/corpus
+/cache
+/charset
+/datasets
+/runs
+/previews
