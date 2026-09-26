@@ -127,7 +127,7 @@ bash ogura/textdet/scripts/synth_images_2000.sh package
 bash ogura/textdet/scripts/synth_images_2000.sh download-command
 ```
 
-比較対象は9,000ページ版と11,000ページ版。JDocQAの固定validation 39ページを使い、
+比較対象は9,000ページ版と11,000ページ版。JDocQAの文書単位の除外を適用したvalidation 35ページを使い、
 後処理は従来選択した入力1536・二値化閾値0.5・unclip 1.0・box閾値0.1に固定する。
 testセットはこのスクリプトでは使用しない。結果には両モデルのbbox画像・確率マップPNG・
 集計値・予測JSONを含め、ダウンロード用tar.gzには学習画像・重み・確率配列npyを含めない。
@@ -138,3 +138,18 @@ Mac側へのコピー例:
 ```bash
 scp -r dgx:~/ogura/ogura/textdet/outputs/image-assets-sample-v1 ~/ogura/ogura/textdet/outputs/
 ```
+
+## 評価対象の見直し（standard-v2）
+
+`evaluation_exclusions.json` に記録した6文書を、ユーザーのPDF目視確認に基づき
+極小文字が過剰な対象外文書として、ページ単位ではなく文書全体で除外する。
+validationは39→35ページ、testは40→35ページ。元PDF・旧レシピ・旧評価結果は保持する。
+評価結果を見た後の対象範囲変更なので、旧ベンチマークの改善とは区別する。
+既存モデルの学習中validation・ベスト重みの選択は元の39ページを使用済みであり、
+再集計によってこの履歴は変わらない。
+
+`evaluate` は両モデルに同じ除外を適用して `validation-synth11000-standard-v2/` に保存する。
+`package` と `download-command` も新しい出力先を使用する。
+今後の `train` は `python -m ogura.textdet.evaluation_scope` で元データから
+`outputs/experiment-standard-v2/` にval/testのコピーを作り、35ページのvalを使用する。
+既存重みの上書き拒否は維持する。過去の他の学習スクリプトは旧条件の再現用として変更しない。

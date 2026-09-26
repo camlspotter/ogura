@@ -90,6 +90,15 @@ def run(args):
     images = list(inventory) if args.all_pages else (args.images or PAGES)
     if not images or len(images) != len(set(images)):
         raise ValueError('Expected a nonempty list of unique pages')
+    exclusions = None
+    excluded = []
+    if getattr(args, 'exclude_documents', None):
+        from .evaluation_scope import load_exclusions, excluded_image
+        exclusions = load_exclusions(args.exclude_documents)
+        excluded = [name for name in images if excluded_image(name, exclusions)]
+        images = [name for name in images if name not in excluded]
+        if not images:
+            raise ValueError('No evaluation pages remain after exclusions')
     if args.expected_pages is not None and len(images) != args.expected_pages:
         raise ValueError(f'Expected {args.expected_pages} pages, got {len(images)}')
     if any(name not in inventory for name in images):
@@ -112,6 +121,10 @@ def run(args):
                   amp=args.amp, device=args.device, versions=dict(torch=torch.__version__, doctr=doctr.__version__),
                   note='unclip=0 means no polygon expansion, not no postprocessing; select settings on validation only')
     rows = []
+    if exclusions:
+        report['evaluation_scope'] = exclusions
+        report['excluded_images'] = excluded
+        report['exclusions_sha256'] = sha(args.exclude_documents)
     normalize = Normalize(mean=(.798, .785, .772), std=(.264, .2749, .287))
     try:
         for name, checkpoint in checkpoints.items():
@@ -159,6 +172,8 @@ def main():
     selection.add_argument('--images', nargs='+')
     selection.add_argument('--all-pages', action='store_true')
     parser.add_argument('--expected-pages', type=int)
+    parser.add_argument('--exclude-documents', type=Path,
+                        help='Explicit document exclusion policy; original dataset is retained')
     parser.add_argument('--model', choices=['both','synth7000','synth9000'], default='both')
     parser.add_argument('--previous-name', default='synth7000')
     parser.add_argument('--current-name', default='synth9000')

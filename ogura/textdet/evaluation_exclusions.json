@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "scope": "jdocqa-standard-document-evaluation-v2",
+  "reason": "Excluded at document level after user inspection: excessively small text at A4-equivalent scale is outside the intended document scope. Selected after viewing evaluation results; this is a revised benchmark, not an improvement on the original benchmark.",
+  "documents": [
+    "public_document_ministry01376.pdf",
+    "public_document_ministry00773.pdf",
+    "public_document_ministry02124.pdf",
+    "public_document_ministry00252.pdf",
+    "public_document_ministry02766.pdf",
+    "public_document_ministry00004.pdf"
+  ]
+}
