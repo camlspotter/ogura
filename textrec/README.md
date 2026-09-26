@@ -144,9 +144,9 @@ verify_training_text は出典付き自然文・旧置換文用の検証器。
 - `../ogura/textdet/`: detection (independent development).
 
 Use `python -m ogura.textrec.training.train` and `python -m ogura.textrec.recognize`.
-Legacy `ogura.training.train`, `ogura.recognize` and other recognition module
-entry points remain available for existing commands. Do not mix legacy and new
-import paths in application code; new code should use `ogura.textrec` consistently.
+The shared `ogura` is a PEP 420 namespace package. Use `ogura.textrec.*`;
+legacy `ogura.recognize` / `ogura.training.*` entry points are no longer provided.
+Both projects can be installed in one environment without replacing each other.
 All commands in this document run from `textrec/`. The `datasets/`, `../corpus/`,
 `config/`, and `runs/` paths are relative to this project directory.
 Existing weight/state-dict checkpoints remain readable. Resume accepts the

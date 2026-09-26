@@ -17,3 +17,8 @@ runs/
 /datasets
 /runs
 /previews
+
+# Python packaging artifacts
+*.egg-info/
+build/
+dist/

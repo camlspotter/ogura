@@ -1236,9 +1236,9 @@ wheels = [
 ]
 
 [[package]]
-name = "ogura"
+name = "ogura-textdet"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
     { name = "diffusers" },
@@ -1257,6 +1257,11 @@ dependencies = [
     { name = "transformers" },
 ]
 
+[package.optional-dependencies]
+textrec = [
+    { name = "ogura-textrec" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "accelerate", specifier = ">=1,<2" },
@@ -1266,6 +1271,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1,<4" },
     { name = "kanjize", specifier = ">=1.5,<2" },
     { name = "numpy", specifier = ">=2" },
+    { name = "ogura-textrec", marker = "extra == 'textrec'", editable = "textrec" },
     { name = "pillow", specifier = "==12.3.0" },
     { name = "playwright", specifier = ">=1.50,<2" },
     { name = "pyarrow", specifier = ">=25.0.1" },
@@ -1274,6 +1280,30 @@ requires-dist = [
     { name = "torch", specifier = ">=2.6,<3" },
     { name = "torchvision", specifier = ">=0.21" },
     { name = "transformers", specifier = ">=4.51,<5" },
+]
+provides-extras = ["train", "textrec"]
+
+[[package]]
+name = "ogura-textrec"
+version = "0.1.0"
+source = { editable = "textrec" }
+dependencies = [
+    { name = "fonttools" },
+    { name = "numpy" },
+    { name = "pillow" },
+    { name = "pyarrow" },
+    { name = "pymupdf" },
+    { name = "torch" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fonttools", specifier = ">=4.55" },
+    { name = "numpy", specifier = ">=2" },
+    { name = "pillow", specifier = "==12.3.0" },
+    { name = "pyarrow", specifier = ">=25.0.1" },
+    { name = "pymupdf", specifier = "==1.28.2" },
+    { name = "torch", specifier = ">=2.6,<3" },
 ]
 provides-extras = ["train"]
 
