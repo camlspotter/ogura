@@ -126,9 +126,9 @@ def compare(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--data', type=Path, default=Path('ogura/textdet/outputs/experiment-v1-regenerated/val'))
+    parser.add_argument('--data', type=Path, default=Path(__file__).resolve().parents[2]/Path('outputs/experiment-v1-regenerated/val'))
     parser.add_argument('--checkpoint', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=Path('ogura/textdet/outputs/validation-comparison-v1'))
+    parser.add_argument('--output', type=Path, default=Path(__file__).resolve().parents[2]/Path('outputs/validation-comparison-v1'))
     parser.add_argument('--input-size', type=int, default=1024)
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--amp', action='store_true')
@@ -136,8 +136,8 @@ def main():
     args = parser.parse_args()
     if args.input_size < 32 or args.input_size % 32 or (args.limit is not None and args.limit < 1):
         parser.error('input-size must be a positive multiple of 32; limit must be positive')
-    if not args.output.resolve().is_relative_to(Path(__file__).resolve().parent):
-        parser.error('Output must be under ogura/textdet')
+    if not args.output.resolve().is_relative_to(Path(__file__).resolve().parents[2]):
+        parser.error('Output must be under textdet')
     compare(args)
 
 

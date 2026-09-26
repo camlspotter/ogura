@@ -89,7 +89,7 @@ def prepare(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source', type=Path, default=ROOT.parents[1]/'corpus/wikipedia/20231101.ja')
+    parser.add_argument('--source', type=Path, default=ROOT.parent/'corpus/wikipedia/20231101.ja')
     parser.add_argument('--output', type=Path, default=ROOT/'outputs/synth-texts-120.jsonl')
     parser.add_argument('--font', type=Path, action='append', required=True)
     parser.add_argument('--count', type=int, default=120)
@@ -100,7 +100,7 @@ def main():
     if args.count < 1 or args.rows_per_shard < 1 or min(args.lengths) < 250:
         parser.error('count/rows-per-shard must be positive; lengths must be at least 250')
     if not args.output.resolve().is_relative_to(ROOT):
-        parser.error('Output must be under ogura/textdet')
+        parser.error('Output must be under textdet')
     prepare(args)
 
 

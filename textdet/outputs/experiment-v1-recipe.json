@@ -8,7 +8,7 @@
     "pillow": "12.3.0"
   },
   "code_sha256": {
-    "prepare.py": "0bdffaf7c2386f1ad37cd43b8c968e01746df60c9e2120ba2e717251f9bb24d1",
+    "prepare.py": "5431e79359dfccaa31edad17e3b660ea344ab0b6cb3633a8be9914ff93f08372",
     "glyph_bounds.py": "5353c514375f681babda7913c21863e5932207fe6132f707dbe0097f12fd3456"
   },
   "experiment_manifest_sha256": "f95c00163995bf3ac66b9abe072054d29b498e698a6ba5a31a31324bffc57975",

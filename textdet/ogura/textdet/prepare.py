@@ -16,7 +16,7 @@ import pymupdf as fitz
 
 from .glyph_bounds import lookup_bounds, vertical_glyph_bounds
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 FONT_ROW = re.compile(
     r'^(.*?)\s+(yes|no)\s+(yes|no)\s+(yes|no)\s+(\d+)\s+(\d+)\s*$'
 )
@@ -393,7 +393,7 @@ def main():
     args = parser.parse_args()
     output = args.output.expanduser().resolve()
     if not output.is_relative_to(ROOT):
-        parser.error('--output must be inside ogura/textdet/')
+        parser.error('--output must be inside textdet/')
     try:
         result = prepare(args.source.expanduser(), output, args.min_chars, args.dpi)
     except (ValueError, FileExistsError) as error:

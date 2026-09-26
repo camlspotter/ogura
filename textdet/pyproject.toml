@@ -1,0 +1,41 @@
+[project]
+name = "ogura-textdet"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pyarrow>=25.0.1",
+    "fonttools>=4.55",
+    "numpy>=2",
+    "Pillow==12.3.0",
+    "PyMuPDF==1.28.2",
+    "torch>=2.6,<3",
+    "torchvision>=0.21",
+    "python-doctr[viz]==1.0.0",
+    "playwright>=1.50,<2",
+    "jinja2>=3.1,<4",
+    "kanjize>=1.5,<2",
+    "diffusers>=0.36,<1",
+    "transformers>=4.51,<5",
+    "accelerate>=1,<2",
+    "huggingface-hub>=0.34,<1",
+]
+
+[project.optional-dependencies]
+# Keep existing scripts using --extra train compatible; all dependencies are default.
+train = []
+textrec = ["ogura-textrec"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ogura.textdet", "ogura.textdet.vendor"]
+include-package-data = false
+
+[tool.setuptools.package-data]
+"ogura.textdet" = ["*.js"]
+"ogura.textdet.vendor" = ["SYNTH_JDOC_LICENSE", "README.md"]
+
+[tool.uv.sources]
+ogura-textrec = { path = "../textrec", editable = true }

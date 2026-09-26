@@ -24,7 +24,7 @@ class ImagePlanTests(unittest.TestCase):
 @unittest.skipUnless(os.getenv('RUN_SYNTH_BROWSER_TESTS') == '1', 'requires Chromium')
 class ImageLayoutTests(unittest.TestCase):
     def test_vertical_end_float_has_gap_for_bold_glyph_bounds(self):
-        font = Path(__file__).resolve().parents[3]/'corpus/fonts/NotoSansCJKjp-Bold.otf'
+        font = Path(__file__).resolve().parents[2]/'corpus/fonts/NotoSansCJKjp-Bold.otf'
         if not font.is_file():
             self.skipTest('requires NotoSansCJKjp-Bold.otf')
         buf = io.BytesIO()

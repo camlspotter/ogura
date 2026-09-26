@@ -15,7 +15,7 @@
 
 ```sh
 uv run --locked python -m ogura.textdet.prepare_experiment \
-  --output ogura/textdet/outputs/experiment-v1
+  --output outputs/experiment-v1
 ```
 
 既存の出力先は上書きしない。データmanifestに元ラベル・入力一覧のハッシュを記録。
@@ -44,9 +44,9 @@ GPUマシンへのアクセスと学習実行はユーザーが行う。アシ�
 
 ## uvでの学習コマンド
 
-以下はすべてリポジトリルートで実行する。textrecとtextdetの依存関係は
-ルートの `pyproject.toml`、解決した版は `uv.lock` に記録する。
-通常の `uv sync` で両方が入る。extra指定と仮想環境のactivateは不要。
+以下はすべて `cd ~/ogura/textdet` の後に実行する。依存関係は
+`textdet/pyproject.toml`、解決した版は `textdet/uv.lock` に記録する。
+`uv sync --locked` で検出用の依存関係が入る。仮想環境のactivateは不要。
 
 ```sh
 uv sync
@@ -62,24 +62,24 @@ GPU上での学習は未検証。
 公式学習スクリプトは初回だけHTTPSで取得する。
 
 ```sh
-mkdir -p ogura/textdet/.cache
+mkdir -p .cache
 git clone --depth 1 --branch v1.0.0 \
   https://github.com/mindee/doctr.git \
-  ogura/textdet/.cache/doctr-v1.0.0
+  .cache/doctr-v1.0.0
 ```
 
 初回の学習例（入力1024、batch 2、5 epoch）:
 
 ```sh
-mkdir -p ogura/textdet/outputs/db-resnet34-v1
+mkdir -p outputs/db-resnet34-v1
 CUDA_VISIBLE_DEVICES=0 \
 uv run --locked python \
-  ogura/textdet/.cache/doctr-v1.0.0/references/detection/train.py \
+  .cache/doctr-v1.0.0/references/detection/train.py \
   db_resnet34 \
   --pretrained --device 0 \
-  --train_path ogura/textdet/outputs/experiment-v1-regenerated/train \
-  --val_path ogura/textdet/outputs/experiment-v1-regenerated/val \
-  --output_dir ogura/textdet/outputs/db-resnet34-v1 \
+  --train_path outputs/experiment-v1-regenerated/train \
+  --val_path outputs/experiment-v1-regenerated/val \
+  --output_dir outputs/db-resnet34-v1 \
   --name jdocqa-db-resnet34-v1 \
   --epochs 5 --batch_size 2 --input_size 1024 --lr 0.0001 \
   --workers 2 --amp --save-interval-epoch
@@ -89,14 +89,14 @@ GPUメモリ不足ならまずbatchを1に下げる。testは設定を固定し�
 
 ## 学習前後の検証画像を比較
 
-リポジトリルートで実行する。公式trainerの最良validation lossの重み（epoch番号なし）を使用する。
+`textdet/`で実行する。公式trainerの最良validation lossの重み（epoch番号なし）を使用する。
 第5epochそのものと比較する場合はcheckpointを `jdocqa-db-resnet34-v1_epoch5.pt` に変える。
 
 ```sh
 CUDA_VISIBLE_DEVICES=0 uv run python -m ogura.textdet.compare_predictions \
-  --data ogura/textdet/outputs/experiment-v1-regenerated/val \
-  --checkpoint ogura/textdet/outputs/db-resnet34-v1/jdocqa-db-resnet34-v1.pt \
-  --output ogura/textdet/outputs/validation-comparison-v1 \
+  --data outputs/experiment-v1-regenerated/val \
+  --checkpoint outputs/db-resnet34-v1/jdocqa-db-resnet34-v1.pt \
+  --output outputs/validation-comparison-v1 \
   --device cuda:0 --input-size 1024 --amp
 ```
 

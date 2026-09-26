@@ -4,10 +4,11 @@
 
 ## セットアップ・実行
 
-リポジトリのルートで実行します。Popplerの `pdffonts` が必要です（macOSでは `brew install poppler`）。
+`textdet/`で実行します。Popplerの `pdffonts` が必要です（macOSでは `brew install poppler`）。
 
-依存関係はtextrecと共通で、ルートの `pyproject.toml` と `uv.lock` で管理します。
-`uv sync` で両方の依存関係がルートの `.venv` に入ります。
+依存関係は `textdet/pyproject.toml` と `textdet/uv.lock` で管理します。
+`cd ~/ogura/textdet` の後、`uv sync --locked` で `textdet/.venv` にインストールします。
+textrecも同じ環境に入れる場合は `uv sync --locked --extra textrec` を使います。
 GPU学習の実行例は [EXPERIMENT.md](EXPERIMENT.md) を参照してください。
 
 ```sh
@@ -18,7 +19,7 @@ uv run --locked python -m ogura.textdet.prepare \
   --dpi 150
 ```
 
-既定の出力先は `ogura/textdet/outputs/YYYYMMDD-HHMMSS/`。`--output ogura/textdet/outputs/名前` でも指定できます。混在を防ぐため、既存の出力ディレクトリは上書きしません。入力は指定ディレクトリ直下の `*.pdf` です。出力はtextdet配下に置き、Git管理外にします。仮想環境はルートの `.venv` を共用します。
+既定の出力先は `outputs/YYYYMMDD-HHMMSS/`。`--output outputs/名前` でも指定できます。混在を防ぐため、既存の出力ディレクトリは上書きしません。入力は指定ディレクトリ直下の `*.pdf` です。出力はtextdet配下に置き、Git管理外にします。仮想環境は `textdet/.venv` です。
 
 ## 一次フィルタリング
 
@@ -49,8 +50,8 @@ uv run --locked python -m ogura.textdet.filter_only \
 
 ```sh
 uv run --locked python -m ogura.textdet.sample_pages \
-  --list ogura/textdet/outputs/jdocqa-filter-only/passed.json \
-  --output ogura/textdet/outputs/jdocqa-latest
+  --list outputs/jdocqa-filter-only/passed.json \
+  --output outputs/jdocqa-latest
 ```
 
 保存済みの `documents.jsonl`（既定では一覧と同じディレクトリ）からページ別文字数を読み、一次フィルタは再実行しません。文字情報のあるページが1ページだけなら、その1ページだけを出力します。ファイル名は `元PDF名_page-0001_bbox.png`、原画像は同じ接頭辞の `_page.png`、座標は `_labels.json` です。ページ番号はPDF内の1始まりの位置で、紙面に印字されたページ番号ではありません。`manifest.json` に選択ページと出力ファイルを記録します。
@@ -78,7 +79,7 @@ bboxとIDは、原画像のRGB値をXOR反転（各チャンネルを255から�
 ## 検証
 
 ```sh
-uv run --locked python -m unittest discover -s ogura/textdet/tests
+uv run --locked python -m unittest discover -s tests
 ```
 
 PyMuPDFはAGPL／商用ライセンスです。元PDFの権利は別です。
@@ -90,3 +91,19 @@ PyMuPDFはAGPL／商用ライセンスです。元PDFの権利は別です。
 通常の行抽出、縦書き断片の結合、回転文字の結合の後に、未結合の1文字断片だけを対象に配置から縦書きを推定します。同じPDFブロック内で同じフォント・近いサイズの文字が同じ列に3文字以上連続する場合に結合します。既存の複数文字の行は再解釈しません。推定結果は `orientation=vertical` と `orientation_source=isolated_character_positions` に記録し、`wmode` と `baseline` はPDFの元の設定を保持します。
 
 行bbox・polygonは先頭と末尾の空白文字（半角・全角・タブ等）を除いた文字範囲から作成します。`text` と `chars` は元の空白を保持し、行の途中にある空白も保持します。空白だけの行は出力しません。回転した行は文字方向に沿って枠を計算します。
+
+## ディレクトリ構成
+
+Pythonコードは `textdet/ogura/textdet/`、スクリプト・テスト・設定・生成データは
+`textdet/` 配下に置く。モジュール名は引き続き `ogura.textdet.*` を使う。
+共有のフォントとWikipediaはリポジトリ直下の `corpus/` を参照する。
+シェルスクリプトは自身の位置から `textdet/` に移動するため、リポジトリ直下から
+`bash textdet/scripts/synth_images_2000.sh train` と実行してもよい。
+引数で渡す相対パスは `textdet/` 基準になる。
+
+別マシンでGitの更新を取得するだけでは、Git管理外のデータは移動されない。
+旧 `ogura/textdet/outputs/` 内のデータと旧 `ogura/textdet/.cache/` を新しい
+`textdet/` 配下へ移してから実行する。移動先に同名データがあれば上書きせず確認する。
+追跡済みの `outputs/experiment-v1-recipe.json` は新しい版を使う。
+仮想環境は移動元のものをコピーせず、`cd textdet && uv sync --locked` で構成する。
+過去のmanifestに記録された絶対パスは実行時の履歴として保持する。

@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from PIL import Image, ImageDraw
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 MODEL = 'Tongyi-MAI/Z-Image-Turbo'
 REVISION = 'f332072aa78be7aecdf3ee76d5c247082da564a6'
 
@@ -141,7 +141,7 @@ def main():
     if args.size < 64 or args.size % 16 or (args.limit is not None and args.limit < 1):
         parser.error('size must be a positive multiple of 16 (at least 64); limit must be positive')
     if any(not p.resolve().is_relative_to(ROOT) for p in (args.cache,args.output)):
-        parser.error('Cache and output must be under ogura/textdet')
+        parser.error('Cache and output must be under textdet')
     rows = read_prompts(args.prompts, args.limit)
     if args.action == 'check':
         print(json.dumps(dict(model=MODEL, revision=REVISION, prompts=len(rows), size=args.size,

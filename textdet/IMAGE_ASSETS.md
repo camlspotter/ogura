@@ -12,7 +12,7 @@ Synth-JDoc本体は変更しない。Flash Attentionは必須にせず、標準S
 公式モデル: https://huggingface.co/Tongyi-MAI/Z-Image-Turbo
 モデルrevisionはスクリプト内で固定。9 steps・guidance_scale=0、bfloat16を使用する。
 生成サイズの既定値は512×512ピクセル。`--size` で変更できる。
-依存パッケージは共通のルートpyproject.toml/uv.lockに含む。
+以下は `cd ~/ogura/textdet` の後に実行する。依存パッケージはこのディレクトリの `pyproject.toml`・`uv.lock` に含む。
 
 GPU側の `~/ogura` で:
 
@@ -24,22 +24,22 @@ uv run --locked python -m ogura.textdet.generate_image_assets check
 uv run --locked python -m ogura.textdet.generate_image_assets download
 # 最初の1枚でGPU動作確認。10枚の出力とは分ける。
 CUDA_VISIBLE_DEVICES=0 uv run --locked python -m ogura.textdet.generate_image_assets generate \
-  --limit 1 --output ogura/textdet/outputs/image-assets-one-v1
+  --limit 1 --output outputs/image-assets-one-v1
 # 全10枚。既に取得したモデルはキャッシュから利用する。
 CUDA_VISIBLE_DEVICES=0 uv run --locked python -m ogura.textdet.generate_image_assets generate
 ```
 
 `generate` は未取得のモデルを自動取得するため、`download` は省略可能。
-モデルキャッシュは `ogura/textdet/.cache/z-image-turbo/`。
+モデルキャッシュは `.cache/z-image-turbo/`。
 GPUメモリに余裕がない場合は `--cpu-offload` を追加する（CPUへの退避で速度は低下）。
 中断後は同じ引数に `--resume` を追加。設定・プロンプト・生成済み画像のハッシュを検証する。
 以前の1024×1024の出力は512×512として再開できないため、
-`--output ogura/textdet/outputs/image-assets-512-v1` など別の出力先を指定する。
+`--output outputs/image-assets-512-v1` など別の出力先を指定する。
 英語プロンプトでの再生成も、日本語版とは別の出力先
-（例: `--output ogura/textdet/outputs/image-assets-512-en-v1`）を指定する。
+（例: `--output outputs/image-assets-512-en-v1`）を指定する。
 生成処理はCUDAとbfloat16対応を必須とし、CPUでの意図しない長時間生成を行わない。
 
-出力 `ogura/textdet/outputs/image-assets-sample-v1/`:
+出力 `outputs/image-assets-sample-v1/`:
 
 - `images/`: 10枚のPNG。ファイル名はプロンプトID。
 - `contact-sheet.jpg`: ID付きの一覧画像。
@@ -61,9 +61,9 @@ GPUメモリに余裕がない場合は `--cpu-offload` を追加する（CPUへ
 
 ```bash
 uv run --locked python -m ogura.textdet.generate_image_assets generate \
-  --prompts ogura/textdet/prompts/image_assets_200.jsonl \
+  --prompts prompts/image_assets_200.jsonl \
   --size 512 \
-  --output ogura/textdet/outputs/image-assets-200-v1
+  --output outputs/image-assets-200-v1
 ```
 
 モデルは最初に一度読み込む。CUDAの先行初期化はスクリプト内で行う。
@@ -79,9 +79,9 @@ Synth-JDocの既存image要素を利用し、上流コードは変更しない�
 
 ```bash
 # 本文中心8ページ（うち縦書き2）と表付き4ページ、計12ページのサンプル。
-bash ogura/textdet/scripts/synth_image_pages.sh generate
+bash scripts/synth_image_pages.sh generate
 # 中断から再開。件数・出力先を変えずに実行する。
-bash ogura/textdet/scripts/synth_image_pages.sh resume
+bash scripts/synth_image_pages.sh resume
 ```
 
 出力先は `outputs/synth-image-pages-pilot-v2/`。`text/` と `tables/` の各フォルダに
@@ -100,8 +100,8 @@ floatは横書きでは左・右、縦書きでは上・下に寄せ、段の幅
 件数と出力先は引数で指定できる。例えば600ページ（本文400・表付き200）なら:
 
 ```bash
-bash ogura/textdet/scripts/synth_image_pages.sh generate 600 \
-  ogura/textdet/outputs/synth-image-pages-600-v1
+bash scripts/synth_image_pages.sh generate 600 \
+  outputs/synth-image-pages-600-v1
 ```
 
 素材は各グループ内で200枚をランダム順に一巡してから再利用する。
@@ -118,13 +118,13 @@ float配置は計1,000ページ、通常配置は計1,000ページ。
 GPU側のリポジトリ直下で順番に実行する:
 
 ```bash
-bash ogura/textdet/scripts/synth_images_2000.sh generate
+bash scripts/synth_images_2000.sh generate
 # 生成が中断した場合だけ、generateの代わりにresumeを使う。
-bash ogura/textdet/scripts/synth_images_2000.sh combine
-bash ogura/textdet/scripts/synth_images_2000.sh train
-bash ogura/textdet/scripts/synth_images_2000.sh evaluate
-bash ogura/textdet/scripts/synth_images_2000.sh package
-bash ogura/textdet/scripts/synth_images_2000.sh download-command
+bash scripts/synth_images_2000.sh combine
+bash scripts/synth_images_2000.sh train
+bash scripts/synth_images_2000.sh evaluate
+bash scripts/synth_images_2000.sh package
+bash scripts/synth_images_2000.sh download-command
 ```
 
 比較対象は9,000ページ版と11,000ページ版。JDocQAの文書単位の除外を適用したvalidation 35ページを使い、
@@ -136,7 +136,7 @@ testセットはこのスクリプトでは使用しない。結果には両モ�
 Mac側へのコピー例:
 
 ```bash
-scp -r dgx:~/ogura/ogura/textdet/outputs/image-assets-sample-v1 ~/ogura/ogura/textdet/outputs/
+scp -r dgx:~/ogura/textdet/outputs/image-assets-sample-v1 ~/ogura/textdet/outputs/
 ```
 
 ## 評価対象の見直し（standard-v2）

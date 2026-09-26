@@ -78,7 +78,7 @@ class BrowserLabelTests(unittest.TestCase):
     def extract(self, markup):
         page = self.browser.new_page()
         page.set_content(markup)
-        lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+        lines = page.evaluate((ROOT/'ogura/textdet/synth_lines.js').read_text())
         page.close()
         return lines
 
@@ -91,7 +91,7 @@ class BrowserLabelTests(unittest.TestCase):
                 page = self.browser.new_page(viewport={'width': 400, 'height': 1000})
                 try:
                     page.set_content(markup)
-                    lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+                    lines = page.evaluate((ROOT/'ogura/textdet/synth_lines.js').read_text())
                     rect = page.locator('h1').bounding_box()
                     title_lines = [line for line in lines if 'TITLE' in line['text']]
                     self.assertGreater(len(title_lines), 1)
@@ -127,9 +127,9 @@ class BrowserLabelTests(unittest.TestCase):
                                                 font_url='data:font/otf;base64,', line_height=1.7)
                         page = self.browser.new_page(viewport={'width':600,'height':800})
                         page.set_content(fixed_page_html(markup))
-                        extract = (ROOT/'synth_lines.js').read_text()
+                        extract = (ROOT/'ogura/textdet/synth_lines.js').read_text()
                         before = page.evaluate(extract)
-                        stats = page.evaluate((ROOT/'synth_paginate.js').read_text(),
+                        stats = page.evaluate((ROOT/'ogura/textdet/synth_paginate.js').read_text(),
                                               dict(lines=before, fraction=fraction))
                         after = page.evaluate(extract)
                         self.assertLess(len(after), len(before))
@@ -184,13 +184,13 @@ class PaginationBoundaryTests(unittest.TestCase):
                 markup, _ = render_html(record, Path('unused'), 12, vertical, 1, 16,
                                         font_url='data:font/otf;base64,')
                 page.set_content(fixed_page_html(markup))
-                before = page.evaluate((ROOT/'synth_lines.js').read_text())
+                before = page.evaluate((ROOT/'ogura/textdet/synth_lines.js').read_text())
                 self.assertEqual([l['text'] for l in before if l['element_id'] in ('1','3')],
                                  ['節見出し', '小見出し'])
                 # Force the first body line after h3 to be beyond the page boundary.
                 next(l for l in before if l['element_id'] == '4')['bbox'] = [0, 900, 10, 920]
-                stats = page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=before, fraction=1))
-                after = page.evaluate((ROOT/'synth_lines.js').read_text())
+                stats = page.evaluate((ROOT/'ogura/textdet/synth_paginate.js').read_text(), dict(lines=before, fraction=1))
+                after = page.evaluate((ROOT/'ogura/textdet/synth_lines.js').read_text())
                 self.assertEqual(page.locator('h3').count(), 0)
                 self.assertEqual(page.locator('h2').count(), 1)
                 self.assertEqual(after[-1]['element_id'], '2')
@@ -204,15 +204,15 @@ class PaginationBoundaryTests(unittest.TestCase):
         markup, _ = render_html(record, Path('unused'), 12, False, 1, 16,
                                 font_url='data:font/otf;base64,', line_height=1.5)
         page.set_content(fixed_page_html(markup))
-        lines = page.evaluate((ROOT/'synth_lines.js').read_text())
+        lines = page.evaluate((ROOT/'ogura/textdet/synth_lines.js').read_text())
         rect = page.locator('.content-body').bounding_box()
         first = next(l for l in lines if l['element_id'] != 'title')
         first['bbox'][1] = rect['y'] - .25
-        stats = page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
+        stats = page.evaluate((ROOT/'ogura/textdet/synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
         self.assertGreater(stats['retained_lines'], 0)
         first['bbox'][1] = rect['y'] - 2
         with self.assertRaisesRegex(Exception, 'No complete body line fits.*first'):
-            page.evaluate((ROOT/'synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
+            page.evaluate((ROOT/'ogura/textdet/synth_paginate.js').read_text(), dict(lines=lines, fraction=1))
         page.close()
 
 

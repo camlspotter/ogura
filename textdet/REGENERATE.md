@@ -5,8 +5,8 @@ PDF自体をコピーする必要はなく、別マシンにある同一内容�
 
 ## 転送するもの
 
-- 最新の `ogura/textdet/` のコードとリポジトリルートの `pyproject.toml`・`uv.lock`（Git対象）。
-- `ogura/textdet/outputs/experiment-v1-recipe.json`（Git管理対象）。
+- 最新の `textdet/` のコードと同ディレクトリの `pyproject.toml`・`uv.lock`（Git対象）。
+- `outputs/experiment-v1-recipe.json`（Git管理対象）。
 
 レシピは387ページの明示的な採用一覧と分割、PDF内容ハッシュを含む。
 train 308、val 39、test 40。手動除外・重複除外・品質保留ページは含まない。
@@ -14,8 +14,8 @@ PDF・画像・ラベルはコミットしない。再生成用レシピはGit�
 
 ## GPUマシン側の準備
 
-リポジトリルートで実行する。Python 3.12以上を使用する。
-textrecとtextdetでルートの `.venv` を共用し、通常の `uv sync` で画像生成・学習の依存関係をまとめてインストールする。
+`textdet/`で実行する。Python 3.12以上を使用する。
+`cd ~/ogura/textdet` の後、`uv sync --locked` で画像生成・学習の依存関係を `textdet/.venv` にインストールする。
 
 ```sh
 uv sync
@@ -25,15 +25,15 @@ uv sync
 
 ## 画像生成
 
-Gitで取得した `ogura/textdet/outputs/experiment-v1-recipe.json` を使用する。
+Gitで取得した `outputs/experiment-v1-recipe.json` を使用する。
 `/path/to/JDocQA_pdf_files` をPDFがあるディレクトリに置き換える。
 PDFはそのディレクトリ直下に、元のファイル名で必要。
 
 ```sh
 uv run --locked python -m ogura.textdet.regenerate_dataset generate \
-  --recipe ogura/textdet/outputs/experiment-v1-recipe.json \
+  --recipe outputs/experiment-v1-recipe.json \
   --pdf-root /path/to/JDocQA_pdf_files \
-  --output ogura/textdet/outputs/experiment-v1-regenerated \
+  --output outputs/experiment-v1-regenerated \
   --workers 2
 ```
 
@@ -65,9 +65,11 @@ PDF内容、抽出コード、PyMuPDF/Pillowの版を照合し、不一致なら
 
 ```sh
 uv run --locked python -m ogura.textdet.regenerate_dataset pack \
-  --experiment ogura/textdet/outputs/experiment-v1 \
-  --pdf-root JDocQA_pdf_files \
-  --output ogura/textdet/outputs/experiment-v1-recipe.json
+  --experiment outputs/experiment-v1 \
+  --pdf-root ../JDocQA_pdf_files \
+  --output outputs/experiment-v1-recipe.json
 ```
 
 レシピの上書きはしない。抽出コードの変更時も、データ再エクスポートとレシピ再作成が必要。
+
+配置変更に伴い、レシピの `prepare.py` のハッシュを更新した。変更は出力ルートとCLIエラー文言のみで、bbox抽出処理・採用ページ・PDFハッシュは変更していない。

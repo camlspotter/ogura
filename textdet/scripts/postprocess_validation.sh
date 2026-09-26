@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Runs locally on the user's GPU machine; never connects to another host.
 set -euo pipefail
-root=ogura/textdet/outputs
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+root=outputs
 output=$root/postprocess-validation-v1
 case "${1:-}" in
   run)
@@ -26,8 +27,8 @@ case "${1:-}" in
     mv "$output.tar.gz.tmp" "$output.tar.gz"
     ;;
   download-command)
-    echo 'scp dgx:~/ogura/ogura/textdet/outputs/postprocess-validation-v1.tar.gz ~/ogura/ogura/textdet/outputs/'
-    echo 'tar -xzf ~/ogura/ogura/textdet/outputs/postprocess-validation-v1.tar.gz -C ~/ogura/ogura/textdet/outputs/'
+    echo 'scp dgx:~/ogura/textdet/outputs/postprocess-validation-v1.tar.gz ~/ogura/textdet/outputs/'
+    echo 'tar -xzf ~/ogura/textdet/outputs/postprocess-validation-v1.tar.gz -C ~/ogura/textdet/outputs/'
     ;;
   *) echo "Usage: bash $0 run|package|download-command|test MODEL BIN_THRESHOLD UNCLIP_RATIO" >&2; exit 2 ;;
 esac

@@ -1,7 +1,8 @@
 .venv/
 .cache/
 workspace/
-outputs/
+outputs/*
+!outputs/experiment-v1-recipe.json
 __pycache__/
 
 .DS_Store

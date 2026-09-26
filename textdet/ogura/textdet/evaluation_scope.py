@@ -63,12 +63,12 @@ def prepare(source, output, policy_path):
 
 if __name__ == '__main__':
     import argparse
-    root = Path(__file__).resolve().parent
+    root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=root/'outputs/experiment-v1-regenerated')
     parser.add_argument('--output', type=Path, default=root/'outputs/experiment-standard-v2')
     parser.add_argument('--policy', type=Path, default=root/'evaluation_exclusions.json')
     args = parser.parse_args()
     if not args.output.resolve().is_relative_to(root):
-        parser.error('Output must be under ogura/textdet')
+        parser.error('Output must be under textdet')
     print(json.dumps(prepare(args.source, args.output, args.policy), ensure_ascii=False, indent=2))

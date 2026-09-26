@@ -11,7 +11,7 @@ from PIL import Image
 
 from .compare_predictions import panel, scores
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 PAGES = [f'public_document_ministry01376_page-{page:04d}_page.png' for page in (6, 11)]
 
 
@@ -191,7 +191,7 @@ def main():
     if not 0 <= args.box_threshold <= 1:
         parser.error('Invalid box threshold')
     if not args.output.resolve().is_relative_to(ROOT):
-        parser.error('Output must be under ogura/textdet')
+        parser.error('Output must be under textdet')
     run(args)
 
 

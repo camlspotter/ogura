@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import shutil
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def sha(path):
@@ -110,7 +110,7 @@ def main():
     if min(args.text_count,args.table_count,args.heading_count,args.image_text_count,args.image_table_count) < 1:
         parser.error('Counts must be positive')
     if not args.output.resolve().is_relative_to(ROOT):
-        parser.error('Output must be under ogura/textdet')
+        parser.error('Output must be under textdet')
     combine(args.text,args.tables,args.output,args.text_count,args.table_count,
             args.headings,args.heading_tables,args.heading_count,
             args.image_text,args.image_tables,args.image_text_count,args.image_table_count)

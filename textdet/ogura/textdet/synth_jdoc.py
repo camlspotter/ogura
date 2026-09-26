@@ -19,7 +19,7 @@ from .vendor import synth_jdoc_generator as upstream
 from .synth_tables import render_table, TABLE_TEXT
 from .synth_images import add_image, image_plan, size_float_image
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM_REVISION = '06d27a594b5680e73f3b1308a5ff86261365903d'
 TEXT_COLORS = ('#244b70', '#345b40', '#743e35', '#59416d')
 TITLE_STYLES = ('outline', 'dashed', 'double', 'tinted', 'dark')
@@ -255,10 +255,10 @@ def restore_pages(output, manifest):
 
 def extract_page(page, fraction=None):
     """Keep overflow coordinates in Chromium; transfer only final page labels."""
-    extract = (ROOT/'synth_lines.js').read_text()
+    extract = (Path(__file__).resolve().parent/'synth_lines.js').read_text()
     if fraction is None:
         return page.evaluate(extract), None
-    paginate = (ROOT/'synth_paginate.js').read_text()
+    paginate = (Path(__file__).resolve().parent/'synth_paginate.js').read_text()
     script = ("fraction => { const extract = (" + extract + "); const paginate = (" + paginate +
               "); const pagination = paginate({lines: extract(), fraction});"
               " return {pagination, lines: extract()}; }")
@@ -333,7 +333,7 @@ def generate(args):
                 shutil.copyfile(license_file, args.output/'fonts'/license_file.name)
     manifest = dict(status='running', label_status='candidate_needs_visual_review',
         upstream_revision=UPSTREAM_REVISION, seed=args.seed, input_sha256=sha(args.input),
-        code_sha256={name: sha(ROOT/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js', 'synth_tables.py', 'synth_images.py')},
+        code_sha256={name: sha(Path(__file__).resolve().parent/name) for name in ('synth_jdoc.py', 'synth_lines.js', 'synth_paginate.js', 'synth_tables.py', 'synth_images.py')},
         fonts={str(p.resolve()):sha(p) for p in fonts}, pages=[],
         role='synthetic_training_candidate', variation=args.vary_layout,
         settings=resume_settings(args), font_order=[sha(p) for p in fonts],
@@ -493,7 +493,7 @@ def main():
     parser.add_argument('--tables', action='store_true', help='Add a fictional table to horizontal body text')
     parser.add_argument('--resume', action='store_true', help='Verify and retain completed pages')
     parser.add_argument('--input', type=Path, default=ROOT/'synth_sample.jsonl')
-    parser.add_argument('--font', type=Path, default=ROOT.parents[1]/'corpus/fonts/NotoSansCJKjp-Regular.otf')
+    parser.add_argument('--font', type=Path, default=ROOT.parent/'corpus/fonts/NotoSansCJKjp-Regular.otf')
     parser.add_argument('--extra-font', type=Path, action='append', default=[])
     parser.add_argument('--fill-page', action='store_true', help='Join articles and retain only the first page')
     parser.add_argument('--partial-fraction', type=float, default=.2, help='Fraction of filled pages ending early')
@@ -527,7 +527,7 @@ def main():
     if args.vary_layout and args.orientation != 'both':
         parser.error('Use --vertical-fraction with --vary-layout')
     if not args.output.resolve().is_relative_to(ROOT):
-        parser.error('Output must be under ogura/textdet')
+        parser.error('Output must be under textdet')
     generate(args)
 
 

@@ -20,7 +20,7 @@ def sha256(path):
 
 
 def code_hashes():
-    return {name: sha256(ROOT/name) for name in ('prepare.py', 'glyph_bounds.py')}
+    return {name: sha256(Path(__file__).resolve().parent/name) for name in ('prepare.py', 'glyph_bounds.py')}
 
 
 def safe_name(name):
@@ -178,7 +178,7 @@ def main():
     rendering.add_argument('--limit',type=int,help='Smoke test only: first N recipe pages')
     args=parser.parse_args()
     if not args.output.resolve().is_relative_to(ROOT):
-        parser.error('Output must be under ogura/textdet')
+        parser.error('Output must be under textdet')
     if args.command=='pack':
         recipe=pack(args.experiment,args.pdf_root,args.output)
         print(f'{len(recipe["pages"])} pages; {len(recipe["documents"])} PDFs; {args.output}')

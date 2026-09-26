@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Execute on the GPU machine from the repository root. Never connects remotely.
+# Execute on the GPU machine from any working directory. Never connects remotely.
 set -euo pipefail
-export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-$PWD/ogura/textdet/.cache/playwright}"
-root=ogura/textdet/outputs
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-$PWD/.cache/playwright}"
+root=outputs
 headings=$root/synth-headings-1000-v1
 tables=$root/synth-heading-tables-1000-v1
 mixed=$root/synth-mixed-9000-v1
@@ -26,10 +27,10 @@ case "${1:-}" in
         --vertical-fraction "$vertical" --section-headings --title-style mixed --colored-text \
         --width 1200 --height 1600 --font-sizes 12 16 20 24 \
         --line-heights 1.5 1.7 2.0 --letter-spacings 0 .03 .08 \
-        --font corpus/fonts/NotoSansCJKjp-Regular.otf \
-        --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
-        --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
-        --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf
+        --font ../corpus/fonts/NotoSansCJKjp-Regular.otf \
+        --extra-font ../corpus/fonts/NotoSansCJKjp-Bold.otf \
+        --extra-font ../corpus/fonts/NotoSerifCJKjp-Regular.otf \
+        --extra-font ../corpus/fonts/NotoSerifCJKjp-Bold.otf
     done
     ;;
   combine)
@@ -44,7 +45,7 @@ case "${1:-}" in
     CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" uv run --locked python \
       -W 'ignore:`torch.cuda.amp.autocast(args...)` is deprecated:FutureWarning' \
       -W 'ignore:`torch.cuda.amp.GradScaler(args...)` is deprecated:FutureWarning' \
-      ogura/textdet/.cache/doctr-v1.0.0/references/detection/train.py \
+      .cache/doctr-v1.0.0/references/detection/train.py \
       db_resnet34 --pretrained --device 0 --train_path "$mixed" \
       --val_path "$root/experiment-v1-regenerated/val" \
       --output_dir "$model" --name synth9000-db-resnet34-v1 \
@@ -74,12 +75,12 @@ case "${1:-}" in
     ;;
   download-command)
     echo 'Run on your Mac:'
-    echo 'scp dgx:~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz ~/ogura/ogura/textdet/outputs/'
-    echo 'tar -xzf ~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura/ogura/textdet/outputs/'
+    echo 'scp dgx:~/ogura/textdet/outputs/validation-synth9000-v1.tar.gz ~/ogura/textdet/outputs/'
+    echo 'tar -xzf ~/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura/textdet/outputs/'
     ;;
   all)
-    for action in generate combine train evaluate package; do bash "$0" "$action"; done
-    bash "$0" download-command
+    for action in generate combine train evaluate package; do bash "scripts/synth_headings_2000.sh" "$action"; done
+    bash "scripts/synth_headings_2000.sh" download-command
     ;;
   *) echo "Usage: bash $0 generate|resume|combine|train|evaluate|package|download-command|all" >&2; exit 2 ;;
 esac

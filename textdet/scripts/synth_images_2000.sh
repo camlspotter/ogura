@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Run on the GPU machine from the repository root. Never connects remotely.
+# Run on the GPU machine from any working directory. Never connects remotely.
 set -euo pipefail
-root=ogura/textdet/outputs
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+root=outputs
 pages=$root/synth-image-pages-2000-v1
 mixed=$root/synth-mixed-11000-v1
 model=$root/db-resnet34-synth11000-v1
@@ -9,7 +10,7 @@ checkpoint=$model/synth11000-db-resnet34-v1.pt
 evaluation=$root/validation-synth11000-standard-v2
 case "${1:-}" in
   generate|resume)
-    bash ogura/textdet/scripts/synth_image_pages.sh "$1" 2000 "$pages"
+    bash scripts/synth_image_pages.sh "$1" 2000 "$pages"
     ;;
   combine)
     uv run --locked python -m ogura.textdet.combine_synthetic \
@@ -26,7 +27,7 @@ case "${1:-}" in
     CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" uv run --locked python \
       -W 'ignore:`torch.cuda.amp.autocast(args...)` is deprecated:FutureWarning' \
       -W 'ignore:`torch.cuda.amp.GradScaler(args...)` is deprecated:FutureWarning' \
-      ogura/textdet/.cache/doctr-v1.0.0/references/detection/train.py \
+      .cache/doctr-v1.0.0/references/detection/train.py \
       db_resnet34 --pretrained --device 0 --train_path "$mixed" \
       --val_path "$root/experiment-standard-v2/val" \
       --output_dir "$model" --name synth11000-db-resnet34-v1 \
@@ -36,7 +37,7 @@ case "${1:-}" in
     # Compare both checkpoints on validation with the previously chosen settings.
     CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" uv run --locked python \
       -m ogura.textdet.diagnose_postprocess --amp --all-pages --expected-pages 35 \
-      --exclude-documents ogura/textdet/evaluation_exclusions.json \
+      --exclude-documents evaluation_exclusions.json \
       --previous "$root/db-resnet34-synth9000-v1/synth9000-db-resnet34-v1.pt" --previous-name synth9000 \
       --current "$checkpoint" --current-name synth11000 --model both \
       --input-size 1536 --thresholds .5 --ratios 1 --box-threshold .1 --output "$evaluation"
@@ -49,12 +50,12 @@ case "${1:-}" in
     ;;
   download-command)
     echo 'Run on your Mac:'
-    echo 'scp dgx:~/ogura/ogura/textdet/outputs/validation-synth11000-standard-v2.tar.gz ~/ogura/ogura/textdet/outputs/'
-    echo 'tar -xzf ~/ogura/ogura/textdet/outputs/validation-synth11000-standard-v2.tar.gz -C ~/ogura/ogura/textdet/outputs/'
+    echo 'scp dgx:~/ogura/textdet/outputs/validation-synth11000-standard-v2.tar.gz ~/ogura/textdet/outputs/'
+    echo 'tar -xzf ~/ogura/textdet/outputs/validation-synth11000-standard-v2.tar.gz -C ~/ogura/textdet/outputs/'
     ;;
   all)
-    for action in generate combine train evaluate package; do bash "$0" "$action"; done
-    bash "$0" download-command
+    for action in generate combine train evaluate package; do bash "scripts/synth_images_2000.sh" "$action"; done
+    bash "scripts/synth_images_2000.sh" download-command
     ;;
   *) echo "Usage: bash $0 generate|resume|combine|train|evaluate|package|download-command|all" >&2; exit 2 ;;
 esac

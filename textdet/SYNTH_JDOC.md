@@ -1,17 +1,17 @@
 # Synth-JDocによるtextdetデータの試作
 
 公式Synth-JDocのHTMLテンプレート・段組み・縦中横処理を利用する。
-ソースの固定版とライセンスは `vendor/README.md` を参照。
+ソースの固定版とライセンスは `ogura/textdet/vendor/README.md` を参照。
 公式の画像生成モデルやLLM処理は呼ばず、手元の文章とフォントからCPU上のChromiumで生成する。
 ブラウザでは出力ディレクトリ内のHTMLとフォントだけを読み込み、外部ネットワーク要求は遮断する。ブラウザ本体の初回インストールのみダウンロードが必要。
 
 ## 実行
 
-リポジトリルートで実行する。依存関係はtextrecと共通のpyproject/uv.lockで管理する。
+`textdet/`で実行する。依存関係はこのディレクトリの `pyproject.toml`・`uv.lock` で管理する。
 
 ```sh
 uv sync
-export PLAYWRIGHT_BROWSERS_PATH="$PWD/ogura/textdet/.cache/playwright"
+export PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/playwright"
 uv run playwright install chromium
 uv run python -m ogura.textdet.synth_jdoc --count 6
 ```
@@ -20,7 +20,7 @@ LinuxでChromiumのシステムライブラリが不足する場合は、その�
 `uv run playwright install-deps chromium` を実行する（OSパッケージの導入権限が必要）。
 GPU、SSH、APIキーは不要。既存出力先は上書きしない。別の `--output` を指定する。
 
-既定フォントは `corpus/fonts/NotoSansCJKjp-Regular.otf`。
+既定フォントは `../corpus/fonts/NotoSansCJKjp-Regular.otf`。
 別のローカルフォントは `--font PATH` で指定する。文章中の文字をフォントが持っているか検査する。
 フォントは出力の `fonts/` に一度だけコピーしてHTML間で共有する。生成物の配布時もフォントのライセンスに従う。
 
@@ -31,7 +31,7 @@ GPU、SSH、APIキーは不要。既存出力先は上書きしない。別の `
 
 ## 出力
 
-既定の `ogura/textdet/outputs/synth-jdoc-pilot/` に保存する。
+既定の `outputs/synth-jdoc-pilot/` に保存する。
 
 - `images/`: 原画像
 - `labels.json`: docTR DetectionDataset形式、文字行の矩形4頂点（画像ピクセル座標）
@@ -57,8 +57,8 @@ JSONLで1行1文書。HTMLは渡さず、通常の文字列を渡す（エスケ
 
 ```sh
 uv run python -m ogura.textdet.synth_jdoc \
-  --input ogura/textdet/outputs/source-texts.jsonl \
-  --count 100 --output ogura/textdet/outputs/synth-jdoc-pilot-100
+  --input outputs/source-texts.jsonl \
+  --count 100 --output outputs/synth-jdoc-pilot-100
 ```
 
 入力文書を順に使い、足りなければ巡回する。100枚の異なる文章を作るには入力文書も増やす。
@@ -68,10 +68,10 @@ uv run python -m ogura.textdet.synth_jdoc \
 ## 検証
 
 ```sh
-RUN_SYNTH_BROWSER_TESTS=1 uv run python -m unittest ogura.textdet.tests.test_synth_jdoc
+RUN_SYNTH_BROWSER_TESTS=1 uv run python -m unittest discover -s tests -p 'test_synth_jdoc.py'
 ```
 
-ブラウザを使うテスト以外は通常の `unittest discover -s ogura/textdet/tests` でも実行する。
+ブラウザを使うテスト以外は通常の `unittest discover -s tests` でも実行する。
 
 
 ## 120ページのバリエーション試作
@@ -88,18 +88,18 @@ val 39ページ・test 40ページは維持する。以下の画像は学習前�
 
 ```sh
 uv run python -m ogura.textdet.prepare_synth_texts \
-  --font corpus/fonts/NotoSansCJKjp-Regular.otf \
-  --font corpus/fonts/NotoSansCJKjp-Bold.otf \
-  --font corpus/fonts/NotoSerifCJKjp-Regular.otf \
-  --font corpus/fonts/NotoSerifCJKjp-Bold.otf
+  --font ../corpus/fonts/NotoSansCJKjp-Regular.otf \
+  --font ../corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --font ../corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --font ../corpus/fonts/NotoSerifCJKjp-Bold.otf
 
 uv run python -m ogura.textdet.synth_jdoc \
-  --input ogura/textdet/outputs/synth-texts-120.jsonl \
+  --input outputs/synth-texts-120.jsonl \
   --count 120 --vary-layout --fill-page --font-sizes 12 16 20 24 \
-  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
-  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
-  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf \
-  --output ogura/textdet/outputs/synth-jdoc-filled-120-v1
+  --extra-font ../corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font ../corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font ../corpus/fonts/NotoSerifCJKjp-Bold.otf \
+  --output outputs/synth-jdoc-filled-120-v1
 ```
 
 先に上記セットアップの `PLAYWRIGHT_BROWSERS_PATH` を設定する。
@@ -140,16 +140,16 @@ metadataには結合候補の記事の出典と段落ごとの記事IDも残す�
 
 ## 学習用5,000ページの生成
 
-設定を `scripts/synth_5000.sh` に固定してある。リポジトリルートで実行する。
+設定を `scripts/synth_5000.sh` に固定してある。`textdet/`で実行する。
 画像生成はCPU上で行い、GPUは学習時だけ必要。以下は利用者が生成先のマシンで実行する手順。
 
 ```sh
 uv sync --locked
-export PLAYWRIGHT_BROWSERS_PATH="$PWD/ogura/textdet/.cache/playwright"
+export PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/playwright"
 uv run --locked playwright install chromium
 ```
 
-入力は `corpus/wikipedia/20231101.ja/*.parquet` と `corpus/fonts/` の4書体。
+入力は `../corpus/wikipedia/20231101.ja/*.parquet` と `../corpus/fonts/` の4書体。
 Wikipediaは `wikimedia/wikipedia`、版 `b04c8d1ceb2f5cd4588862100d08de323dccfbaa`、
 設定 `20231101.ja` の15シャードを使う。既存のtextrec用コーパス・フォントがあれば共用する。
 未取得の場合は既存の取得コードを使える（Wikipedia取得コマンドは文字頻度の集計も行うため時間がかかる）。
@@ -162,8 +162,8 @@ uv run --locked python -m ogura.download_training_fonts
 生成は2段階。最初に5,000件の異なる記事から本文を用意し、次に画像と正解を作る。
 
 ```sh
-bash ogura/textdet/scripts/synth_5000.sh prepare
-bash ogura/textdet/scripts/synth_5000.sh generate
+bash scripts/synth_5000.sh prepare
+bash scripts/synth_5000.sh generate
 ```
 
 - 本文: `outputs/synth-texts-5000-v1.jsonl`。記事あたり最大2,000・4,000・8,000文字。
@@ -174,14 +174,14 @@ bash ogura/textdet/scripts/synth_5000.sh generate
 - 抽出候補は各シャードの先頭2,048件まで。全Wikipediaからの一様抽出ではない。
 
 `manifest.json` の `status` が `complete` で5,000ページあることを確認してから学習する。
-docTRの `--train_path` は `ogura/textdet/outputs/synth-jdoc-5000-v1` を指定する。
+docTRの `--train_path` は `outputs/synth-jdoc-5000-v1` を指定する。
 JDocQAの既存val 39ページ・test 40ページは固定し、合成データを分割してそこに混ぜない。
 モデルはdocTR配布の事前学習済み重みから開始し、以前のJDocQA学習済み重みを再開に使わない。
 
 通常の生成は既存出力を上書きしない。失敗時は原因を直して次のコマンドで再開する。
 
 ```sh
-bash ogura/textdet/scripts/synth_5000.sh resume
+bash scripts/synth_5000.sh resume
 ```
 
 manifestに記録済みのページの画像・メタデータを検査し、そこまでは再描画せず、未完了ページから続行する。
@@ -207,10 +207,10 @@ OS・Chromium版・フォントが異なる場合は描画差があり得るの�
 初回の取得方法は [EXPERIMENT.md](EXPERIMENT.md) を参照。
 
 ```sh
-bash ogura/textdet/scripts/synth_5000.sh train
+bash scripts/synth_5000.sh train
 ```
 
-モデル保存先 `ogura/textdet/outputs/db-resnet34-synth5000-v1` を学習開始前に作成する。
+モデル保存先 `outputs/db-resnet34-synth5000-v1` を学習開始前に作成する。
 設定は事前学習済みdb_resnet34、5 epoch、batch 2、入力1024、学習率0.0001、AMP。
 合成5,000ページを学習に、JDocQAの固定valを検証に使う。
 `CUDA_VISIBLE_DEVICES` は未指定なら0で、指定済みならその値を使う。
@@ -229,13 +229,13 @@ docTRの外部コードやAMPの計算方法は変更しない。起動済みの
 
 ```sh
 uv run --locked python -m ogura.textdet.synth_jdoc \
-  --input ogura/textdet/outputs/synth-texts-5000-v1.jsonl \
-  --output ogura/textdet/outputs/synth-tables-pilot-v2 \
+  --input outputs/synth-texts-5000-v1.jsonl \
+  --output outputs/synth-tables-pilot-v2 \
   --count 16 --vary-layout --fill-page --tables --table-position both --vertical-fraction 0 \
   --font-sizes 12 16 20 24 \
-  --extra-font corpus/fonts/NotoSansCJKjp-Bold.otf \
-  --extra-font corpus/fonts/NotoSerifCJKjp-Regular.otf \
-  --extra-font corpus/fonts/NotoSerifCJKjp-Bold.otf
+  --extra-font ../corpus/fonts/NotoSansCJKjp-Bold.otf \
+  --extra-font ../corpus/fonts/NotoSerifCJKjp-Regular.otf \
+  --extra-font ../corpus/fonts/NotoSerifCJKjp-Bold.otf
 ```
 
 Chromiumの設定は本文生成と共通。表のラベル・数値は自作の架空データであり、本文記事の統計ではない。
@@ -269,9 +269,9 @@ metadataの `table`・`table_lines` とmanifestの `table_distributions` に表�
 別の2,000記事を取得する処理ではなく、学習画像の追加である。
 
 ```sh
-bash ogura/textdet/scripts/synth_tables_2000.sh generate
-bash ogura/textdet/scripts/synth_tables_2000.sh combine
-bash ogura/textdet/scripts/synth_tables_2000.sh train
+bash scripts/synth_tables_2000.sh generate
+bash scripts/synth_tables_2000.sh combine
+bash scripts/synth_tables_2000.sh train
 ```
 
 生成が中断した場合だけ、最初のコマンドを `resume` に置き換える。
@@ -336,14 +336,14 @@ JDocQAの固定val、docTR v1.0.0の学習コードを前提とする。追加�
 
 ```bash
 uv sync
-bash ogura/textdet/scripts/synth_headings_2000.sh generate
-bash ogura/textdet/scripts/synth_headings_2000.sh combine
-bash ogura/textdet/scripts/synth_headings_2000.sh train
-bash ogura/textdet/scripts/synth_headings_2000.sh evaluate
-bash ogura/textdet/scripts/synth_headings_2000.sh package
+bash scripts/synth_headings_2000.sh generate
+bash scripts/synth_headings_2000.sh combine
+bash scripts/synth_headings_2000.sh train
+bash scripts/synth_headings_2000.sh evaluate
+bash scripts/synth_headings_2000.sh package
 ```
 
-初回は `bash ogura/textdet/scripts/synth_headings_2000.sh all` でも順次実行できる。
+初回は `bash scripts/synth_headings_2000.sh all` でも順次実行できる。
 生成中断時は `resume`（両セットを確認し、未着手のセットは新規生成）。
 結合はコピー方式で約9,000枚分の追加容量が必要。結合の途中再開は未対応。
 既存出力は上書きせず、学習先にcheckpointがあれば学習も停止する。
@@ -366,8 +366,8 @@ bash ogura/textdet/scripts/synth_headings_2000.sh package
 Mac側でダウンロード・展開する（スクリプト自身はSSHやscpを実行しない）。
 
 ```bash
-scp dgx:~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz ~/ogura/ogura/textdet/outputs/
-tar -xzf ~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura/ogura/textdet/outputs/
+scp dgx:~/ogura/textdet/outputs/validation-synth9000-v1.tar.gz ~/ogura/textdet/outputs/
+tar -xzf ~/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura/textdet/outputs/
 ```
 
 `download-command` でも上記コマンドを表示する。生成データ・検証画像はGit対象外。
@@ -375,9 +375,9 @@ tar -xzf ~/ogura/ogura/textdet/outputs/validation-synth9000-v1.tar.gz -C ~/ogura
 ## 細かい表の後処理診断
 
 ```bash
-bash ogura/textdet/scripts/diagnose_postprocess.sh run
-bash ogura/textdet/scripts/diagnose_postprocess.sh package
-bash ogura/textdet/scripts/diagnose_postprocess.sh download-command
+bash scripts/diagnose_postprocess.sh run
+bash scripts/diagnose_postprocess.sh package
+bash scripts/diagnose_postprocess.sh download-command
 ```
 
 7,000枚・9,000枚モデルの最良checkpointを使い、JDocQA valの
@@ -398,9 +398,9 @@ unclip=0も輪郭の矩形化などは行うため、後処理を全て無効に
 ## 検証全体での後処理パラメーター選択
 
 ```bash
-bash ogura/textdet/scripts/postprocess_validation.sh run
-bash ogura/textdet/scripts/postprocess_validation.sh package
-bash ogura/textdet/scripts/postprocess_validation.sh download-command
+bash scripts/postprocess_validation.sh run
+bash scripts/postprocess_validation.sh package
+bash scripts/postprocess_validation.sh download-command
 ```
 
 固定val全39ページ・両モデル・1536入力で、二値化閾値0.3/0.4/0.5と
@@ -419,7 +419,7 @@ val全体の指標と通常本文・表・見出し・縦書きの画像を見�
 選んだ値に置き換える。スクリプトはvalで実行済みの組合せだけ受け付ける。
 
 ```text
-bash ogura/textdet/scripts/postprocess_validation.sh test MODEL BIN_THRESHOLD UNCLIP_RATIO
+bash scripts/postprocess_validation.sh test MODEL BIN_THRESHOLD UNCLIP_RATIO
 ```
 
 test出力は `outputs/postprocess-test-v1`。test評価で設定探索は行わない。
