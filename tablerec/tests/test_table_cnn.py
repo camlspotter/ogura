@@ -6,7 +6,7 @@ import torch
 from torch.nn import functional as F
 from PIL import Image
 
-from ogura.textdet.table_cnn import (CHANNELS, SizeBatchSampler, TableUNet, boundary_loss,
+from ogura.tablerec.table_cnn import (CHANNELS, SizeBatchSampler, TableUNet, boundary_loss,
     boundary_metrics, collate_tables, load_model, predict_image)
 
 

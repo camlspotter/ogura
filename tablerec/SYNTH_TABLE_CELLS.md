@@ -9,10 +9,10 @@ CNN学習は [TABLE_CNN.md](TABLE_CNN.md) を参照。セル復元はまだ実�
 リポジトリルートから:
 
 ```sh
-uv run --frozen python -m ogura.textdet.synth_table_cells \
-  --output textdet/outputs/table-cells-v3/train --count 160 --split train
-uv run --frozen python -m ogura.textdet.synth_table_cells \
-  --output textdet/outputs/table-cells-v3/validation --count 40 --split validation
+uv run --frozen python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-v3/train --count 160 --split train
+uv run --frozen python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-v3/validation --count 40 --split validation
 ```
 
 `--scale 2|4|8` で描画倍率を指定する（既定4）。倍率はJSONに保存される。
@@ -38,10 +38,10 @@ PNGやJPEG、プレビューは自動保存しない。フォントは既存の�
 ```python
 import json
 from pathlib import Path
-from ogura.textdet.synth_table_cells import render_sample
+from ogura.tablerec.synth_table_cells import render_sample
 
 recipe = json.loads(Path(
-    'textdet/outputs/table-cells-v3/train/recipes/table-000000.json'
+    'tablerec/outputs/table-cells-v3/train/recipes/table-000000.json'
 ).read_text())
 image, horizontal, vertical = render_sample(recipe)
 # PIL.Image: RGB入力画像、L横罫線マップ、L縦罫線マップ
@@ -67,9 +67,9 @@ JSONには画像サイズ、格子座標、セルの結合範囲とbbox、文字
 
 ```python
 from pathlib import Path
-from ogura.textdet.synth_table_cells import TableCellDataset
+from ogura.tablerec.synth_table_cells import TableCellDataset
 
-dataset = TableCellDataset(Path('textdet/outputs/table-cells-v3/train'))
+dataset = TableCellDataset(Path('tablerec/outputs/table-cells-v3/train'))
 sample = dataset[0]  # この時点で1サンプルだけ描画
 image = sample['image']
 horizontal = sample['horizontal']
@@ -129,7 +129,7 @@ JSON生成時には作業画像は作らない。
 ## 検証
 
 ```sh
-uv run --frozen python -m unittest discover -s textdet/tests -p test_synth_table_cells.py
+uv run --frozen python -m unittest discover -s tablerec/tests -p test_synth_table_cells.py
 ```
 
 セルの被覆・結合内部のマップ・交点・再現性に加え、JSON生成中に画像を作らないこと、

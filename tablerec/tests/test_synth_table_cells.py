@@ -9,7 +9,7 @@ import shutil
 
 from PIL import Image, ImageChops
 
-from ogura.textdet.synth_table_cells import (
+from ogura.tablerec.synth_table_cells import (
     MODES, TableCellDataset, boundary_segments, draw_mask, generate, make_sample, partition, render_sample, sample_seed,
 )
 
@@ -70,7 +70,7 @@ class RenderTests(unittest.TestCase):
         for mode in MODES:
             labels = make_sample(1234, FONT, mode)
             labels2 = json.loads(json.dumps(labels))
-            with patch('ogura.textdet.synth_table_cells.random.Random', side_effect=AssertionError('renderer must not use RNG')):
+            with patch('ogura.tablerec.synth_table_cells.random.Random', side_effect=AssertionError('renderer must not use RNG')):
                 image, h, v = render_sample(labels)
                 image2, h2, v2 = render_sample(labels2)
             self.assertEqual(json.loads(json.dumps(labels)), labels2)
@@ -91,7 +91,7 @@ class RenderTests(unittest.TestCase):
     def test_dataset_contract_and_overwrite_protection(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)/'data'
-            with patch('ogura.textdet.synth_table_cells.Image.new', side_effect=AssertionError('JSON generation must not create images')):
+            with patch('ogura.tablerec.synth_table_cells.Image.new', side_effect=AssertionError('JSON generation must not create images')):
                 result = generate(output, 5, 42, 'train', [FONT])
             self.assertEqual(result['status'], 'complete')
             self.assertEqual(result['modes'], dict.fromkeys(MODES, 1))

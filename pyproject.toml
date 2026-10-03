@@ -2,7 +2,7 @@
 name = "ogura"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["ogura-textdet"]
+dependencies = ["ogura-textdet", "ogura-tablerec"]
 
 [project.optional-dependencies]
 # Compatibility for existing detection training commands.
@@ -12,3 +12,4 @@ textrec = ["ogura-textrec"]
 [tool.uv.sources]
 ogura-textdet = { path = "textdet", editable = true }
 ogura-textrec = { path = "textrec", editable = true }
+ogura-tablerec = { path = "tablerec", editable = true }

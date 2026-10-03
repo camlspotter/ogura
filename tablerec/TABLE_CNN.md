@@ -25,21 +25,21 @@ GroupNormや畳み込みの特徴はパディングの影響を受けるため�
 生成済みJSONを転送してもよいが、GPU側で生成すれば絶対フォントパスも現地で解決できる。
 
 ```sh
-uv run --frozen python -m ogura.textdet.synth_table_cells \
-  --output textdet/outputs/table-cells-train-v1/train \
+uv run --frozen python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-train-v1/train \
   --count 2000 --split train --scale 4
-uv run --frozen python -m ogura.textdet.synth_table_cells \
-  --output textdet/outputs/table-cells-train-v1/validation \
+uv run --frozen python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-train-v1/validation \
   --count 200 --split validation --scale 4
 ```
 
 これらのJSONとモデルの実装が揃ったGPUマシンで、次を実行する。
 
 ```sh
-uv run --frozen python -m ogura.textdet.train_table_cnn \
-  --train textdet/outputs/table-cells-train-v1/train \
-  --validation textdet/outputs/table-cells-train-v1/validation \
-  --output textdet/outputs/table-cnn-v1 \
+uv run --frozen python -m ogura.tablerec.train_table_cnn \
+  --train tablerec/outputs/table-cells-train-v1/train \
+  --validation tablerec/outputs/table-cells-train-v1/validation \
+  --output tablerec/outputs/table-cnn-v1 \
   --device cuda --epochs 20 --batch-size 2 --workers 2
 ```
 
@@ -83,14 +83,14 @@ AdamW、既定学習率3e-4、weight decay 1e-4、勾配ノルム上限5。
 ```python
 import json
 from pathlib import Path
-from ogura.textdet.synth_table_cells import render_sample
-from ogura.textdet.table_cnn import load_model, predict_image
+from ogura.tablerec.synth_table_cells import render_sample
+from ogura.tablerec.table_cnn import load_model, predict_image
 
 recipe = json.loads(Path(
-    'textdet/outputs/table-cells-v3/validation/recipes/table-000000.json'
+    'tablerec/outputs/table-cells-v3/validation/recipes/table-000000.json'
 ).read_text())
 image, _, _ = render_sample(recipe)
-model = load_model(Path('textdet/outputs/table-cnn-v1/best.pt'), device='cpu')
+model = load_model(Path('tablerec/outputs/table-cnn-v1/best.pt'), device='cpu')
 probabilities = predict_image(model, image, device='cpu')
 horizontal, vertical = probabilities  # CPU tensor [H,W], 0〜1
 ```
@@ -100,13 +100,13 @@ horizontal, vertical = probabilities  # CPU tensor [H,W], 0〜1
 ## 短い動作確認
 
 ```sh
-uv run --frozen python -m ogura.textdet.train_table_cnn \
-  --train textdet/outputs/table-cells-v3/train \
-  --validation textdet/outputs/table-cells-v3/validation \
-  --output textdet/outputs/table-cnn-smoke \
+uv run --frozen python -m ogura.tablerec.train_table_cnn \
+  --train tablerec/outputs/table-cells-v3/train \
+  --validation tablerec/outputs/table-cells-v3/validation \
+  --output tablerec/outputs/table-cnn-smoke \
   --device cpu --epochs 1 --batch-size 1 --base-channels 4 \
   --train-limit 2 --validation-limit 1 --threads 2
-uv run --frozen python -m unittest discover -s textdet/tests -p 'test_table_cnn.py'
+uv run --frozen python -m unittest discover -s tablerec/tests -p 'test_table_cnn.py'
 ```
 
 `--train-limit / --validation-limit` は使用する先頭サンプル数を制限する。
