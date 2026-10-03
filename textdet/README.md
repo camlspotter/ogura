@@ -112,3 +112,5 @@ Pythonコードは `textdet/ogura/textdet/`、スクリプト・テスト・設�
 
 表の描画パラメータと結合セル構造をJSONで保存し、画像と横・縦の罫線マップを
 必要時にメモリ上で生成する方法は [SYNTH_TABLE_CELLS.md](SYNTH_TABLE_CELLS.md) を参照してください。
+
+JSONから逐次描画して横・縦の罫線マップを学習するCNNは [TABLE_CNN.md](TABLE_CNN.md) を参照してください。
