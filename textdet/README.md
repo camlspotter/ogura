@@ -107,3 +107,8 @@ Pythonコードは `textdet/ogura/textdet/`、スクリプト・テスト・設�
 追跡済みの `outputs/experiment-v1-recipe.json` は新しい版を使う。
 仮想環境は移動元のものをコピーせず、`cd textdet && uv sync --locked` で構成する。
 過去のmanifestに記録された絶対パスは実行時の履歴として保持する。
+
+## 表セル認識用の合成データ
+
+表の描画パラメータと結合セル構造をJSONで保存し、画像と横・縦の罫線マップを
+必要時にメモリ上で生成する方法は [SYNTH_TABLE_CELLS.md](SYNTH_TABLE_CELLS.md) を参照してください。
