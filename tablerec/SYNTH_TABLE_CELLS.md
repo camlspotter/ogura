@@ -55,7 +55,7 @@ image, horizontal, vertical = render_sample(recipe)
 JSONには画像サイズ、格子座標、セルの結合範囲とbbox、文字サイズ、背景色・文字色、
 各描画行の文字列と位置（`text_runs`）、罫線の色と太さ、画像劣化の具体値を保存する。
 フォントは名前・元の絶対パス・SHA-256を保持する。既定では縦横4倍の解像度で描き、縮小する。
-新規生成はschema v3 / pillow-table-v3。旧schema v2のJSONは従来の2倍描画で
+新規生成はschema v4 / pillow-table-v4。旧schema v2/v3のJSONも従来の描画で
 読み込める。非対応のschema・倍率は明示的に拒否する。
 
 `text` / `lines` / `align` は内容と配置の記録であり、実際の文字描画には確定済みの
@@ -135,3 +135,27 @@ uv run --frozen python -m unittest discover -s tablerec/tests -p test_synth_tabl
 セルの被覆・結合内部のマップ・交点・再現性に加え、JSON生成中に画像を作らないこと、
 描画時に乱数やディスク出力を使わないこと、JSON往復、フォント移設・内容不一致を検証する。
 描画テストにはローカルのNoto Sansが必要。
+
+## 誤検出しやすいセル内容（v4）
+
+新規JSONは `content_profile: hard-negatives-v1` を持ち、各セルの内容を次の確率で選ぶ。
+通常の文章・数値・空欄を45%、直線や四角形の多い文字を35%、図形のチェックボックスを10%、
+空セルの斜線を10%とする。割合はサンプル全体での期待値で、各表で固定しない。
+
+文字候補には `上 1 I ー L U R 月 日 回`、カタカナ、`年　月　日`、`第1回`、
+`□ 有　□ 無`、`△123` / `▲123` のような負数表記を含む。
+文字サイズや配置は既存の文字レイアウトに従う。
+図形のチェックボックスは9〜20pxで、空・チェック入り・塗りつぶしを混ぜる。
+空欄の斜線は `/`・`\`・`×` を生成し、角に接する場合と内側に余白を持つ場合を混ぜる。
+
+各セルの `content_kind` と `marks` に種類・座標・線幅・色・状態を保存する。
+これらは入力画像だけに描き、縦横罫線の正解マスクには含めない。セル外周は従来通り正解とする。
+描画時の乱数は使わず、画像は引き続き学習時にメモリ上で生成する。
+既存のJSONは変わらないため、この内容で学習するには新しい出力先へJSONを生成する。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-hard-v1/train --count 2000 --split train --seed 20261004
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-hard-v1/validation --count 200 --split validation --seed 20261004
+```

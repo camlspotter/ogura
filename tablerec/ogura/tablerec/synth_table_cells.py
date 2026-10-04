@@ -16,6 +16,10 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 WORDS = ['区分', '項目', '実績', '備考', '件数', '割合', '合計', '受付', '相談',
          '調査結果', '年度末時点', '継続対応', '対象外', '未集計', '第一地区',
          '第二地区', '参考資料', '確認済', 'ABC', '2026年度']
+HARD_TEXTS = ['上', '1', 'I', 'ー', 'L', 'U', 'R', '月', '日', '回',
+              '月　日', '年　月　日', '第1回', 'L U R', 'コ', 'エ', 'ロ', 'ニ',
+              'カ', 'キ', 'ト', 'ヒ', 'コスト', 'チェック', '□', '□ 有　□ 無']
+CONTENT_PROFILE = 'hard-negatives-v1'
 MODES = ('plain', 'column_merge', 'row_merge', 'mixed', 'block_merge')
 DEFAULT_SCALE = 4
 SCALES = (2, 4, 8)
@@ -103,6 +107,46 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
     return lines
 
 
+def cell_content(rng: random.Random) -> tuple[str, str]:
+    """Keep ordinary cells while oversampling line-like text and input-only marks."""
+    choice = rng.random()
+    if choice < 0.10:
+        return 'diagonal', ''
+    if choice < 0.20:
+        return 'checkbox', ''
+    if choice < 0.55:
+        text = rng.choice(HARD_TEXTS + [f'△{rng.randint(1,99999):,}',
+                                      f'▲{rng.randint(1,99999):,}'])
+        return 'hard_text', text
+    return 'ordinary', rng.choice(WORDS + [f'{rng.randint(0,99999):,}',
+                                          f'{rng.uniform(0,100):.1f}%', '', ''])
+
+
+def cell_marks(rng: random.Random, kind: str, bbox: list, foreground: str) -> list[dict]:
+    """Resolve input-only marks in final-image coordinates; never table boundaries."""
+    x0, y0, x1, y1 = bbox
+    if kind == 'diagonal':
+        inset = rng.choice([0, 0, 2, 4])
+        a, b, c, d = x0+inset, y0+inset, x1-inset, y1-inset
+        direction = rng.choice(['slash', 'backslash', 'cross'])
+        segments = []
+        if direction in ('slash', 'cross'):
+            segments.append([a, d, c, b])
+        if direction in ('backslash', 'cross'):
+            segments.append([a, b, c, d])
+        return [dict(kind='diagonal', segments=segments,
+                     width=rng.choice([0.5, 0.75, 1, 1.5, 2]),
+                     color=rng.choice([foreground, '#555555', '#888888']))]
+    if kind == 'checkbox':
+        side = rng.randint(9, 20)
+        left = rng.uniform(x0+6, x1-6-side)
+        top = rng.uniform(y0+6, y1-6-side)
+        return [dict(kind='checkbox', bbox=[left, top, left+side, top+side],
+                     width=rng.choice([0.75, 1, 1.5, 2]), color=foreground,
+                     state=rng.choice(['empty', 'empty', 'checked', 'filled']))]
+    return []
+
+
 def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | None = None, scale: int = DEFAULT_SCALE) -> dict:
     """Resolve all randomness and text layout without allocating any image."""
     if type(scale) is not int or scale not in SCALES:
@@ -135,7 +179,7 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
         bbox = [xs[c], ys[r], xs[c+cs], ys[r+rs]]
         x0, y0, x1, y1 = (value*scale for value in bbox)
         bg = header_color if r == 0 else stripe_color if r % 2 else '#ffffff'
-        text = rng.choice(WORDS + [f'{rng.randint(0,99999):,}', f'{rng.uniform(0,100):.1f}%', '', ''])
+        content_kind, text = cell_content(rng)
         # Keep the exact rendered text as the cell label; fit without clipping glyphs.
         cell_font, cell_height = font, line_height
         padding = (max(inner_width, outer_width)+4)*scale
@@ -158,6 +202,8 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
             text_runs.append(dict(text=line, xy=[left/scale, (top+offset*cell_height)/scale]))
         cell.update(id=index, bbox=bbox, text=text, lines=lines, align=align, font_size=cell_size,
                     background=bg, foreground="white" if bg == "#254b70" else "#202020", text_runs=text_runs)
+        cell['content_kind'] = content_kind
+        cell['marks'] = cell_marks(rng, content_kind, bbox, cell['foreground'])
     line_color = rng.choice(['#111111', '#555555', '#888888', '#345778'])
     degradation = rng.choice(['clean', 'clean', 'jpeg', 'blur', 'downsample'])
     params = {'kind': degradation}
@@ -167,7 +213,7 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
         params['radius'] = rng.uniform(0.25, 0.7)
     elif degradation == 'downsample':
         params['factor'] = rng.uniform(0.5, 0.8)
-    labels = dict(schema_version=3, renderer="pillow-table-v3", scale=scale, seed=seed, mode=mode, width=size[0], height=size[1],
+    labels = dict(schema_version=4, renderer="pillow-table-v4", content_profile=CONTENT_PROFILE, scale=scale, seed=seed, mode=mode, width=size[0], height=size[1],
                   table_bbox=[xs[0], ys[0], xs[-1], ys[-1]], rows=rows, columns=columns,
                   x_boundaries=xs, y_boundaries=ys, cells=cells,
                   horizontal_segments=h_segments, vertical_segments=v_segments,
@@ -189,7 +235,7 @@ def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.
     scale = recipe.get('scale')
     if (type(scale) is not int or
             not ((version == 2 and recipe.get('renderer') == 'pillow-table-v2' and scale == 2) or
-                 (version == 3 and recipe.get('renderer') == 'pillow-table-v3' and scale in SCALES))):
+                 (version in (3, 4) and recipe.get('renderer') == f'pillow-table-v{version}' and scale in SCALES))):
         raise ValueError('Unsupported table recipe schema/renderer/scale')
     record = recipe['font']
     font_path = (Path(font_dir)/record['name'] if font_dir is not None else Path(record['path'])).resolve()
@@ -200,7 +246,7 @@ def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.
     xs, ys = recipe['x_boundaries'], recipe['y_boundaries']
     h_segments, v_segments = boundary_segments(recipe['cells'], xs, ys)
     inner_width, outer_width = recipe['inner_line_width'], recipe['outer_line_width']
-    mask_options = dict(scale=scale, subpixel=version == 3)
+    mask_options = dict(scale=scale, subpixel=version >= 3)
     # Outer frame uses its own width; thinner outer borders remain thin.
     h_inner = [s for s in h_segments if s[1] not in (ys[0], ys[-1])]
     v_inner = [s for s in v_segments if s[0] not in (xs[0], xs[-1])]
@@ -217,6 +263,23 @@ def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.
         for run in cell['text_runs']:
             draw.text(tuple(v*scale for v in run['xy']), run['text'], font=fonts[fs],
                       anchor='lt', fill=cell['foreground'])
+        for mark in cell.get('marks', []) if version >= 4 else []:
+            width = max(1, round(mark['width']*scale))
+            if mark['kind'] == 'diagonal':
+                for segment in mark['segments']:
+                    draw.line(tuple(value*scale for value in segment), fill=mark['color'], width=width)
+            elif mark['kind'] == 'checkbox':
+                box = tuple(value*scale for value in mark['bbox'])
+                draw.rectangle(box, outline=mark['color'], width=width,
+                               fill=mark['color'] if mark['state'] == 'filled' else None)
+                if mark['state'] == 'checked':
+                    left, top, right, bottom = box
+                    side = right-left
+                    draw.line([(left+0.2*side, top+0.5*side),
+                               (left+0.45*side, top+0.8*side),
+                               (left+0.85*side, top+0.2*side)], fill=mark['color'], width=width)
+            else:
+                raise ValueError(f"Unknown cell mark: {mark['kind']}")
     image.paste(recipe['line_color'], mask=ImageChops.lighter(h, v))
     image = image.resize(size, Image.Resampling.LANCZOS)
     h, v = (mask.resize(size, Image.Resampling.BOX) for mask in (h, v))
@@ -244,8 +307,8 @@ class TableCellDataset:
         self.root = Path(root)
         self.font_dir = font_dir
         manifest = json.loads((self.root/'manifest.json').read_text())
-        if manifest.get('schema_version') not in (2, 3) or manifest.get('status') != 'complete':
-            raise ValueError('Dataset must be a completed schema-v2/v3 JSON dataset')
+        if manifest.get('schema_version') not in (2, 3, 4) or manifest.get('status') != 'complete':
+            raise ValueError('Dataset must be a completed schema-v2/v3/v4 JSON dataset')
         self.records = [json.loads(line) for line in (self.root/'samples.jsonl').read_text().splitlines()]
         if len(self.records) != manifest['count']:
             raise ValueError('Sample count does not match manifest')
@@ -261,7 +324,7 @@ class TableCellDataset:
 
 
 def validate_fonts(paths: list[Path]) -> list[dict]:
-    required = set(''.join(WORDS)+'0123456789,.%')
+    required = set(''.join(WORDS+HARD_TEXTS)+'0123456789,.%△▲') - {' ', '　'}
     result = []
     for path in paths:
         with TTFont(path) as font:
@@ -284,7 +347,7 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
     output.mkdir(parents=True, exist_ok=False)
     (output/'recipes').mkdir()
     counts = dict.fromkeys(MODES, 0)
-    manifest = dict(schema_version=3, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
+    manifest = dict(schema_version=4, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
                     fonts=font_records, pillow_version=Image.__version__,
                     generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     mask_encoding='uint8 coverage, divide by 255; independent horizontal and vertical channels')

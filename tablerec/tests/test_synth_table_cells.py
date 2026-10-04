@@ -88,6 +88,34 @@ class RenderTests(unittest.TestCase):
                 self.assertGreater(h.getpixel((int((xs[c]+xs[c+1])//2), int(ys[r]))), 0)
                 self.assertGreater(v.getpixel((int(xs[c]), int((ys[r]+ys[r+1])//2))), 0)
 
+    def test_marks_change_input_but_never_masks_and_old_recipe_still_renders(self):
+        recipe = make_sample(42, FONT, 'plain')
+        recipe['degradation'] = {'kind': 'clean'}
+        for cell in recipe['cells']:
+            cell['marks'] = []
+        baseline, h, v = render_sample(recipe)
+        old = copy.deepcopy(recipe)
+        old.update(schema_version=3, renderer='pillow-table-v3')
+        for cell in old['cells']:
+            del cell['marks']
+            del cell['content_kind']
+        for expected, actual in zip((baseline, h, v), render_sample(old)):
+            self.assertEqual(expected.tobytes(), actual.tobytes())
+        cell = recipe['cells'][0]
+        x0, y0, x1, y1 = cell['bbox']
+        variants = [dict(kind='diagonal', segments=segments, width=1, color='#111111')
+                    for segments in ([[x0,y0,x1,y1]], [[x0,y1,x1,y0]],
+                                     [[x0,y0,x1,y1],[x0,y1,x1,y0]])]
+        variants += [dict(kind='checkbox', bbox=[x0+10,y0+10,x0+24,y0+24],
+                          width=1, color='#111111', state=state)
+                     for state in ('empty', 'checked', 'filled')]
+        for mark in variants:
+            cell['marks'] = [mark]
+            actual, actual_h, actual_v = render_sample(recipe)
+            self.assertNotEqual(baseline.tobytes(), actual.tobytes())
+            self.assertEqual(h.tobytes(), actual_h.tobytes())
+            self.assertEqual(v.tobytes(), actual_v.tobytes())
+
     def test_dataset_contract_and_overwrite_protection(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)/'data'
@@ -101,7 +129,7 @@ class RenderTests(unittest.TestCase):
             for record in records:
                 recipe = json.loads((output/record['recipe']).read_text())
                 self.assertEqual(recipe['seed'], record['seed'])
-                self.assertEqual(recipe['schema_version'], 3)
+                self.assertEqual(recipe['schema_version'], 4)
             dataset = TableCellDataset(output)
             self.assertEqual(len(dataset), 5)
             before = {str(p): p.read_bytes() for p in output.rglob('*') if p.is_file()}
