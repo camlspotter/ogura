@@ -630,6 +630,30 @@ def add_dense_cells(recipe, seed):
     return recipe
 
 
+def add_dashed_borders(recipe, seed):
+    """Resolve dots, short/long dashes and faint strokes into existing recipe fields."""
+    recipe = copy.deepcopy(recipe)
+    rng = random.Random(f'dashed-borders/{seed}')
+    recipe['dash_profile'] = 'varied-dashes-v1'
+    recipe['line_styles'] = {'horizontal':{},'vertical':{}}
+    patterns = [(0.75,1.5),(1,2),(2,2),(3,3),(6,3),(10,5)]
+    for channel, coordinates in [('horizontal',recipe['y_boundaries']),
+                                 ('vertical',recipe['x_boundaries'])]:
+        selected = [value for value in coordinates[1:-1]
+                    if rng.random() < (0.55 if channel=='horizontal' else 0.25)]
+        if channel=='horizontal' and not selected and len(coordinates)>2:
+            selected = [rng.choice(coordinates[1:-1])]
+        dash,gap = rng.choice(patterns)
+        width = rng.choice([0.5,0.75,1,1.25])
+        color = rng.choice(['#222222','#444444','#777777'])
+        phase = rng.uniform(0,dash+gap)
+        for value in selected:
+            key = str(value)
+            recipe['line_styles'][channel][key] = dict(dash=dash,gap=gap,phase=phase)
+            recipe['boundary_appearance'][channel][key] = dict(width=width,color=color)
+    return recipe
+
+
 def add_background_context(recipe, seed):
     """Resolve page whitespace and zero-target negatives into a schema-v9 recipe."""
     recipe = copy.deepcopy(recipe)
@@ -736,7 +760,7 @@ def validate_fonts(paths: list[Path]) -> list[dict]:
     return result
 
 
-def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False, dense_text: bool = False) -> dict:
+def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False, dense_text: bool = False, dashed_borders: bool = False) -> dict:
     if type(scale) is not int or scale not in SCALES:
         raise ValueError(f'scale must be one of {SCALES}')
     if count <= 0:
@@ -747,7 +771,7 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
     output.mkdir(parents=True, exist_ok=False)
     (output/'recipes').mkdir()
     counts = dict.fromkeys(MODES, 0)
-    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, dense_text=dense_text, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
+    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, dense_text=dense_text, dashed_borders=dashed_borders, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
                     fonts=font_records, pillow_version=Image.__version__,
                     generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     mask_encoding='uint8 coverage, divide by 255; independent horizontal and vertical channels')
@@ -760,6 +784,8 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
             recipe = make_sample(item_seed, fonts[font_index], mode, font_record=font_records[font_index], scale=scale)
             if dense_text and random.Random(f'dense-selection/{item_seed}').random() < 0.3:
                 recipe = add_dense_cells(recipe, item_seed)
+            if dashed_borders:
+                recipe = add_dashed_borders(recipe, item_seed)
             if background_context:
                 recipe = add_background_context(recipe, item_seed)
             name = f'table-{index:06d}'
@@ -784,12 +810,13 @@ def main() -> None:
     parser.add_argument('--split', choices=['train', 'validation', 'test'], default='train')
     parser.add_argument('--background-context', action='store_true', help='Mix page whitespace, text-only and blank negatives')
     parser.add_argument('--dense-text', action='store_true', help='Include 30% paragraph-heavy forms')
+    parser.add_argument('--dashed-borders', action='store_true', help='Vary internal dotted/dashed, thin and faint borders')
     parser.add_argument('--font', type=Path, action='append', help='Repeat for multiple Japanese fonts')
     args = parser.parse_args()
     fonts = args.font or [Path(__file__).resolve().parents[3]/'corpus/fonts'/name for name in
                          ('NotoSansCJKjp-Regular.otf', 'NotoSerifCJKjp-Regular.otf')]
     try:
-        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context, dense_text=args.dense_text)
+        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context, dense_text=args.dense_text, dashed_borders=args.dashed_borders)
     except (ValueError, OSError) as exc:
         parser.exit(1, f'{exc}\n')
     print(json.dumps(result, ensure_ascii=False))

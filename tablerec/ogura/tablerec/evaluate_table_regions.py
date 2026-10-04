@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-from .synth_table_cells import TableCellDataset
+from .synth_table_cells import TableCellDataset, boundary_segments, dashed_segments, draw_mask
 from .table_cnn import load_model, predict_image
 
 
@@ -33,7 +33,39 @@ def regions(sample, font_dir=None):
     return truth, {'text':text_region,'white':white}
 
 
-def measure(probabilities, truth, masks):
+def boundary_regions(recipe, truth):
+    """Classify teacher pixels by pre-degradation stroke geometry, not source colors."""
+    result = {kind: np.zeros_like(truth,dtype=bool) for kind in ('solid','dash_ink','dash_gap')}
+    if recipe.get('background_context') in ('blank','text_only'):
+        return result
+    size = (recipe['width'],recipe['height'])
+    scale = recipe['scale']
+    segments = boundary_segments(recipe['cells'],recipe['x_boundaries'],recipe['y_boundaries'])
+    for channel,name in enumerate(('horizontal','vertical')):
+        full = np.zeros(truth.shape[1:],dtype=bool)
+        ink = np.zeros_like(full)
+        gap = np.zeros_like(full)
+        styles = recipe.get('line_styles',{}).get(name,{})
+        for key,style in styles.items():
+            coordinate = float(key)
+            group = [s for s in segments[channel] if s[1 if channel==0 else 0]==coordinate]
+            width = recipe.get('boundary_appearance',{}).get(name,{}).get(key,{}).get('width',recipe['inner_line_width'])
+            def coverage(lines):
+                mask = draw_mask(size,lines,width,scale=scale,subpixel=recipe['schema_version']>=3)
+                return np.array(mask.resize(size,Image.Resampling.BOX))/255
+            continuous = coverage(group)>=.5
+            painted = coverage(dashed_segments(group,{key:style}))
+            full |= continuous
+            ink |= continuous&(painted>=.5)
+            gap |= continuous&(painted<=.01)
+        teacher = truth[channel]>=.5
+        result['solid'][channel] = teacher&~full
+        result['dash_ink'][channel] = teacher&ink
+        result['dash_gap'][channel] = teacher&gap&~ink
+    return result
+
+
+def measure(probabilities, truth, masks, boundaries=None):
     values = {}
     for channel,name in enumerate(('horizontal','vertical')):
         p = probabilities[channel]
@@ -46,6 +78,14 @@ def measure(probabilities, truth, masks):
         n = int(mask.sum())
         values[f'{name}/boundary'] = dict(pixels=n,
             recall_at_05=float((p[mask]>=.5).mean()) if n else None)
+    if boundaries is not None:
+        for channel,name in enumerate(('horizontal','vertical')):
+            for kind,masks in boundaries.items():
+                mask = masks[channel]
+                n = int(mask.sum())
+                values[f'{name}/{kind}'] = dict(pixels=n,
+                    mean_probability=float(probabilities[channel][mask].mean()) if n else None,
+                    recall_at_05=float((probabilities[channel][mask]>=.5).mean()) if n else None)
     return values
 
 
@@ -58,8 +98,10 @@ def evaluate(dataset, checkpoints, device, count):
         for index in range(report['count']):
             sample=dataset[index]
             truth,masks=regions(sample,dataset.font_dir)
-            metrics=measure(predict_image(model,sample['image'],device).numpy(),truth,masks)
+            metrics=measure(predict_image(model,sample['image'],device).numpy(),truth,masks,
+                            boundary_regions(sample['recipe'],truth))
             samples.append(dict(id=sample['id'],template=sample['recipe'].get('template'),metrics=metrics))
+            if (index+1)%50==0: print(f'{checkpoint.name}: {index+1}/{report["count"]}',flush=True)
             for key,values in metrics.items():
                 accumulator=totals.setdefault(key,dict(pixels=0))
                 accumulator['pixels']+=values['pixels']
