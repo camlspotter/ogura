@@ -587,6 +587,49 @@ def _render_structural_sample(recipe: dict, *, font_dir: Path | None = None) -> 
     return image, h, v
 
 
+def add_dense_cells(recipe, seed):
+    """Resolve a paragraph-heavy form using only font metrics and JSON geometry."""
+    recipe = copy.deepcopy(recipe)
+    rng = random.Random(f'dense-cells/{seed}')
+    scale = recipe['scale']
+    rows = rng.randint(5, 9)
+    xs = [20, 65, rng.randint(420, 560), rng.randint(620, 720)]
+    ys = [20, 52]
+    for _ in range(rows-1):
+        ys.append(ys[-1]+rng.randint(65, 110))
+    cells = partition(rows, 3, rng, recipe['mode'])
+    for index, cell in enumerate(cells):
+        r,c,rs,cs = (cell[k] for k in ('row','column','rowspan','colspan'))
+        box = [xs[c],ys[r],xs[c+cs],ys[r+rs]]
+        fs = rng.choice([10,11,12])
+        font = ImageFont.truetype(recipe['font']['path'], fs*scale)
+        pitch = sum(font.getmetrics())/scale
+        width = (box[2]-box[0]-10)*scale
+        if r == 0:
+            text = ['番号','確認項目','結果'][c]
+        elif box[2]-box[0] > 180:
+            phrases = rng.sample(CHECK_ITEMS, 12)
+            text = '。'.join(phrases)+'。'
+        else:
+            text = str(r) if c == 0 else rng.choice(HARD_TEXTS)
+        lines = wrap_text(text,font,width)
+        lines = lines[:max(1,int((box[3]-box[1]-10)/pitch))]
+        # Store exactly what is rendered, with no hidden/truncated label text.
+        runs = [dict(text=line,xy=[box[0]+5,box[1]+5+i*pitch]) for i,line in enumerate(lines)]
+        cell.update(id=index,bbox=box,text='\n'.join(lines),lines=lines,align='left',
+                    font_size=fs,background='#eeeeee' if r==0 else '#ffffff',
+                    foreground='#202020',text_runs=runs,marks=[],content_kind='dense_text',
+                    text_stroke_width=0)
+    h,v = boundary_segments(cells,xs,ys)
+    recipe.update(template='dense_form',content_profile='dense-paragraph-v1',rows=rows,columns=3,
+                  width=xs[-1]+20,height=ys[-1]+20,table_bbox=[xs[0],ys[0],xs[-1],ys[-1]],
+                  x_boundaries=xs,y_boundaries=ys,cells=cells,horizontal_segments=h,vertical_segments=v,
+                  line_styles={'horizontal':{},'vertical':{}},
+                  boundary_appearance={'horizontal':{},'vertical':{}},corner_radius=0)
+    recipe.pop('ledger_records',None)
+    return recipe
+
+
 def add_background_context(recipe, seed):
     """Resolve page whitespace and zero-target negatives into a schema-v9 recipe."""
     recipe = copy.deepcopy(recipe)
@@ -693,7 +736,7 @@ def validate_fonts(paths: list[Path]) -> list[dict]:
     return result
 
 
-def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False) -> dict:
+def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False, dense_text: bool = False) -> dict:
     if type(scale) is not int or scale not in SCALES:
         raise ValueError(f'scale must be one of {SCALES}')
     if count <= 0:
@@ -704,7 +747,7 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
     output.mkdir(parents=True, exist_ok=False)
     (output/'recipes').mkdir()
     counts = dict.fromkeys(MODES, 0)
-    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
+    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, dense_text=dense_text, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
                     fonts=font_records, pillow_version=Image.__version__,
                     generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     mask_encoding='uint8 coverage, divide by 255; independent horizontal and vertical channels')
@@ -715,6 +758,8 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
             mode = MODES[index % len(MODES)]
             font_index = random.Random(item_seed).randrange(len(fonts))
             recipe = make_sample(item_seed, fonts[font_index], mode, font_record=font_records[font_index], scale=scale)
+            if dense_text and random.Random(f'dense-selection/{item_seed}').random() < 0.3:
+                recipe = add_dense_cells(recipe, item_seed)
             if background_context:
                 recipe = add_background_context(recipe, item_seed)
             name = f'table-{index:06d}'
@@ -738,12 +783,13 @@ def main() -> None:
     parser.add_argument('--seed', type=int, default=20261003)
     parser.add_argument('--split', choices=['train', 'validation', 'test'], default='train')
     parser.add_argument('--background-context', action='store_true', help='Mix page whitespace, text-only and blank negatives')
+    parser.add_argument('--dense-text', action='store_true', help='Include 30% paragraph-heavy forms')
     parser.add_argument('--font', type=Path, action='append', help='Repeat for multiple Japanese fonts')
     args = parser.parse_args()
     fonts = args.font or [Path(__file__).resolve().parents[3]/'corpus/fonts'/name for name in
                          ('NotoSansCJKjp-Regular.otf', 'NotoSerifCJKjp-Regular.otf')]
     try:
-        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context)
+        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context, dense_text=args.dense_text)
     except (ValueError, OSError) as exc:
         parser.exit(1, f'{exc}\n')
     print(json.dumps(result, ensure_ascii=False))
