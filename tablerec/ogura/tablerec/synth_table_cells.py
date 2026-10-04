@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import io
 import json
@@ -473,7 +474,7 @@ def styled_mask(size, segments, recipe, channel, scale):
     return mask
 
 
-def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.Image, Image.Image, Image.Image]:
+def _render_structural_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.Image, Image.Image, Image.Image]:
     """Render a JSON recipe in memory. No randomness, file output, or recipe mutation."""
     version = recipe.get('schema_version')
     scale = recipe.get('scale')
@@ -586,6 +587,76 @@ def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.
     return image, h, v
 
 
+def add_background_context(recipe, seed):
+    """Resolve page whitespace and zero-target negatives into a schema-v9 recipe."""
+    recipe = copy.deepcopy(recipe)
+    rng = random.Random(f'background-context/{seed}')
+    kind = rng.choices(['table', 'page_table', 'text_only', 'blank'], weights=[40,40,10,10])[0]
+    recipe.update(schema_version=9, renderer='pillow-table-v9', background_context=kind)
+    if kind == 'page_table':
+        width, height = recipe['width'], recipe['height']
+        extra_width = rng.randint(0, max(1, width//3))
+        extra_height = rng.randint(max(1,height//3), max(1,height))
+        dx = rng.randint(0,extra_width)
+        dy = rng.randint(0, max(1,extra_height//3))
+        recipe['width'] += extra_width
+        recipe['height'] += extra_height
+        def point(values):
+            return [value+(dx if i%2==0 else dy) for i,value in enumerate(values)]
+        recipe['table_bbox'] = point(recipe['table_bbox'])
+        for channel,key,delta in [('horizontal','y_boundaries',dy),('vertical','x_boundaries',dx)]:
+            recipe[key] = [value+delta for value in recipe[key]]
+            for styles_key in ('line_styles','boundary_appearance'):
+                recipe[styles_key][channel] = {str(float(coordinate)+delta):style
+                    for coordinate,style in recipe[styles_key][channel].items()}
+        for key in ('horizontal_segments','vertical_segments'):
+            recipe[key] = [point(segment) for segment in recipe[key]]
+        for cell in recipe['cells']:
+            cell['bbox'] = point(cell['bbox'])
+            for run in cell['text_runs']:
+                run['xy'] = point(run['xy'])
+            if 'background_patch' in cell:
+                cell['background_patch']['bbox'] = point(cell['background_patch']['bbox'])
+            for mark in cell['marks']:
+                for key in ('bbox','start','end'):
+                    if key in mark:
+                        mark[key] = point(mark[key])
+                if 'segments' in mark:
+                    mark['segments'] = [point(segment) for segment in mark['segments']]
+        recipe['page_offset'] = [dx,dy]
+    return recipe
+
+
+
+
+def render_sample(recipe, *, font_dir=None):
+    if recipe.get('schema_version') != 9:
+        return _render_structural_sample(recipe, font_dir=font_dir)
+    if recipe.get('renderer') != 'pillow-table-v9' or recipe.get('background_context') not in ('table','page_table','text_only','blank'):
+        raise ValueError('Unsupported table background context')
+    size = (recipe['width'],recipe['height'])
+    if type(recipe.get('scale')) is not int or recipe['scale'] not in SCALES:
+        raise ValueError('Unsupported table recipe scale')
+    if recipe['background_context']=='blank':
+        return Image.new('RGB',size,'white'),Image.new('L',size),Image.new('L',size)
+    base = copy.deepcopy(recipe)
+    base.update(schema_version=8, renderer='pillow-table-v8')
+    if recipe['background_context']=='text_only':
+        base['line_color'] = '#ffffff'
+        base['corner_radius'] = 0
+        for channel in base['boundary_appearance'].values():
+            for style in channel.values():
+                style['color'] = '#ffffff'
+        for cell in base['cells']:
+            cell['background'] = '#ffffff'
+            cell['foreground'] = '#202020'
+            cell.pop('background_patch',None)
+    image,h,v = _render_structural_sample(base,font_dir=font_dir)
+    if recipe['background_context']=='text_only':
+        h,v = Image.new('L',size),Image.new('L',size)
+    return image,h,v
+
+
 class TableCellDataset:
     """Map-style dataset returning PIL images, compatible with custom DataLoader collation."""
 
@@ -593,8 +664,8 @@ class TableCellDataset:
         self.root = Path(root)
         self.font_dir = font_dir
         manifest = json.loads((self.root/'manifest.json').read_text())
-        if manifest.get('schema_version') not in (2, 3, 4, 5, 6, 7, 8) or manifest.get('status') != 'complete':
-            raise ValueError('Dataset must be a completed schema-v2/v3/v4/v5/v6/v7/v8 JSON dataset')
+        if manifest.get('schema_version') not in (2, 3, 4, 5, 6, 7, 8, 9) or manifest.get('status') != 'complete':
+            raise ValueError('Dataset must be a completed schema-v2/v3/v4/v5/v6/v7/v8/v9 JSON dataset')
         self.records = [json.loads(line) for line in (self.root/'samples.jsonl').read_text().splitlines()]
         if len(self.records) != manifest['count']:
             raise ValueError('Sample count does not match manifest')
@@ -622,7 +693,7 @@ def validate_fonts(paths: list[Path]) -> list[dict]:
     return result
 
 
-def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE) -> dict:
+def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False) -> dict:
     if type(scale) is not int or scale not in SCALES:
         raise ValueError(f'scale must be one of {SCALES}')
     if count <= 0:
@@ -633,7 +704,7 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
     output.mkdir(parents=True, exist_ok=False)
     (output/'recipes').mkdir()
     counts = dict.fromkeys(MODES, 0)
-    manifest = dict(schema_version=8, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
+    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
                     fonts=font_records, pillow_version=Image.__version__,
                     generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     mask_encoding='uint8 coverage, divide by 255; independent horizontal and vertical channels')
@@ -644,6 +715,8 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
             mode = MODES[index % len(MODES)]
             font_index = random.Random(item_seed).randrange(len(fonts))
             recipe = make_sample(item_seed, fonts[font_index], mode, font_record=font_records[font_index], scale=scale)
+            if background_context:
+                recipe = add_background_context(recipe, item_seed)
             name = f'table-{index:06d}'
             recipe_path = f'recipes/{name}.json'
             (output/recipe_path).write_text(json.dumps(recipe, ensure_ascii=False, indent=2)+'\n')
@@ -664,12 +737,13 @@ def main() -> None:
     parser.add_argument('--count', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=20261003)
     parser.add_argument('--split', choices=['train', 'validation', 'test'], default='train')
+    parser.add_argument('--background-context', action='store_true', help='Mix page whitespace, text-only and blank negatives')
     parser.add_argument('--font', type=Path, action='append', help='Repeat for multiple Japanese fonts')
     args = parser.parse_args()
     fonts = args.font or [Path(__file__).resolve().parents[3]/'corpus/fonts'/name for name in
                          ('NotoSansCJKjp-Regular.otf', 'NotoSerifCJKjp-Regular.otf')]
     try:
-        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale)
+        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context)
     except (ValueError, OSError) as exc:
         parser.exit(1, f'{exc}\n')
     print(json.dumps(result, ensure_ascii=False))

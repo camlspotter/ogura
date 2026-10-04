@@ -282,3 +282,10 @@ uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
 uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
   --output tablerec/outputs/table-cells-natural-v2/validation --count 200 --split validation --seed 20261008
 ```
+
+## 背景・余白の条件（オプション、v9）
+
+`--background-context` を指定すると、schema v9として広い余白付きの表・文字だけ・白紙を
+混ぜる。種別と全座標をJSONに保存する。文字だけ・白紙の正解はゼロ。
+指定しない場合は従来通りschema v8。旧JSONの描画も維持する。
+確率と旧データとの混合方法は [RECOVERY_TRAINING.md](RECOVERY_TRAINING.md) を参照。

@@ -257,3 +257,9 @@ uv run --frozen --inexact python -m ogura.tablerec.preview_actual_table_cnn \
 rsync -av dgx:~/ogura/tablerec/outputs/table-cnn-natural-v2/actual-preview-half/ \
   ~/ogura/tablerec/outputs/table-cnn-natural-v2/actual-preview-half/
 ```
+
+### 背景への誤反応が増えた場合
+
+natural-v2で見つかった余白への広い誤反応については、
+[背景を含めた学習と旧データ混合の手順](RECOVERY_TRAINING.md)を参照。
+旧hard-v1の重みから、学習率3e-5・旧新データ1:1で短い試行を行い、実画像で比較する。
