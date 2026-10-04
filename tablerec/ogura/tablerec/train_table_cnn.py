@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .table_cnn import (CHANNELS, SizeBatchSampler, TableTrainingDataset, TableUNet,
-                        boundary_loss, boundary_metrics, collate_tables)
+                        boundary_loss, boundary_metrics, collate_tables, load_model)
 
 
 def run_epoch(model, loader, device, *, optimizer=None, max_batches=None):
@@ -56,8 +56,17 @@ def save_checkpoint(path, checkpoint):
     temporary.replace(path)
 
 
+def initialize_model(base_channels, checkpoint, device):
+    if checkpoint is None:
+        return TableUNet(32 if base_channels is None else base_channels).to(device)
+    model = load_model(checkpoint, device)
+    if base_channels is not None and base_channels != model.base_channels:
+        raise ValueError('--base-channels differs from the initial checkpoint')
+    return model
+
+
 def train(args):
-    for key in ('epochs', 'batch_size', 'base_channels', 'threads'):
+    for key in ('epochs', 'batch_size', 'threads'):
         if getattr(args, key) <= 0:
             raise ValueError(f'{key} must be positive')
     for key in ('max_train_batches', 'max_validation_batches'):
@@ -84,10 +93,14 @@ def train(args):
         loader_options.update(multiprocessing_context='spawn', persistent_workers=True, prefetch_factor=1)
     train_loader = DataLoader(training, batch_sampler=sampler, **loader_options)
     validation_loader = DataLoader(validation, batch_sampler=validation_sampler, **loader_options)
-    model = TableUNet(args.base_channels).to(device)
+    initial = getattr(args, 'init_checkpoint', None)
+    model = initialize_model(args.base_channels, initial, device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     config = {key: str(value) if isinstance(value, Path) else value for key, value in vars(args).items()}
-    config.update(device=device, parameters=sum(p.numel() for p in model.parameters()),
+    config.update(base_channels=model.base_channels,
+                  init_checkpoint=str(initial.resolve()) if initial is not None else None,
+                  init_checkpoint_sha256=hashlib.sha256(initial.read_bytes()).hexdigest() if initial is not None else None,
+                  device=device, parameters=sum(p.numel() for p in model.parameters()),
                   channels=list(CHANNELS), train_count=len(training), validation_count=len(validation),
                   train_sha256=dataset_digest(training), validation_sha256=dataset_digest(validation),
                   torch_version=str(torch.__version__))
@@ -103,7 +116,7 @@ def train(args):
             record = dict(epoch=epoch, train=train_metrics, validation=validation_metrics)
             log.write(json.dumps(record)+'\n')
             log.flush()
-            checkpoint = dict(format_version=1, channels=list(CHANNELS), base_channels=args.base_channels,
+            checkpoint = dict(format_version=1, channels=list(CHANNELS), base_channels=model.base_channels,
                               epoch=epoch, model=model.state_dict(), optimizer=optimizer.state_dict(), config=config,
                               metrics=record)
             save_checkpoint(args.output/'last.pt', checkpoint)
@@ -123,7 +136,8 @@ def main():
     parser.add_argument('--device', choices=['auto', 'cpu', 'cuda', 'mps'], default='auto')
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--batch-size', type=int, default=2)
-    parser.add_argument('--base-channels', type=int, default=32)
+    parser.add_argument('--base-channels', type=int, help='Default: checkpoint architecture, or 32 for a new model')
+    parser.add_argument('--init-checkpoint', type=Path, help='Initialize weights only; optimizer and epoch count start fresh')
     parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--workers', type=int, default=0)
     parser.add_argument('--threads', type=int, default=4)

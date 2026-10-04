@@ -182,3 +182,28 @@ uv run --frozen --inexact python -m ogura.tablerec.preview_actual_table_cnn \
 例えば上記コマンドに `--scale 0.5` を加え、出力先を
 `tablerec/outputs/table-cnn-gpu-pilot-v1/actual-preview-half` に変更する。
 倍率は `summary.json` に、変換前後のサイズはHTMLとJSONに記録する。
+
+### 既存モデルからの追加学習
+
+`--init-checkpoint` で既存モデルの重みを読み込む。モデルの幅はチェックポイントから
+引き継ぐ。`--base-channels` も指定した場合、不一致はエラーになる。
+optimizerは新規作成し、学習率は `--lr`、エポック数は今回の `--epochs` に従う。
+ログのepochは1から開始し、bestモデルも今回の検証lossで選ぶ。
+これは重みを使った追加学習であり、optimizerや乱数状態を復元する中断再開ではない。
+初期チェックポイントの絶対パスとSHA-256をconfigに記録する。
+
+GPU側で最新コードを取得し、[合成データ生成手順](SYNTH_TABLE_CELLS.md)に従って
+`table-cells-hard-v1` のJSONを生成した後に実行する。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.train_table_cnn \
+  --train tablerec/outputs/table-cells-hard-v1/train \
+  --validation tablerec/outputs/table-cells-hard-v1/validation \
+  --init-checkpoint tablerec/outputs/table-cnn-gpu-pilot-v1/best.pt \
+  --output tablerec/outputs/table-cnn-hard-v1 \
+  --device cuda --epochs 1 --batch-size 2 --workers 2 --lr 1e-4
+```
+
+元のモデルを保存するため新しい出力先を使う。既存の出力先は上書きしない。
+実画像では、新しい `best.pt` で `preview_actual_table_cnn --scale 0.5` を実行して
+前回と比較する。文字・記号の誤検出だけでなく、本物の罫線の欠落も確認する。
