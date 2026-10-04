@@ -153,3 +153,25 @@ uv run --frozen --inexact python -m ogura.tablerec.preview_table_cnn \
 現在のSoft Diceは分母が予測と教師の和であり、教師に中間値があると完全一致でも
 1にならない。そのため、ここではMAEと閾値0.5のF1を併記する。
 可視化以外の通常のデータ生成・学習では、引き続き画像を保存しない。
+
+### 正解データのない実画像
+
+`preview_actual_table_cnn` は指定フォルダ直下のPNGをファイル名順にすべて推論する。
+JSONレシピや正解マスクは不要。元画像と予測の重ね合わせだけを表示し、精度指標は計算しない。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.preview_actual_table_cnn \
+  --images tablerec/tests/actual \
+  --checkpoint tablerec/outputs/table-cnn-gpu-pilot-v1/best.pt \
+  --output tablerec/outputs/table-cnn-gpu-pilot-v1/actual-preview \
+  --device cuda
+```
+
+原寸で1枚ずつ推論する。GPUメモリが足りなければ `--max-side 1600` などで
+縦横比を保って縮小できる。ただし縮小すると罫線の太さも変わるため、結果の比較では
+倍率に注意する。HTMLと `summary.json` に元サイズと推論サイズを記録する。
+`--count 10` で先頭10枚に限定できる。出力先が既存なら上書きせず終了する。
+透明なPNGは白背景に合成する。`--overlay-offset` は合成データ用previewと同じ。
+
+`tablerec/tests/actual/` はGit管理対象外なので、画像は別途GPUマシンへコピーする。
+生成したpreviewも入力画像を含むため、元画像と同じ取り扱いにする。

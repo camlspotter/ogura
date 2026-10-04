@@ -1,5 +1,6 @@
 .venv/
 .cache/
 outputs/
+/tests/actual/
 __pycache__/
 .DS_Store
