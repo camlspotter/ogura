@@ -55,7 +55,7 @@ image, horizontal, vertical = render_sample(recipe)
 JSONには画像サイズ、格子座標、セルの結合範囲とbbox、文字サイズ、背景色・文字色、
 各描画行の文字列と位置（`text_runs`）、罫線の色と太さ、画像劣化の具体値を保存する。
 フォントは名前・元の絶対パス・SHA-256を保持する。既定では縦横4倍の解像度で描き、縮小する。
-新規生成はschema v4 / pillow-table-v4。旧schema v2/v3のJSONも従来の描画で
+新規生成はschema v8 / pillow-table-v8。旧schema v2/v3/v4/v5/v6/v7のJSONも従来の描画で
 読み込める。非対応のschema・倍率は明示的に拒否する。
 
 `text` / `lines` / `align` は内容と配置の記録であり、実際の文字描画には確定済みの
@@ -138,7 +138,7 @@ uv run --frozen python -m unittest discover -s tablerec/tests -p test_synth_tabl
 
 ## 誤検出しやすいセル内容（v4）
 
-新規JSONは `content_profile: hard-negatives-v1` を持ち、各セルの内容を次の確率で選ぶ。
+v4のJSONは `content_profile: hard-negatives-v1` を持つ。v5も各セルの内容を次の確率で選ぶ。
 通常の文章・数値・空欄を45%、直線や四角形の多い文字を35%、図形のチェックボックスを10%、
 空セルの斜線を10%とする。割合はサンプル全体での期待値で、各表で固定しない。
 
@@ -158,4 +158,127 @@ uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
   --output tablerec/outputs/table-cells-hard-v1/train --count 2000 --split train --seed 20261004
 uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
   --output tablerec/outputs/table-cells-hard-v1/validation --count 200 --split validation --seed 20261004
+```
+
+
+## 破線の罫線（v5）
+
+`し`・`一`・`ユーザーリスト`・`ユーザー`・`リスト`・`ユーザー名` も
+誤検出しやすい文字候補に追加した。
+v5データの `content_profile` は `hard-negatives-dashed-v2`。
+約半数の表で内罫線の一部を破線にする。横境界は60%、縦境界は25%の確率で選び、
+外枠は実線に保つ。実線だけの表も残す。
+破線の線分長は1〜8px、隙間は1〜5pxから選び、同じ境界上では位相を揃える。
+`line_styles` に方向・境界座標ごとの線分長、隙間、位相を記録する。
+入力だけを破線にし、正解マスクは隙間を埋めた連続したセル境界とする。
+結合セル内の存在しない境界は埋めない。旧JSONは従来通り描画する。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-dashed-v1/train --count 2000 --split train --seed 20261005
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-dashed-v1/validation --count 200 --split validation --seed 20261005
+```
+
+既存のJSONは更新されない。破線を学習するにはこの新データを生成し、
+`table-cnn-hard-v1/best.pt` を `--init-checkpoint` に指定して追加学習する。
+
+
+## 実画像で判明した条件の生成ルール（v6）
+
+v6の `content_profile` は `real-table-cases-v3`。以下の乱数選択をJSON生成時に
+確定し、描画時には乱数を使わない。v2〜v5は既存JSONの従来の描画を保つ。
+
+| 項目 | 生成アルゴリズム |
+|---|---|
+| 通常セル | 内容選択の35%。従来の文章・数値・空欄 |
+| 紛らわしい文字 | 29%。し、一、ユーザーリスト、直線の多い英字・カタカナ、月・日・回、三角記号付き数値など |
+| 空欄記号 | 8%。ー・―・−・－・—を中央配置。文字サイズ10〜28pxを選び、セル内へ縮小して収める |
+| チェックボックス | 10%。空・チェック入り・塗りつぶし。狭いセルでは枠内に収まるサイズへ制限 |
+| 空欄斜線 | 10%。/・逆斜線・×。セルの角へ接する例も含む |
+| 矢印 | 8%。セル内の長い片矢印・両矢印。約25%は斜め。先端3〜9px以下、線幅0.5〜2px |
+| 狭い横長セル | 表の40%を12〜28行にし、各行の80%を高さ14〜30px、残りを42〜80px。1列を幅250〜450pxにする |
+| セル背景 | 従来・行単位・列単位・セル単位を等確率で選択。ピンク・橙・水色・緑・黄と白を混ぜる |
+| 背景だけの境目 | 各セル10%でセル左半分の背景色を変更。セル構造や罫線マスクは変更しない |
+| 罫線の色・太さ | 各内境界30%で黒・赤・青・灰と線幅0.5〜3pxを選択。同じ境界内では統一 |
+| 破線 | v5と同じ。約半数の表で横・縦の内境界の一部を破線にする |
+| 丸角 | 表の30%で外枠を丸角にする。半径3〜12pxを選び、最外側のセル寸法の1/3以下へ制限 |
+
+確率は期待値で、各画像に全条件が必ず入るわけではない。実線・通常の行高・白背景の例も残す。
+狭いセルでは余白と文字サイズを調整して、文字をセル内に収める。
+
+正解は色に依存しない縦横2チャネルのセル境界。境界ごとの線幅は正解にも反映する。
+破線の隙間と丸角の欠けた四隅は、連続した矩形のセル境界として補完する。
+文字・空欄記号・矢印・チェックボックス・斜線・背景の色の境目は正解に含めない。
+結合セル内に存在しない境界を作ることはしない。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-real-cases-v1/train --count 2000 --split train --seed 20261006
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-real-cases-v1/validation --count 200 --split validation --seed 20261006
+```
+
+学習時は上記データを使い、初期重みに `table-cnn-hard-v1/best.pt` を指定する。
+実画像での改善は学習後に確認する。追加した条件の存在だけでは改善は保証されない。
+
+
+## 帳票の用途に沿った配置（v7）
+
+v7の生成プロファイルは `natural-forms-v4`。セルごとの無関係な組み合わせを抑えるため、
+まず表単位でテンプレートを選び、列の役割に応じてセル内容を配置する。
+
+| 型 | 選択確率 | 配置 |
+|---|---:|---|
+| チェック表 | 40% | 番号・広い説明・はい・いいえの4列。回答列のみ着色し、チェックボックスを中央配置 |
+| 帳簿 | 35% | 科目・前年度・当年度・増減の4列。数値は右揃え、空欄記号は中央。見出し・小計の位置・最終行を着色 |
+| 記入用紙 | 20% | 項目と記入欄の組を2〜3組。空欄を中心に日付・区分チェック・少数の斜線や案内矢印を配置 |
+| 極端な組み合わせ | 5% | v6のセル単位ランダム配置を補助例として残す |
+
+チェック表と帳簿は10〜22行。狭い行は14〜28px、見出しは28〜40px。
+チェック表の説明列は300〜450px、回答列は55〜75px。
+帳簿の科目列は200〜300px、数値列は100〜145px。
+狭いセルは余白を1pxにし、文字サイズを収まるまで調整する。
+記入用紙は6〜12行、高さ35〜65pxを基本とし、70%で外枠を丸角にする。
+
+通常の3型は罫線の色と太さを表内で統一する。
+チェック表・記入用紙の50%で一部の横境界を同一パターンの破線にする。
+帳簿の30%で数値列の区切り1本だけを赤にする。
+文字・記号の正解除外、破線・丸角の矩形境界への補完はv6と同じ。
+結合セルの構造選択は従来の5モードを維持する。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-natural-v1/train --count 2000 --split train --seed 20261007
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-natural-v1/validation --count 200 --split validation --seed 20261007
+```
+
+既存の `table-cells-real-cases-v1` はv6の極端な配置のデータであり、この変更では更新しない。
+新しい型を学習する場合は `table-cells-natural-v1` を生成して使う。
+
+
+## 帳票例の体裁と内容の整合（v8）
+
+最新プロファイルは `natural-forms-v5`。型の選択確率と入力・正解の関係はv7と同じ。
+通常の帳票では本文の行高を表内で揃え、見出し・小計・合計を少し太い文字で描く。
+チェック表・帳簿の標準行高は20〜28px。25%では密な行の例として14〜18pxを選ぶ。
+文字サイズも行高に合わせる。記入用紙は38〜55pxの行高を表内で揃える。
+
+チェック表の説明項目は重複なく選び、チェックボックスのサイズ・線幅も揃える。
+回答は行単位で「はい」50%、「いいえ」40%、未選択10%から選ぶ。
+帳簿は明細の前年度・当年度の値を生成し、増減を当年度−前年度として計算する。
+小計は直前の明細群、合計は全明細を集計する。ゼロは中央の空欄記号、負の増減は△付きで表示する。
+値の記録は `ledger_records` に保存する。構造上結合されたセルでは表示できる項目のみ表示する。
+記入用紙の項目は氏名・所属・住所・連絡先・日付などを順に配置し、繰り返しを減らす。
+項目欄は薄い灰色、入力欄は白を基本とする。日付欄と区分・確認・承認のチェック欄を役割に応じて配置する。
+
+`text_stroke_width` で見出し等の文字の太さをJSONに保存する。
+旧JSONの描画は変更しない。これまで作成したv6データは最新の生成規則を含まない。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-natural-v2/train --count 2000 --split train --seed 20261008
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-natural-v2/validation --count 200 --split validation --seed 20261008
 ```

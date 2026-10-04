@@ -93,6 +93,12 @@ class RenderTests(unittest.TestCase):
         recipe['degradation'] = {'kind': 'clean'}
         for cell in recipe['cells']:
             cell['marks'] = []
+        recipe['line_styles'] = {'horizontal': {}, 'vertical': {}}
+        recipe['boundary_appearance'] = {'horizontal': {}, 'vertical': {}}
+        recipe['corner_radius'] = 0
+        for item in recipe['cells']:
+            item.pop('background_patch', None)
+            item['text_stroke_width'] = 0
         baseline, h, v = render_sample(recipe)
         old = copy.deepcopy(recipe)
         old.update(schema_version=3, renderer='pillow-table-v3')
@@ -116,6 +122,102 @@ class RenderTests(unittest.TestCase):
             self.assertEqual(h.tobytes(), actual_h.tobytes())
             self.assertEqual(v.tobytes(), actual_v.tobytes())
 
+    def test_dashed_input_has_continuous_boundary_targets(self):
+        recipe = make_sample(42, FONT, 'plain')
+        recipe['degradation'] = {'kind': 'clean'}
+        recipe['line_styles'] = {'horizontal': {}, 'vertical': {}}
+        recipe['boundary_appearance'] = {'horizontal': {}, 'vertical': {}}
+        recipe['corner_radius'] = 0
+        for item in recipe['cells']:
+            item.pop('background_patch', None)
+            item['text_stroke_width'] = 0
+        solid, h, v = render_sample(recipe)
+        for channel, key in [('horizontal', 'y_boundaries'), ('vertical', 'x_boundaries')]:
+            for coordinate in recipe[key][1:-1]:
+                recipe['line_styles'][channel][str(coordinate)] = dict(dash=2, gap=4, phase=0.5)
+        snapshot = copy.deepcopy(recipe)
+        dashed, dh, dv = render_sample(json.loads(json.dumps(recipe)))
+        self.assertEqual(recipe, snapshot)
+        self.assertNotEqual(solid.tobytes(), dashed.tobytes())
+        self.assertEqual(h.tobytes(), dh.tobytes())
+        self.assertEqual(v.tobytes(), dv.tobytes())
+        # A gap is visible in the input but remains supervised as a boundary.
+        y = round(recipe['y_boundaries'][1])
+        xs = recipe['x_boundaries']
+        found = any(solid.getpixel((x,y)) != dashed.getpixel((x,y)) and dh.getpixel((x,y)) > 0
+                    for y in range(y-2,y+3) for x in range(round(xs[0])+5, round(xs[1])-5))
+        self.assertTrue(found)
+
+    def test_rounding_arrows_background_changes_are_input_only(self):
+        recipe = make_sample(42, FONT, 'plain')
+        recipe['degradation'] = {'kind': 'clean'}
+        recipe['corner_radius'] = 0
+        before, h, v = render_sample(recipe)
+        recipe['corner_radius'] = 5
+        cell = recipe['cells'][0]
+        x0, y0, x1, y1 = cell['bbox']
+        cell['marks'] = [dict(kind='arrow', start=[x0+6,(y0+y1)/2],
+                             end=[x1-6,(y0+y1)/2], head=3, double=True, width=1, color='#111111')]
+        cell['background'] = '#ffcccc'
+        cell['background_patch'] = dict(bbox=[x0,y0,(x0+x1)/2,y1], color='#ccffcc')
+        snapshot = copy.deepcopy(recipe)
+        after, h2, v2 = render_sample(json.loads(json.dumps(recipe)))
+        self.assertEqual(snapshot, recipe)
+        self.assertNotEqual(before.tobytes(), after.tobytes())
+        self.assertEqual(h.tobytes(), h2.tobytes())
+        self.assertEqual(v.tobytes(), v2.tobytes())
+        self.assertTrue(all(value >= 250 for value in after.getpixel((round(x0),round(y0)))))
+        for a, b in zip((after,h2,v2), render_sample(recipe)):
+            self.assertEqual(a.tobytes(), b.tobytes())
+
+    def test_compact_geometry_and_content_coverage(self):
+        kinds = set()
+        compact = False
+        for seed in range(30):
+            recipe = make_sample(seed, FONT, 'mixed')
+            kinds.update(c['content_kind'] for c in recipe['cells'])
+            if recipe['geometry_profile'] == 'compact':
+                compact = True
+                self.assertTrue(any(14 <= b-a < 31 for a,b in zip(recipe['y_boundaries'],recipe['y_boundaries'][1:])))
+                self.assertTrue(any(b-a >= 200 for a,b in zip(recipe['x_boundaries'],recipe['x_boundaries'][1:])))
+                for cell in recipe['cells']:
+                    for mark in cell['marks']:
+                        if mark['kind'] == 'checkbox':
+                            self.assertTrue(cell['bbox'][1] < mark['bbox'][1] < mark['bbox'][3] < cell['bbox'][3])
+        self.assertTrue(compact)
+        self.assertTrue({'empty_sign','arrow','checkbox','diagonal','hard_text','ordinary'} <= kinds)
+
+    def test_templates_keep_content_in_appropriate_columns(self):
+        for seed, expected in [(1,'checklist'), (5,'ledger')]:
+            recipe = make_sample(seed, FONT, 'plain')
+            self.assertEqual(recipe['template'], expected)
+            for cell in recipe['cells']:
+                row, column = cell['row'], cell['column']
+                if row == 0:
+                    continue
+                if expected == 'checklist':
+                    if column >= 2:
+                        self.assertEqual(cell['content_kind'], 'checkbox')
+                    if column == 1 or column == 3:
+                        self.assertEqual(cell['background'], '#ffffff')
+                    self.assertFalse(any(m['kind'] == 'arrow' for m in cell['marks']))
+                elif column >= 1:
+                    self.assertIn(cell['align'], ('right','center'))
+                    self.assertFalse(cell['marks'])
+
+    def test_ledger_arithmetic_and_checkbox_exclusivity(self):
+        recipe = make_sample(5, FONT, 'plain')
+        records = recipe['ledger_records']
+        items = [r for r in records if r['label'] not in ('小計','合計')]
+        for record in records:
+            a,b,difference = record['values']
+            self.assertEqual(difference,b-a)
+        self.assertEqual(records[-1]['values'], [sum(r['values'][c] for r in items) for c in range(3)])
+        recipe = make_sample(1,FONT,'plain')
+        for row in range(1,recipe['rows']):
+            answers = [m for cell in recipe['cells'] if cell['row']==row for m in cell['marks']]
+            self.assertLessEqual(sum(m.get('state')=='checked' for m in answers),1)
+
     def test_dataset_contract_and_overwrite_protection(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)/'data'
@@ -129,7 +231,7 @@ class RenderTests(unittest.TestCase):
             for record in records:
                 recipe = json.loads((output/record['recipe']).read_text())
                 self.assertEqual(recipe['seed'], record['seed'])
-                self.assertEqual(recipe['schema_version'], 4)
+                self.assertEqual(recipe['schema_version'], 8)
             dataset = TableCellDataset(output)
             self.assertEqual(len(dataset), 5)
             before = {str(p): p.read_bytes() for p in output.rglob('*') if p.is_file()}

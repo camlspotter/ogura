@@ -207,3 +207,53 @@ uv run --frozen --inexact python -m ogura.tablerec.train_table_cnn \
 元のモデルを保存するため新しい出力先を使う。既存の出力先は上書きしない。
 実画像では、新しい `best.pt` で `preview_actual_table_cnn --scale 0.5` を実行して
 前回と比較する。文字・記号の誤検出だけでなく、本物の罫線の欠落も確認する。
+
+### 自然な帳票例での追加学習（natural-v2）
+
+以下はリポジトリルート（GPU側の `~/ogura`）で実行する。
+最新の合成データ生成はschema v8 / `natural-forms-v5`。
+過去のJSONはGit管理外であり、コード更新だけでは生成内容は変わらないため、
+新しい `table-cells-natural-v2` を必ず生成する。
+初期モデルには前回追加学習した `table-cnn-hard-v1/best.pt` を使う。
+
+```sh
+cd ~/ogura
+git pull --ff-only
+
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-natural-v2/train \
+  --count 2000 --split train --seed 20261008
+
+uv run --frozen --inexact python -m ogura.tablerec.synth_table_cells \
+  --output tablerec/outputs/table-cells-natural-v2/validation \
+  --count 200 --split validation --seed 20261008
+
+uv run --frozen --inexact python -m ogura.tablerec.train_table_cnn \
+  --train tablerec/outputs/table-cells-natural-v2/train \
+  --validation tablerec/outputs/table-cells-natural-v2/validation \
+  --init-checkpoint tablerec/outputs/table-cnn-hard-v1/best.pt \
+  --output tablerec/outputs/table-cnn-natural-v2 \
+  --device cuda --epochs 1 --batch-size 2 --workers 2 --lr 1e-4
+```
+
+データ生成・学習の出力先は既存の場合エラーになる。
+今回のデータを既に生成済みなら生成コマンドを省略する。
+学習を再度行う場合は別の出力先を指定する。
+
+学習後は同じ実画像を同じ0.5倍で推論して前回と比較する。
+狭い行や既に小さい画像については、原寸の結果も別途比較する。
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.preview_actual_table_cnn \
+  --images tablerec/tests/actual \
+  --checkpoint tablerec/outputs/table-cnn-natural-v2/best.pt \
+  --output tablerec/outputs/table-cnn-natural-v2/actual-preview-half \
+  --device cuda --scale 0.5
+```
+
+手元のマシンで結果をコピーする（画像を含むのでGit管理外の出力先に保存する）。
+
+```sh
+rsync -av dgx:~/ogura/tablerec/outputs/table-cnn-natural-v2/actual-preview-half/ \
+  ~/ogura/tablerec/outputs/table-cnn-natural-v2/actual-preview-half/
+```

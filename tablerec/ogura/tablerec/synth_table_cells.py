@@ -16,10 +16,29 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 WORDS = ['区分', '項目', '実績', '備考', '件数', '割合', '合計', '受付', '相談',
          '調査結果', '年度末時点', '継続対応', '対象外', '未集計', '第一地区',
          '第二地区', '参考資料', '確認済', 'ABC', '2026年度']
-HARD_TEXTS = ['上', '1', 'I', 'ー', 'L', 'U', 'R', '月', '日', '回',
+HARD_TEXTS = ['し', '一', '上', '1', 'I', 'ー', 'L', 'U', 'R', '月', '日', '回',
               '月　日', '年　月　日', '第1回', 'L U R', 'コ', 'エ', 'ロ', 'ニ',
+              'ユーザーリスト', 'ユーザー', 'リスト', 'ユーザー名',
               'カ', 'キ', 'ト', 'ヒ', 'コスト', 'チェック', '□', '□ 有　□ 無']
-CONTENT_PROFILE = 'hard-negatives-v1'
+CONTENT_PROFILE = 'natural-forms-v5'
+CHECK_ITEMS = ['ユーザーリストを確認した', 'チェック項目を確認した', '対象の区分を確認した',
+               '参考資料を確認した', '調査結果を確認した', '月次の実績を確認した',
+               '申請内容に変更はない', '担当者の確認が完了した', '記入漏れはない',
+               '提出日を確認した', '金額を確認した', '回数を確認した',
+               '受付番号を確認した', '連絡先を確認した', '備考欄を確認した',
+               '添付資料を確認した', '承認が完了した', '対象人数を確認した',
+               '年度の区分を確認した', '実施日を確認した', '使用目的を確認した']
+LEDGER_ITEMS = ['現金', '預金', '売上', '費用', '備品', '消耗品', '通信費', '旅費',
+                '手数料', '使用料', '図書費', '修繕費', '給与', '雑費', 'その他']
+FORM_ITEMS = ['氏名', '所属', '住所', '連絡先', '受付日', '申請日', '区分', '担当者',
+              '部署', '備考', '項目', '対象', '期間', '件数', '回数', '確認', '承認',
+              '年度', '支払日', '金額', '使用目的', '資料名', '受付番号', '確認日',
+              '実施日', '担当部署', '対象人数', '結果', '作成日', '提出日', '更新日', '摘要',
+              '資料番号', '管理番号', '処理日', '備考欄']
+TEMPLATE_TEXTS = CHECK_ITEMS+LEDGER_ITEMS+FORM_ITEMS+['番号', '確認項目', 'はい', 'いいえ',
+    '科目', '前年度', '当年度', '増減', '小計', '合計', '項目', '内容', '担当', '備考']
+EMPTY_SIGNS = ['ー', '―', '−', '－', '—']
+CELL_COLORS = ['#ffcccc', '#f59ac7', '#fbd5b5', '#ccecff', '#ccffcc', '#fff2cc']
 MODES = ('plain', 'column_merge', 'row_merge', 'mixed', 'block_merge')
 DEFAULT_SCALE = 4
 SCALES = (2, 4, 8)
@@ -114,7 +133,11 @@ def cell_content(rng: random.Random) -> tuple[str, str]:
         return 'diagonal', ''
     if choice < 0.20:
         return 'checkbox', ''
-    if choice < 0.55:
+    if choice < 0.28:
+        return 'empty_sign', rng.choice(EMPTY_SIGNS)
+    if choice < 0.36:
+        return 'arrow', ''
+    if choice < 0.65:
         text = rng.choice(HARD_TEXTS + [f'△{rng.randint(1,99999):,}',
                                       f'▲{rng.randint(1,99999):,}'])
         return 'hard_text', text
@@ -138,13 +161,115 @@ def cell_marks(rng: random.Random, kind: str, bbox: list, foreground: str) -> li
                      width=rng.choice([0.5, 0.75, 1, 1.5, 2]),
                      color=rng.choice([foreground, '#555555', '#888888']))]
     if kind == 'checkbox':
-        side = rng.randint(9, 20)
-        left = rng.uniform(x0+6, x1-6-side)
-        top = rng.uniform(y0+6, y1-6-side)
+        side = min(rng.randint(9, 20), y1-y0-4, x1-x0-4)
+        left = rng.uniform(x0+2, x1-2-side)
+        top = rng.uniform(y0+2, y1-2-side)
         return [dict(kind='checkbox', bbox=[left, top, left+side, top+side],
                      width=rng.choice([0.75, 1, 1.5, 2]), color=foreground,
                      state=rng.choice(['empty', 'empty', 'checked', 'filled']))]
+    if kind == 'arrow':
+        y = (y0+y1)/2
+        start, end = [x0+6, y], [x1-6, y]
+        if rng.random() < 0.25:
+            start, end = [x0+6, y0+4], [x1-6, y1-4]
+        return [dict(kind='arrow', start=start, end=end,
+                     head=min(rng.uniform(3, 9), (y1-y0)/3),
+                     double=rng.random() < 0.4, width=rng.choice([0.5, 1, 1.5, 2]), color=foreground)]
     return []
+
+
+def dashed_segments(segments: list, styles: dict) -> list:
+    """Split input strokes with a phase shared across every piece of a boundary."""
+    result = []
+    for x0, y0, x1, y1 in segments:
+        horizontal = y0 == y1
+        style = styles.get(str(y0 if horizontal else x0))
+        if style is None:
+            result.append((x0, y0, x1, y1))
+            continue
+        dash, gap, phase = (style[k] for k in ('dash', 'gap', 'phase'))
+        if dash <= 0 or gap <= 0:
+            raise ValueError('Dash and gap must be positive')
+        start, end = (x0, x1) if horizontal else (y0, y1)
+        period = dash+gap
+        position = math.floor((start-phase)/period)*period+phase
+        while position < end:
+            left, right = max(start, position), min(end, position+dash)
+            if right > left:
+                result.append((left, y0, right, y1) if horizontal else (x0, left, x1, right))
+            position += period
+    return result
+
+
+def line_styles(rng, xs, ys):
+    styles = {'horizontal': {}, 'vertical': {}}
+    # Half of tables mix solid and dashed internal boundaries; frames stay solid.
+    if rng.random() < 0.5:
+        for channel, coordinates in [('horizontal', ys), ('vertical', xs)]:
+            probability = 0.6 if channel == 'horizontal' else 0.25
+            for coordinate in coordinates[1:-1]:
+                if rng.random() < probability:
+                    styles[channel][str(coordinate)] = dict(
+                        dash=rng.choice([1, 2, 3, 5, 8]),
+                        gap=rng.choice([1, 1.5, 2, 3, 5]), phase=rng.uniform(0, 4))
+    return styles
+
+
+def template_content(rng, template, row, column, columns, rows, colspan, context):
+    """Assign roles by position instead of independently scattering symbols."""
+    if template == 'checklist':
+        if row == 0:
+            return 'ordinary', ['番号', '確認項目', 'はい', 'いいえ'][column], 'center'
+        if column == 0 and colspan == 1:
+            return 'ordinary', str(row), 'center'
+        if column <= 1 or colspan > 1:
+            return 'hard_text', context['check_items'][row-1], 'left'
+        return 'checkbox', '', 'center'
+    if template == 'ledger':
+        if row == 0:
+            return 'ordinary', ['科目', '前年度', '当年度', '増減'][column], 'center'
+        record = context['ledger'][row-1]
+        if column == 0 or colspan > 1:
+            return 'ordinary', record['label'], 'left'
+        value = record['values'][column-1]
+        if value == 0:
+            return 'empty_sign', '―', 'center'
+        return 'ordinary', ('△' if value < 0 else '')+f'{abs(value):,}', 'right'
+    if row == 0:
+        return 'ordinary', ['項目','内容'][column % 2], 'center'
+    field = FORM_ITEMS[((row-1)*(columns//2)+column//2) % len(FORM_ITEMS)]
+    if column % 2 == 0:
+        return 'ordinary', field, 'left'
+    if field.endswith('日') or field == '期間':
+        return 'ordinary', '月　日', 'center'
+    if field in ('区分','確認','承認'):
+        return 'checkbox', '', 'center'
+    if rng.random() < 0.08:
+        return 'diagonal', '', 'center'
+    if field == '備考' and rng.random() < 0.15:
+        return 'arrow', '', 'center'
+    return 'ordinary', '', 'left'
+
+
+def template_context(rng, rows):
+    items = rng.sample(CHECK_ITEMS, len(CHECK_ITEMS))
+    records, group, all_values = [], [], []
+    for row in range(1, rows):
+        if row == rows-1 or row % 6 == 0:
+            source = all_values if row == rows-1 else group
+            values = [sum(v[c] for v in source) for c in range(3)]
+            label = '合計' if row == rows-1 else '小計'
+            group = []
+        else:
+            previous, current = [0 if rng.random() < 0.15 else rng.randint(1,999)*100 for _ in range(2)]
+            values = [previous, current, current-previous]
+            label = LEDGER_ITEMS[len(all_values) % len(LEDGER_ITEMS)]
+            group.append(values)
+            all_values.append(values)
+        records.append(dict(label=label, values=values))
+    return dict(check_items=items, ledger=records,
+                answers=[rng.choices(['yes','no','blank'],weights=[5,4,1])[0] for _ in range(rows)],
+                checkbox_width=rng.choice([0.75,1,1.25]))
 
 
 def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | None = None, scale: int = DEFAULT_SCALE) -> dict:
@@ -155,23 +280,60 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
         raise ValueError(f"Unknown mode: {mode}")
     font_record = font_record or validate_fonts([font_path])[0]
     rng = random.Random(seed)
-    rows, columns = rng.randint(4, 16), rng.randint(3, 9)
+    template = rng.choices(['checklist', 'ledger', 'form', 'stress'], weights=[40,35,20,5])[0]
+    compact = template in ('checklist', 'ledger') or template == 'stress' and rng.random() < 0.4
+    rows, columns = rng.randint(12, 28) if compact else rng.randint(4, 16), rng.randint(3, 9)
+    if template != 'stress':
+        columns = 4 if template != 'form' else rng.choice([4, 6])
+        rows = rng.randint(10, 22) if compact else rng.randint(6, 12)
+    wide_column = 1 if template == 'checklist' else 0 if compact else None
     cells = partition(rows, columns, rng, mode)
     margin = rng.randint(12, 28)
     xs = [margin+rng.randrange(scale)/scale]
     ys = [margin+rng.randrange(scale)/scale]
-    for _ in range(columns):
-        xs.append(xs[-1]+rng.randint(75, 170)+rng.randrange(scale)/scale)
-    for _ in range(rows):
-        ys.append(ys[-1]+rng.randint(42, 80)+rng.randrange(scale)/scale)
+    for column in range(columns):
+        xs.append(xs[-1]+(rng.randint(250, 450) if len(xs)-1 == wide_column else rng.randint(75, 170))+rng.randrange(scale)/scale)
+    if template != 'stress':
+        widths = ([rng.randint(30, 45), rng.randint(300, 450), rng.randint(55, 75), rng.randint(55, 75)]
+                  if template == 'checklist' else
+                  [rng.randint(200, 300)]+[rng.randint(100, 145) for _ in range(columns-1)] if template == 'ledger' else
+                  [rng.randint(80, 110) if c % 2 == 0 else rng.randint(140, 200) for c in range(columns)])
+        xs = [xs[0]]
+        for width in widths:
+            xs.append(xs[-1]+width+rng.randrange(scale)/scale)
+    for row in range(rows):
+        ys.append(ys[-1]+(rng.randint(14, 30) if compact and rng.random() < 0.8 else rng.randint(42, 80))+rng.randrange(scale)/scale)
+    if template != 'stress':
+        ys = [ys[0]]
+        row_height = rng.randint(20, 28) if compact else rng.randint(38, 55)
+        if compact and rng.random() < 0.25:
+            row_height = rng.randint(14, 18)
+        for row in range(rows):
+            height = row_height
+            if row == 0:
+                height = rng.randint(28, 40)
+            ys.append(ys[-1]+height+rng.randrange(scale)/scale)
     size = (math.ceil(xs[-1]+margin), math.ceil(ys[-1]+margin))
     inner_width = rng.choice([0.5, 0.75, 1.0, 1.0, 1.25, 1.5, 2.0, 3.0])
     outer_width = rng.choice([0.75, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0])
     h_segments, v_segments = boundary_segments(cells, xs, ys)
     header_color = rng.choice(['#e6edf5', '#eeeeee', '#e6efdf', '#ffffff', '#254b70'])
     stripe_color = rng.choice(['#ffffff', '#f1f4f7', '#f4f4ed'])
-    font_size = rng.randint(12, 20)
-    font = ImageFont.truetype(str(font_path), font_size*scale)
+    background_mode = rng.choice(['legacy', 'rows', 'columns', 'cells'])
+    row_colors = [rng.choice(CELL_COLORS+['#ffffff']*3) for _ in range(rows)]
+    column_colors = [rng.choice(CELL_COLORS+['#ffffff']*3) for _ in range(columns)]
+    if template != 'stress':
+        inner_width = rng.choice([0.5, 0.75, 1, 1.5])
+        outer_width = rng.choice([1, 1.5, 2])
+    accent = rng.choice(CELL_COLORS)
+    font_size = min(rng.randint(12,16), max(8, round(row_height/1.8))) if template != 'stress' and compact else rng.randint(12, 18)
+    context = template_context(rng, rows)
+    font_cache = {}
+    def sized_font(size):
+        if size not in font_cache:
+            font_cache[size] = ImageFont.truetype(str(font_path), size*scale)
+        return font_cache[size]
+    font = sized_font(font_size)
     ascent, descent = font.getmetrics()
     line_height = ascent+descent
     for index, cell in enumerate(cells):
@@ -179,21 +341,43 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
         bbox = [xs[c], ys[r], xs[c+cs], ys[r+rs]]
         x0, y0, x1, y1 = (value*scale for value in bbox)
         bg = header_color if r == 0 else stripe_color if r % 2 else '#ffffff'
+        if background_mode == 'rows':
+            bg = row_colors[r]
+        elif background_mode == 'columns':
+            bg = column_colors[c]
+        elif background_mode == 'cells':
+            bg = rng.choice(CELL_COLORS+['#ffffff']*3)
         content_kind, text = cell_content(rng)
+        if bbox[3]-bbox[1] < 32 and content_kind in ('ordinary', 'hard_text'):
+            text = rng.choice(WORDS+HARD_TEXTS)
+
+        preferred_align = None
+        if template != 'stress':
+            content_kind, text, preferred_align = template_content(rng, template, r, c, columns, rows, cs, context)
+            bg = header_color if r == 0 else '#ffffff'
+            if template == 'checklist' and r > 0 and c == 2 and cs == 1:
+                bg = accent
+            if template == 'ledger' and (r == rows-1 or r % 6 == 0):
+                bg = accent
         # Keep the exact rendered text as the cell label; fit without clipping glyphs.
         cell_font, cell_height = font, line_height
-        padding = (max(inner_width, outer_width)+4)*scale
+        if content_kind == 'empty_sign' and template == 'stress':
+            cell_font = sized_font(rng.randint(10, 28))
+            cell_height = sum(cell_font.getmetrics())
+        padding = min(max(inner_width, outer_width)+4, max(1, (bbox[3]-bbox[1]-10)/2))*scale
+        if compact and template != 'stress':
+            padding = 3*scale if row_height >= 20 else scale
         lines = wrap_text(text, cell_font, x1-x0-2*padding)
-        cell_size = font_size
+        cell_size = cell_font.size//scale
         while lines and (len(lines)*cell_height > y1-y0-2*padding or
                          max(cell_font.getlength(line) for line in lines) > x1-x0-2*padding):
             cell_size -= 1
             if cell_size < 6:
                 raise RuntimeError('Cell text cannot fit')
-            cell_font = ImageFont.truetype(str(font_path), cell_size*scale)
+            cell_font = sized_font(cell_size)
             cell_height = sum(cell_font.getmetrics())
             lines = wrap_text(text, cell_font, x1-x0-2*padding)
-        align = rng.choice(['left', 'center', 'right'])
+        align = preferred_align or ('center' if content_kind == 'empty_sign' else rng.choice(['left', 'center', 'right']))
         top = y0+(y1-y0-len(lines)*cell_height)/2
         text_runs = []
         for offset, line in enumerate(lines):
@@ -204,7 +388,21 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
                     background=bg, foreground="white" if bg == "#254b70" else "#202020", text_runs=text_runs)
         cell['content_kind'] = content_kind
         cell['marks'] = cell_marks(rng, content_kind, bbox, cell['foreground'])
-    line_color = rng.choice(['#111111', '#555555', '#888888', '#345778'])
+        cell['text_stroke_width'] = 0.25 if template != 'stress' and (r == 0 or text in ('小計','合計')) else 0
+        if template == 'form' and c % 2 == 0 and r > 0:
+            cell['background'] = '#f2f2f2'
+        if template == 'checklist' and content_kind == 'checkbox':
+            for mark in cell['marks']:
+                side = min(12, bbox[3]-bbox[1]-6)
+                left, top = (bbox[0]+bbox[2]-side)/2, (bbox[1]+bbox[3]-side)/2
+                mark['bbox'] = [left,top,left+side,top+side]
+                mark['state'] = 'checked' if context['answers'][r] == ('yes' if c == 2 else 'no') else 'empty'
+                mark['width'] = context['checkbox_width']
+        # A background change inside a cell is not a structural boundary.
+        if template == 'stress' and rng.random() < 0.1:
+            cell['background_patch'] = dict(bbox=[bbox[0], bbox[1], (bbox[0]+bbox[2])/2, bbox[3]],
+                                            color=rng.choice(CELL_COLORS))
+    line_color = rng.choice(['#111111', '#333333', '#555555']) if template != 'stress' else rng.choice(['#111111', '#555555', '#888888', '#345778'])
     degradation = rng.choice(['clean', 'clean', 'jpeg', 'blur', 'downsample'])
     params = {'kind': degradation}
     if degradation == 'jpeg':
@@ -213,13 +411,41 @@ def make_sample(seed: int, font_path: Path, mode: str, *, font_record: dict | No
         params['radius'] = rng.uniform(0.25, 0.7)
     elif degradation == 'downsample':
         params['factor'] = rng.uniform(0.5, 0.8)
-    labels = dict(schema_version=4, renderer="pillow-table-v4", content_profile=CONTENT_PROFILE, scale=scale, seed=seed, mode=mode, width=size[0], height=size[1],
+    labels = dict(schema_version=8, renderer="pillow-table-v8", content_profile=CONTENT_PROFILE, scale=scale, seed=seed, mode=mode, width=size[0], height=size[1],
                   table_bbox=[xs[0], ys[0], xs[-1], ys[-1]], rows=rows, columns=columns,
                   x_boundaries=xs, y_boundaries=ys, cells=cells,
                   horizontal_segments=h_segments, vertical_segments=v_segments,
                   inner_line_width=inner_width, outer_line_width=outer_width,
                   line_color=line_color, header_color=header_color, stripe_color=stripe_color,
                   font=font_record, degradation=params)
+    labels['line_styles'] = line_styles(rng, xs, ys)
+    labels['geometry_profile'] = 'compact' if compact else 'regular'
+    labels['background_mode'] = background_mode
+    labels['corner_radius'] = min(rng.uniform(3, 12), (ys[1]-ys[0])/3,
+                                  (ys[-1]-ys[-2])/3, (xs[1]-xs[0])/3,
+                                  (xs[-1]-xs[-2])/3) if rng.random() < 0.3 else 0
+    labels['boundary_appearance'] = {'horizontal': {}, 'vertical': {}}
+    for channel, coordinates in [('horizontal', ys), ('vertical', xs)]:
+        for coordinate in coordinates[1:-1]:
+            if rng.random() < 0.3:
+                labels['boundary_appearance'][channel][str(coordinate)] = dict(
+                    color=rng.choice(['#111111', '#ff0000', '#2469a0', '#777777']),
+                    width=rng.choice([0.5, 0.75, 1, 1.5, 2, 3]))
+    labels['template'] = template
+    if template == 'ledger':
+        labels['ledger_records'] = context['ledger']
+    if template != 'stress':
+        labels['background_mode'] = 'answer-column' if template == 'checklist' else 'subtotal-rows' if template == 'ledger' else 'header'
+        labels['boundary_appearance'] = {'horizontal': {}, 'vertical': {}}
+        labels['line_styles'] = {'horizontal': {}, 'vertical': {}}
+        labels['corner_radius'] = min(10, (ys[1]-ys[0])/3) if template == 'form' and rng.random() < 0.7 else 0
+        if template in ('checklist','form') and rng.random() < 0.5:
+            dash, gap = rng.choice([1,2,4]), rng.choice([1,2,3])
+            for coordinate in ys[2:-1:3]:
+                labels['line_styles']['horizontal'][str(coordinate)] = dict(dash=dash,gap=gap,phase=0)
+        if template == 'ledger' and rng.random() < 0.3:
+            coordinate = xs[-2]
+            labels['boundary_appearance']['vertical'][str(coordinate)] = dict(color='#e00000',width=2)
     return labels
 
 
@@ -229,13 +455,31 @@ def _font_digest(path: str, size: int, mtime_ns: int) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def stroke_groups(segments, recipe, channel):
+    groups = {}
+    for segment in segments:
+        coordinate = segment[1] if channel == 'horizontal' else segment[0]
+        appearance = recipe['boundary_appearance'][channel].get(str(coordinate), {})
+        key = (appearance.get('color', recipe['line_color']),
+               appearance.get('width', recipe['inner_line_width']))
+        groups.setdefault(key, []).append(segment)
+    return groups
+
+
+def styled_mask(size, segments, recipe, channel, scale):
+    mask = Image.new('L', (size[0]*scale, size[1]*scale))
+    for (_, width), group in stroke_groups(segments, recipe, channel).items():
+        mask = ImageChops.lighter(mask, draw_mask(size, group, width, scale=scale, subpixel=True))
+    return mask
+
+
 def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.Image, Image.Image, Image.Image]:
     """Render a JSON recipe in memory. No randomness, file output, or recipe mutation."""
     version = recipe.get('schema_version')
     scale = recipe.get('scale')
     if (type(scale) is not int or
             not ((version == 2 and recipe.get('renderer') == 'pillow-table-v2' and scale == 2) or
-                 (version in (3, 4) and recipe.get('renderer') == f'pillow-table-v{version}' and scale in SCALES))):
+                 (version in (3, 4, 5, 6, 7, 8) and recipe.get('renderer') == f'pillow-table-v{version}' and scale in SCALES))):
         raise ValueError('Unsupported table recipe schema/renderer/scale')
     record = recipe['font']
     font_path = (Path(font_dir)/record['name'] if font_dir is not None else Path(record['path'])).resolve()
@@ -257,17 +501,31 @@ def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.
     fonts = {}
     for cell in recipe['cells']:
         draw.rectangle(tuple(v*scale for v in cell['bbox']), fill=cell['background'])
+        patch = cell.get('background_patch') if version >= 6 else None
+        if patch:
+            draw.rectangle(tuple(v*scale for v in patch['bbox']), fill=patch['color'])
         fs = cell['font_size']
         if fs not in fonts:
             fonts[fs] = ImageFont.truetype(str(font_path), fs*scale)
         for run in cell['text_runs']:
             draw.text(tuple(v*scale for v in run['xy']), run['text'], font=fonts[fs],
-                      anchor='lt', fill=cell['foreground'])
+                      anchor='lt', fill=cell['foreground'],
+                      stroke_width=round(cell.get('text_stroke_width', 0)*scale) if version >= 8 else 0,
+                      stroke_fill=cell['foreground'])
         for mark in cell.get('marks', []) if version >= 4 else []:
             width = max(1, round(mark['width']*scale))
             if mark['kind'] == 'diagonal':
                 for segment in mark['segments']:
                     draw.line(tuple(value*scale for value in segment), fill=mark['color'], width=width)
+            elif mark['kind'] == 'arrow':
+                a, b = mark['start'], mark['end']
+                draw.line(tuple(v*scale for point in (a, b) for v in point), fill=mark['color'], width=width)
+                theta = math.atan2(b[1]-a[1], b[0]-a[0])
+                for tip, angle in [(b, theta)]+([(a, theta+math.pi)] if mark['double'] else []):
+                    points = [(tip[0]-mark['head']*math.cos(angle+delta),
+                               tip[1]-mark['head']*math.sin(angle+delta)) for delta in (-0.5, 0.5)]
+                    draw.line([tuple(v*scale for v in points[0]), tuple(v*scale for v in tip),
+                               tuple(v*scale for v in points[1])], fill=mark['color'], width=width)
             elif mark['kind'] == 'checkbox':
                 box = tuple(value*scale for value in mark['bbox'])
                 draw.rectangle(box, outline=mark['color'], width=width,
@@ -280,7 +538,35 @@ def render_sample(recipe: dict, *, font_dir: Path | None = None) -> tuple[Image.
                                (left+0.85*side, top+0.2*side)], fill=mark['color'], width=width)
             else:
                 raise ValueError(f"Unknown cell mark: {mark['kind']}")
-    image.paste(recipe['line_color'], mask=ImageChops.lighter(h, v))
+    input_mask = ImageChops.lighter(h, v)
+    if version >= 5:
+        styles = recipe['line_styles']
+        input_h = draw_mask(size, dashed_segments(h_inner, styles['horizontal']), inner_width, **mask_options)
+        input_v = draw_mask(size, dashed_segments(v_inner, styles['vertical']), inner_width, **mask_options)
+        frame_h = draw_mask(size, [(xs[0], y, xs[-1], y) for y in (ys[0], ys[-1])], outer_width, **mask_options)
+        frame_v = draw_mask(size, [(x, ys[0], x, ys[-1]) for x in (xs[0], xs[-1])], outer_width, **mask_options)
+        input_mask = ImageChops.lighter(ImageChops.lighter(input_h, input_v), ImageChops.lighter(frame_h, frame_v))
+    if version >= 6:
+        h = ImageChops.lighter(styled_mask(size, h_inner, recipe, 'horizontal', scale), frame_h)
+        v = ImageChops.lighter(styled_mask(size, v_inner, recipe, 'vertical', scale), frame_v)
+        for channel, segments in [('horizontal', h_inner), ('vertical', v_inner)]:
+            for (color, width), group in stroke_groups(segments, recipe, channel).items():
+                mask = draw_mask(size, dashed_segments(group, recipe['line_styles'][channel]), width, **mask_options)
+                image.paste(color, mask=mask)
+        radius = recipe['corner_radius']
+        if radius:
+            shape = Image.new('L', image.size)
+            box = tuple(value*scale for value in recipe['table_bbox'])
+            ImageDraw.Draw(shape).rounded_rectangle(box, radius=radius*scale, fill=255)
+            image = Image.composite(image, Image.new('RGB', image.size, 'white'), shape)
+            outline = Image.new('L', image.size)
+            ImageDraw.Draw(outline).rounded_rectangle(box, radius=radius*scale, outline=255,
+                                                     width=max(1, round(outer_width*scale)))
+            image.paste(recipe['line_color'], mask=outline)
+        else:
+            image.paste(recipe['line_color'], mask=ImageChops.lighter(frame_h, frame_v))
+    else:
+        image.paste(recipe['line_color'], mask=input_mask)
     image = image.resize(size, Image.Resampling.LANCZOS)
     h, v = (mask.resize(size, Image.Resampling.BOX) for mask in (h, v))
     params = recipe['degradation']
@@ -307,8 +593,8 @@ class TableCellDataset:
         self.root = Path(root)
         self.font_dir = font_dir
         manifest = json.loads((self.root/'manifest.json').read_text())
-        if manifest.get('schema_version') not in (2, 3, 4) or manifest.get('status') != 'complete':
-            raise ValueError('Dataset must be a completed schema-v2/v3/v4 JSON dataset')
+        if manifest.get('schema_version') not in (2, 3, 4, 5, 6, 7, 8) or manifest.get('status') != 'complete':
+            raise ValueError('Dataset must be a completed schema-v2/v3/v4/v5/v6/v7/v8 JSON dataset')
         self.records = [json.loads(line) for line in (self.root/'samples.jsonl').read_text().splitlines()]
         if len(self.records) != manifest['count']:
             raise ValueError('Sample count does not match manifest')
@@ -324,7 +610,7 @@ class TableCellDataset:
 
 
 def validate_fonts(paths: list[Path]) -> list[dict]:
-    required = set(''.join(WORDS+HARD_TEXTS)+'0123456789,.%△▲') - {' ', '　'}
+    required = set(''.join(WORDS+HARD_TEXTS+EMPTY_SIGNS+TEMPLATE_TEXTS)+'0123456789,.%△▲') - {' ', '　'}
     result = []
     for path in paths:
         with TTFont(path) as font:
@@ -347,7 +633,7 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
     output.mkdir(parents=True, exist_ok=False)
     (output/'recipes').mkdir()
     counts = dict.fromkeys(MODES, 0)
-    manifest = dict(schema_version=4, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
+    manifest = dict(schema_version=8, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
                     fonts=font_records, pillow_version=Image.__version__,
                     generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     mask_encoding='uint8 coverage, divide by 255; independent horizontal and vertical channels')
