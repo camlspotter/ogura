@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import html
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +17,11 @@ from .table_cnn import load_model, predict_image
 
 
 def report(images: Path, checkpoint: Path, output: Path, *, device='cpu',
-           count=None, overlay_offset=3, max_side=None):
+           count=None, overlay_offset=3, max_side=None, scale=None):
+    if scale is not None and (not math.isfinite(scale) or scale <= 0):
+        raise ValueError('scale must be finite and positive')
+    if scale is not None and max_side is not None:
+        raise ValueError('scale and max-side cannot be used together')
     if count is not None and count <= 0:
         raise ValueError('count must be positive')
     if max_side is not None and max_side <= 0:
@@ -37,7 +42,7 @@ def report(images: Path, checkpoint: Path, output: Path, *, device='cpu',
     metadata = dict(status='generating', images=str(images.resolve()),
                     checkpoint=str(checkpoint.resolve()),
                     checkpoint_sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
-                    count=len(paths), device=device, max_side=max_side,
+                    count=len(paths), device=device, max_side=max_side, scale=scale,
                     overlay_offset=overlay_offset, overlay_image_alpha=0.3,
                     ground_truth=False, samples=[])
     summary = output/'summary.json'
@@ -50,6 +55,9 @@ def report(images: Path, checkpoint: Path, output: Path, *, device='cpu',
             image.alpha_composite(rgba)
             image = image.convert('RGB')
         original_size = image.size
+        if scale is not None:
+            size = tuple(max(1, round(length*scale)) for length in image.size)
+            image = image.resize(size, Image.Resampling.LANCZOS)
         if max_side is not None:
             image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
         predicted = predict_image(model, image, device).numpy()
@@ -86,7 +94,9 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--device', choices=['cpu', 'cuda', 'mps'], default='cpu')
     parser.add_argument('--count', type=int, help='Process the first N filenames (default: all)')
-    parser.add_argument('--max-side', type=int, help='Optionally shrink before inference; default: original resolution')
+    resize = parser.add_mutually_exclusive_group()
+    resize.add_argument('--scale', type=float, help='Uniform image scale before inference, e.g. 0.5')
+    resize.add_argument('--max-side', type=int, help='Optionally shrink before inference; default: original resolution')
     parser.add_argument('--overlay-offset', type=int, default=3)
     parser.add_argument('--threads', type=int, default=4)
     args = parser.parse_args()
@@ -95,7 +105,7 @@ def main():
     torch.set_num_threads(args.threads)
     try:
         report(args.images, args.checkpoint, args.output, device=args.device,
-               count=args.count, overlay_offset=args.overlay_offset, max_side=args.max_side)
+               count=args.count, overlay_offset=args.overlay_offset, max_side=args.max_side, scale=args.scale)
     except (ValueError, OSError) as exc:
         parser.exit(1, f'{exc}\n')
 

@@ -175,3 +175,10 @@ uv run --frozen --inexact python -m ogura.tablerec.preview_actual_table_cnn \
 
 `tablerec/tests/actual/` はGit管理対象外なので、画像は別途GPUマシンへコピーする。
 生成したpreviewも入力画像を含むため、元画像と同じ取り扱いにする。
+
+文字や罫線の縮尺を一律に揃えて比較する場合は `--scale 0.5` を指定する。
+全画像の幅と高さをそれぞれ半分にしてから推論する（Lanczos、整数へ丸め、最小1px）。
+元ファイルは変更しない。`--max-side` とは併用できない。
+例えば上記コマンドに `--scale 0.5` を加え、出力先を
+`tablerec/outputs/table-cnn-gpu-pilot-v1/actual-preview-half` に変更する。
+倍率は `summary.json` に、変換前後のサイズはHTMLとJSONに記録する。

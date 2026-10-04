@@ -11,6 +11,13 @@ from ogura.tablerec.table_cnn import TableUNet, CHANNELS
 
 
 class ActualPreviewTests(unittest.TestCase):
+    def test_invalid_scale(self):
+        for scale in (0, -1, float('nan'), float('inf')):
+            with self.assertRaisesRegex(ValueError, 'scale'):
+                report(Path('missing'), Path('missing'), Path('missing'), scale=scale)
+        with self.assertRaisesRegex(ValueError, 'together'):
+            report(Path('missing'), Path('missing'), Path('missing'), scale=0.5, max_side=1000)
+
     def test_report_without_labels_and_with_transparency(self):
         torch.set_num_threads(1)
         with tempfile.TemporaryDirectory() as directory:
@@ -32,6 +39,9 @@ class ActualPreviewTests(unittest.TestCase):
                 self.assertEqual(image.getpixel((0, 24)), (255, 255, 255))
             self.assertIn('a&amp;b.png', (output/'index.html').read_text())
             self.assertEqual(json.loads((output/'summary.json').read_text())['count'], 1)
+            scaled = report(images, checkpoint, root/'scaled', scale=0.5)
+            self.assertEqual(scaled['samples'][0]['inference_size'], (32, 20))
+            self.assertEqual(scaled['scale'], 0.5)
             with self.assertRaises(FileExistsError):
                 report(images, checkpoint, output)
 
