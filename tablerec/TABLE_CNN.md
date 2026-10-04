@@ -112,3 +112,43 @@ uv run --frozen python -m unittest discover -s tablerec/tests -p 'test_table_cnn
 `--train-limit / --validation-limit` は使用する先頭サンプル数を制限する。
 `--max-train-batches / --max-validation-batches` でも1epochのバッチ数を制限できる。
 制限付きの実行結果は動作確認であり、本学習の評価ではない。
+
+## 予測の可視化（20件）
+
+GPU側で学習済み `best.pt` を使い、検証データの少数例だけを書き出す。
+リポジトリルートから:
+
+```sh
+uv run --frozen --inexact python -m ogura.tablerec.preview_table_cnn \
+  --dataset tablerec/outputs/table-cells-train-v1/validation \
+  --checkpoint tablerec/outputs/table-cnn-gpu-pilot-v1/best.pt \
+  --output tablerec/outputs/table-cnn-gpu-pilot-v1/preview \
+  --device cuda --count 20
+```
+
+`preview/index.html` をブラウザで開く。GPUマシンにブラウザがなければ
+`preview/` ディレクトリ全体をローカルへコピーする。外部リソースは不要。
+出力先が既存なら上書きせず終了する。`--font-dir` でフォントの参照先を変更できる。
+
+各比較PNGは9パネルで、元の画素数を維持する。HTML上の縮小表示で細線が見えない
+場合は画像をクリックして拡大する。
+
+| 行 | 左 | 中央 | 右 |
+|---|---|---|---|
+| 上 | 入力画像 | 正解の重ね合わせ | 予測の重ね合わせ |
+| 中 | 横罫線の正解 | 横罫線の予測確率 | 横罫線の誤差 |
+| 下 | 縦罫線の正解 | 縦罫線の予測確率 | 縦罫線の誤差 |
+
+重ね合わせは横が赤、縦が青。誤差は赤が予測過剰、青が予測不足、黒が一致。
+確率・誤差マップは二値化せず、0〜1の中間値を使う。
+`summary.json` に選択サンプル、線幅、画像劣化、MAE/F1、使用checkpointのSHA-256を保存する。
+
+選択は5種類の表構造と細線（内罫線または外枠が1px未満）/通常線の組み合わせを
+順に取り出す。該当例が十分なら20件で各組2件ずつ。seed固定で再現できる。
+この選択例の指標を検証全体の平均として扱わない。
+
+本コマンドは1画像ずつ推論する。GroupNormが余白の影響を受けるため、学習時の
+検証バッチとパディング量が違う場合、指標が完全に一致するとは限らない。
+現在のSoft Diceは分母が予測と教師の和であり、教師に中間値があると完全一致でも
+1にならない。そのため、ここではMAEと閾値0.5のF1を併記する。
+可視化以外の通常のデータ生成・学習では、引き続き画像を保存しない。
