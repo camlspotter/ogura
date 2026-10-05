@@ -6,31 +6,13 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image
 
 from .synth_table_cells import TableCellDataset, boundary_segments, dashed_segments, draw_mask
 from .table_cnn import load_model, predict_image
+from .table_regions import regions
+from .table_resize import resize_image, resize_masks
 
-
-def regions(sample, font_dir=None):
-    recipe = sample['recipe']
-    text = Image.new('L', sample['image'].size)
-    draw = ImageDraw.Draw(text)
-    if recipe.get('background_context') != 'blank':
-        path = Path(font_dir)/recipe['font']['name'] if font_dir else Path(recipe['font']['path'])
-        for cell in recipe['cells']:
-            font = ImageFont.truetype(str(path), cell['font_size'])
-            for run in cell['text_runs']:
-                x,y = run['xy']
-                a,b,c,d = font.getbbox(run['text'],anchor='lt')
-                draw.rectangle((x+a-1,y+b-1,x+c+1,y+d+1),fill=255)
-    truth = np.stack([np.array(sample[k]) for k in ('horizontal','vertical')])/255
-    border = Image.fromarray((truth.max(0)>0).astype('uint8')*255).filter(ImageFilter.MaxFilter(9))
-    safe = np.array(border)==0
-    text_region = (np.array(text)>0)&safe
-    # White background only; avoid treating symbols or shaded cell fills as blank.
-    white = (np.array(sample['image']).min(2)>=250)&safe&(np.array(text)==0)
-    return truth, {'text':text_region,'white':white}
 
 
 def boundary_regions(recipe, truth):
@@ -89,8 +71,8 @@ def measure(probabilities, truth, masks, boundaries=None):
     return values
 
 
-def evaluate(dataset, checkpoints, device, count):
-    report = dict(dataset=str(dataset.root.resolve()),count=min(count,len(dataset)),models=[])
+def evaluate(dataset, checkpoints, device, count, max_side=1024):
+    report = dict(dataset=str(dataset.root.resolve()),count=min(count,len(dataset)),max_side=max_side,models=[])
     for checkpoint in checkpoints:
         model = load_model(checkpoint,device)
         samples=[]
@@ -98,8 +80,13 @@ def evaluate(dataset, checkpoints, device, count):
         for index in range(report['count']):
             sample=dataset[index]
             truth,masks=regions(sample,dataset.font_dir)
-            metrics=measure(predict_image(model,sample['image'],device).numpy(),truth,masks,
-                            boundary_regions(sample['recipe'],truth))
+            boundaries=boundary_regions(sample['recipe'],truth)
+            image=resize_image(sample['image'],max_side)
+            if image.size!=sample['image'].size:
+                truth=resize_masks(truth,image.size)
+                masks={key:resize_masks(mask[None],image.size,conservative=True)[0] for key,mask in masks.items()}
+                boundaries={key:resize_masks(mask,image.size,conservative=True)&(truth>=.5) for key,mask in boundaries.items()}
+            metrics=measure(predict_image(model,image,device).numpy(),truth,masks,boundaries)
             samples.append(dict(id=sample['id'],template=sample['recipe'].get('template'),metrics=metrics))
             if (index+1)%50==0: print(f'{checkpoint.name}: {index+1}/{report["count"]}',flush=True)
             for key,values in metrics.items():
@@ -121,6 +108,7 @@ def main():
     parser.add_argument('--data',type=Path,required=True)
     parser.add_argument('--checkpoint',type=Path,action='append',required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--max-side',type=int,default=1024)
     parser.add_argument('--font-dir',type=Path)
     parser.add_argument('--device',default='cpu')
     parser.add_argument('--count',type=int,default=100)
@@ -128,7 +116,7 @@ def main():
     if args.count<=0: parser.error('--count must be positive')
     if args.output.exists(): parser.error('Output already exists')
     torch.set_num_threads(4)
-    result=evaluate(TableCellDataset(args.data,font_dir=args.font_dir),args.checkpoint,args.device,args.count)
+    result=evaluate(TableCellDataset(args.data,font_dir=args.font_dir),args.checkpoint,args.device,args.count,args.max_side)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     with args.output.open('x') as file: json.dump(result,file,indent=2)
     for model in result['models']: print(json.dumps(dict(checkpoint=model['checkpoint'],metrics=model['metrics'])))

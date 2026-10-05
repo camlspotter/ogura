@@ -13,6 +13,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset, Sampler
 
 from .synth_table_cells import TableCellDataset
+from .table_resize import capped_size, resize_image, resize_masks
 
 CHANNELS = ('horizontal', 'vertical')
 
@@ -60,8 +61,11 @@ def image_tensor(image: Image.Image) -> torch.Tensor:
 
 
 class TableTrainingDataset(Dataset):
-    def __init__(self, root: Path, *, font_dir: Path | None = None, limit: int | None = None):
+    def __init__(self, root: Path, *, font_dir: Path | None = None, limit: int | None = None, text_penalty: bool = False, max_side: int | None = 1024):
         self.source = TableCellDataset(root, font_dir=font_dir)
+        capped_size((1,1),max_side)
+        self.max_side = max_side
+        self.text_penalty = text_penalty
         if limit is not None and limit <= 0:
             raise ValueError('Dataset limit must be positive')
         self.count = min(len(self.source), limit) if limit is not None else len(self.source)
@@ -70,7 +74,8 @@ class TableTrainingDataset(Dataset):
         self.sizes, self.seeds = [], set()
         for record in self.source.records[:self.count]:
             recipe = json.loads((self.source.root/record['recipe']).read_text())
-            self.sizes.append((recipe['height'], recipe['width']))
+            width,height = capped_size((recipe['width'],recipe['height']),max_side)
+            self.sizes.append((height,width))
             self.seeds.add(recipe['seed'])
 
     def __len__(self):
@@ -78,8 +83,22 @@ class TableTrainingDataset(Dataset):
 
     def __getitem__(self, index):
         sample = self.source[index]
-        target = torch.from_numpy(np.stack([np.array(sample[c], dtype=np.float32) for c in CHANNELS])).div_(255)
-        return dict(image=image_tensor(sample['image']), target=target, id=sample['id'])
+        image = resize_image(sample['image'],self.max_side)
+        size = image.size
+        target_array = np.stack([np.array(sample[c],dtype=np.float32) for c in CHANNELS])/255
+        if size!=sample['image'].size: target_array=resize_masks(target_array,size)
+        target = torch.from_numpy(target_array)
+        result = dict(image=image_tensor(image),target=target,id=sample['id'])
+        if self.text_penalty:
+            from .table_regions import regions
+            masks=regions(sample,self.source.font_dir)[1]
+            text_mask=(masks['text']|masks['underline']|masks['shallow_diagonal']).astype(np.float32)[None]
+            if size!=sample['image'].size: text_mask=resize_masks(text_mask,size)
+            # A resized text rectangle must never penalize positive boundary coverage.
+            text_mask *= (target_array.max(0,keepdims=True)==0)
+            result['text_mask'] = torch.from_numpy(text_mask)
+
+        return result
 
 
 class SizeBatchSampler(Sampler):
@@ -111,14 +130,16 @@ def collate_tables(samples):
     images = torch.ones(len(samples), 3, height, width)
     targets = torch.zeros(len(samples), 2, height, width)
     valid = torch.zeros(len(samples), 1, height, width)
+    text_mask = torch.zeros(len(samples),1,height,width)
     sizes = []
     for i, sample in enumerate(samples):
         h, w = sample['image'].shape[-2:]
         images[i, :, :h, :w] = sample['image']
         targets[i, :, :h, :w] = sample['target']
         valid[i, :, :h, :w] = 1
+        if 'text_mask' in sample: text_mask[i,:,:h,:w] = sample['text_mask']
         sizes.append((h, w))
-    return dict(image=images, target=targets, valid=valid, sizes=sizes, ids=[s['id'] for s in samples])
+    return dict(image=images, target=targets, valid=valid, sizes=sizes, ids=[s['id'] for s in samples], text_mask=text_mask)
 
 
 def boundary_loss(logits, target, valid):
@@ -131,6 +152,13 @@ def boundary_loss(logits, target, valid):
     denominator = ((probability+target)*valid).sum(axes)
     dice_loss = 1-(2*intersection+1e-6)/(denominator+1e-6)
     return (bce+dice_loss).mean()
+
+
+def text_false_positive_loss(logits, text_mask, valid):
+    """BCE against zero, normalized per table/channel over safe text rectangles."""
+    mask = text_mask*valid
+    area = mask.sum((-2,-1)).clamp_min(1)
+    return (F.softplus(logits)*mask).sum((-2,-1)).div(area).mean()
 
 
 def boundary_metrics(logits, target, valid):

@@ -14,6 +14,7 @@ from PIL import Image, ImageOps
 
 from .preview_table_cnn import comparison, overlay_description
 from .table_cnn import load_model, predict_image
+from .table_resize import resize_image
 
 
 def report(images: Path, checkpoint: Path, output: Path, *, device='cpu',
@@ -59,7 +60,7 @@ def report(images: Path, checkpoint: Path, output: Path, *, device='cpu',
             size = tuple(max(1, round(length*scale)) for length in image.size)
             image = image.resize(size, Image.Resampling.LANCZOS)
         if max_side is not None:
-            image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            image = resize_image(image,max_side)
         predicted = predict_image(model, image, device).numpy()
         if not np.isfinite(predicted).all():
             raise ValueError(f'Prediction contains nonfinite values: {path}')

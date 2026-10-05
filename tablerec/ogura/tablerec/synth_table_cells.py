@@ -654,12 +654,49 @@ def add_dashed_borders(recipe, seed):
     return recipe
 
 
-def add_background_context(recipe, seed):
+def add_content_lines(recipe, seed):
+    """Resolve text underlines and shallow non-boundary diagonals into JSON marks."""
+    recipe=copy.deepcopy(recipe)
+    rng=random.Random(f'content-lines/{seed}')
+    recipe['content_lines_profile']='underlines-empty-cell-diagonals-v2'
+    fonts={}
+    for cell in recipe['cells']:
+        x0,y0,x1,y1=cell['bbox']
+        if cell['row']==0: continue
+        # An empty-cell cancellation mark connects actual corners; slope follows geometry.
+        if (x1-x0)/(y1-y0)>=3 and rng.random()<.35:
+            angle=math.degrees(math.atan2(y1-y0,x1-x0))
+            cell.update(text='',lines=[],text_runs=[],content_kind='empty_diagonal',marks=[
+                dict(kind='diagonal',role='shallow_diagonal',angle_degrees=angle,
+                     segments=[[x0,y0,x1,y1]],width=rng.choice([.5,.75,1,1.5]),
+                     color=cell['foreground'])])
+            continue
+        fs=cell['font_size']
+        if fs not in fonts: fonts[fs]=ImageFont.truetype(recipe['font']['path'],fs*recipe['scale'])
+        font=fonts[fs]
+        for run in cell['text_runs']:
+            if not run['text'].strip() or rng.random()>=.4: continue
+            x,y=run['xy']
+            _,_,_,bottom=font.getbbox(run['text'],anchor='lt')
+            length=font.getlength(run['text'])/recipe['scale']
+            # A phrase or whole line, placed just below the rendered glyphs.
+            fraction=rng.choice([.3,.6,1.0])
+            start=x+rng.uniform(0,max(0,length*(1-fraction)))
+            end=min(x1-4,start+length*fraction)
+            baseline=y+bottom/recipe['scale']+rng.choice([1,2,3])
+            if end-start>=5 and baseline<y1-4:
+                cell['marks'].append(dict(kind='diagonal',role='underline',
+                    segments=[[start,baseline,end,baseline]],width=rng.choice([.5,.75,1,1.5]),
+                    color=cell['foreground']))
+    return recipe
+
+
+def add_background_context(recipe, seed, *, negative_heavy=False):
     """Resolve page whitespace and zero-target negatives into a schema-v9 recipe."""
     recipe = copy.deepcopy(recipe)
     rng = random.Random(f'background-context/{seed}')
-    kind = rng.choices(['table', 'page_table', 'text_only', 'blank'], weights=[40,40,10,10])[0]
-    recipe.update(schema_version=9, renderer='pillow-table-v9', background_context=kind)
+    kind = rng.choices(['table', 'page_table', 'text_only', 'blank'], weights=[40,20,30,10] if negative_heavy else [40,40,10,10])[0]
+    recipe.update(schema_version=9, renderer='pillow-table-v9', background_context=kind, negative_heavy=negative_heavy)
     if kind == 'page_table':
         width, height = recipe['width'], recipe['height']
         extra_width = rng.randint(0, max(1, width//3))
@@ -760,18 +797,20 @@ def validate_fonts(paths: list[Path]) -> list[dict]:
     return result
 
 
-def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False, dense_text: bool = False, dashed_borders: bool = False) -> dict:
+def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path], *, scale: int = DEFAULT_SCALE, background_context: bool = False, dense_text: bool = False, dashed_borders: bool = False, negative_heavy: bool = False, content_lines: bool = False) -> dict:
     if type(scale) is not int or scale not in SCALES:
         raise ValueError(f'scale must be one of {SCALES}')
     if count <= 0:
         raise ValueError('count must be positive')
     if not fonts:
         raise ValueError('At least one font is required')
+    if negative_heavy and not background_context:
+        raise ValueError("negative_heavy requires background_context")
     font_records = validate_fonts(fonts)
     output.mkdir(parents=True, exist_ok=False)
     (output/'recipes').mkdir()
     counts = dict.fromkeys(MODES, 0)
-    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, dense_text=dense_text, dashed_borders=dashed_borders, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
+    manifest = dict(schema_version=9 if background_context else 8, background_context=background_context, dense_text=dense_text, dashed_borders=dashed_borders, negative_heavy=negative_heavy, content_lines=content_lines, content_profile=CONTENT_PROFILE, scale=scale, storage='json-only', status='generating', count=count, seed=seed, split=split,
                     fonts=font_records, pillow_version=Image.__version__,
                     generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     mask_encoding='uint8 coverage, divide by 255; independent horizontal and vertical channels')
@@ -787,7 +826,9 @@ def generate(output: Path, count: int, seed: int, split: str, fonts: list[Path],
             if dashed_borders:
                 recipe = add_dashed_borders(recipe, item_seed)
             if background_context:
-                recipe = add_background_context(recipe, item_seed)
+                recipe = add_background_context(recipe, item_seed, negative_heavy=negative_heavy)
+            if content_lines and recipe.get("background_context") not in ("blank","text_only"):
+                recipe=add_content_lines(recipe,item_seed)
             name = f'table-{index:06d}'
             recipe_path = f'recipes/{name}.json'
             (output/recipe_path).write_text(json.dumps(recipe, ensure_ascii=False, indent=2)+'\n')
@@ -809,14 +850,16 @@ def main() -> None:
     parser.add_argument('--seed', type=int, default=20261003)
     parser.add_argument('--split', choices=['train', 'validation', 'test'], default='train')
     parser.add_argument('--background-context', action='store_true', help='Mix page whitespace, text-only and blank negatives')
-    parser.add_argument('--dense-text', action='store_true', help='Include 30% paragraph-heavy forms')
+    parser.add_argument('--dense-text', action='store_true', help='Include 30%% paragraph-heavy forms')
     parser.add_argument('--dashed-borders', action='store_true', help='Vary internal dotted/dashed, thin and faint borders')
+    parser.add_argument('--negative-heavy', action='store_true', help='With background context, increase text-only negatives to 30%%')
+    parser.add_argument('--content-lines',action='store_true',help='Add text underlines and shallow diagonal negatives')
     parser.add_argument('--font', type=Path, action='append', help='Repeat for multiple Japanese fonts')
     args = parser.parse_args()
     fonts = args.font or [Path(__file__).resolve().parents[3]/'corpus/fonts'/name for name in
                          ('NotoSansCJKjp-Regular.otf', 'NotoSerifCJKjp-Regular.otf')]
     try:
-        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context, dense_text=args.dense_text, dashed_borders=args.dashed_borders)
+        result = generate(args.output, args.count, args.seed, args.split, [f.resolve() for f in fonts], scale=args.scale, background_context=args.background_context, dense_text=args.dense_text, dashed_borders=args.dashed_borders, negative_heavy=args.negative_heavy, content_lines=args.content_lines)
     except (ValueError, OSError) as exc:
         parser.exit(1, f'{exc}\n')
     print(json.dumps(result, ensure_ascii=False))

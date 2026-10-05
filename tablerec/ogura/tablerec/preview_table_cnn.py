@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw
 
 from .synth_table_cells import MODES, TableCellDataset
 from .table_cnn import load_model, predict_image
+from .table_resize import resize_image, resize_masks
 
 
 def select_samples(dataset, count: int, seed: int) -> list[dict]:
@@ -100,7 +101,7 @@ def overlay_description(offset):
 
 
 def report(dataset_path: Path, checkpoint: Path, output: Path, *, count=20, seed=20261004,
-           device='cpu', font_dir=None, overlay_offset=3):
+           device='cpu', font_dir=None, overlay_offset=3, max_side=1024):
     if not isinstance(overlay_offset, int) or overlay_offset < 0:
         raise ValueError('overlay offset must be a nonnegative integer')
     dataset = TableCellDataset(dataset_path, font_dir=font_dir)
@@ -112,15 +113,17 @@ def report(dataset_path: Path, checkpoint: Path, output: Path, *, count=20, seed
     rows, sections = [], []
     metadata = dict(status='generating', dataset=str(dataset_path.resolve()),
                     checkpoint=str(checkpoint.resolve()), checkpoint_sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
-                    count=len(selection), seed=seed, device=device, layout_version=4, overlay_offset=overlay_offset, overlay_image_alpha=0.3,
+                    count=len(selection), seed=seed, device=device, max_side=max_side, layout_version=4, overlay_offset=overlay_offset, overlay_image_alpha=0.3,
                     selection='round-robin mode x thin/regular; not an unbiased full validation score')
     (output/'summary.json').write_text(json.dumps(metadata, indent=2)+'\n')
     for number, selected in enumerate(selection):
         sample = dataset[selected['index']]
-        predicted = predict_image(model, sample['image'], device).numpy()
+        image=resize_image(sample['image'],max_side)
+        predicted = predict_image(model, image, device).numpy()
         if not np.isfinite(predicted).all():
             raise ValueError('Prediction contains nonfinite values')
         target = np.stack([np.array(sample[k], dtype=np.float32)/255 for k in ('horizontal', 'vertical')])
+        if image.size!=sample["image"].size: target=resize_masks(target,image.size)
         metrics = {}
         for c, channel in enumerate(('horizontal', 'vertical')):
             p, t = predicted[c], target[c]
@@ -129,9 +132,9 @@ def report(dataset_path: Path, checkpoint: Path, output: Path, *, count=20, seed
             metrics[channel] = dict(mae=float(np.abs(p-t).mean()),
                                     f1_at_05=float(2*np.logical_and(pb, tb).sum()/denom) if denom else 1.0)
         filename = f'{number:03d}-comparison.png'
-        comparison(sample['image'], target, predicted, overlay_offset).save(output/filename)
+        comparison(image, target, predicted, overlay_offset).save(output/filename)
         recipe = sample['recipe']
-        row = dict(**selected, id=sample['id'], file=filename,
+        row = dict(**selected, id=sample['id'], file=filename, original_size=list(sample['image'].size), inference_size=list(image.size),
                    inner_line_width=recipe['inner_line_width'], outer_line_width=recipe['outer_line_width'],
                    degradation=recipe['degradation'], metrics=metrics)
         rows.append(row)
@@ -160,6 +163,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--count', type=int, default=20)
     parser.add_argument('--seed', type=int, default=20261004)
+    parser.add_argument('--max-side',type=int,default=1024)
     parser.add_argument('--font-dir', type=Path)
     parser.add_argument('--device', choices=['cpu', 'cuda', 'mps'], default='cpu')
     parser.add_argument('--overlay-offset', type=int, default=3, help='Display offset in pixels: horizontal down, vertical right')
@@ -170,7 +174,7 @@ def main():
     torch.set_num_threads(args.threads)
     try:
         report(args.dataset, args.checkpoint, args.output, count=args.count, seed=args.seed,
-               device=args.device, font_dir=args.font_dir, overlay_offset=args.overlay_offset)
+               device=args.device, font_dir=args.font_dir, overlay_offset=args.overlay_offset,max_side=args.max_side)
     except (ValueError, OSError) as exc:
         parser.exit(1, f'{exc}\n')
 

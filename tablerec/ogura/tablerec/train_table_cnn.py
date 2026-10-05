@@ -12,10 +12,10 @@ import torch
 from torch.utils.data import DataLoader
 
 from .table_cnn import (CHANNELS, SizeBatchSampler, TableTrainingDataset, TableUNet,
-                        boundary_loss, boundary_metrics, collate_tables, load_model)
+                        boundary_loss, boundary_metrics, collate_tables, load_model, text_false_positive_loss)
 
 
-def run_epoch(model, loader, device, *, optimizer=None, max_batches=None):
+def run_epoch(model, loader, device, *, optimizer=None, max_batches=None, text_penalty_weight=0):
     model.train(optimizer is not None)
     totals, count = {}, 0
     with torch.set_grad_enabled(optimizer is not None):
@@ -27,6 +27,9 @@ def run_epoch(model, loader, device, *, optimizer=None, max_batches=None):
                 optimizer.zero_grad(set_to_none=True)
             logits = model(x)
             loss = boundary_loss(logits, target, valid)
+            if text_penalty_weight:
+                penalty = text_false_positive_loss(logits,batch['text_mask'].to(device),valid)
+                loss = loss + text_penalty_weight*penalty
             if not torch.isfinite(loss):
                 raise RuntimeError('Nonfinite loss')
             if optimizer is not None:
@@ -35,6 +38,7 @@ def run_epoch(model, loader, device, *, optimizer=None, max_batches=None):
                 optimizer.step()
             metrics = boundary_metrics(logits.detach(), target, valid)
             metrics['loss'] = loss.item()
+            if text_penalty_weight: metrics['text_false_positive_loss'] = penalty.item()
             for key, value in metrics.items():
                 totals[key] = totals.get(key, 0.0)+value*x.shape[0]
             count += x.shape[0]
@@ -75,6 +79,9 @@ def train(args):
             raise ValueError(f'{key} must be positive')
     if args.lr <= 0 or args.workers < 0:
         raise ValueError('lr must be positive and workers nonnegative')
+    text_weight = getattr(args,'text_penalty_weight',0)
+    if not np.isfinite(text_weight) or text_weight < 0:
+        raise ValueError('text_penalty_weight must be finite and nonnegative')
     torch.set_num_threads(args.threads)
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -82,8 +89,8 @@ def train(args):
     device = args.device
     if device == 'auto':
         device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
-    training = TableTrainingDataset(args.train, font_dir=args.font_dir, limit=args.train_limit)
-    validation = TableTrainingDataset(args.validation, font_dir=args.font_dir, limit=args.validation_limit)
+    training = TableTrainingDataset(args.train, font_dir=args.font_dir, limit=args.train_limit, text_penalty=text_weight>0, max_side=getattr(args,"max_side",1024))
+    validation = TableTrainingDataset(args.validation, font_dir=args.font_dir, limit=args.validation_limit, text_penalty=text_weight>0, max_side=getattr(args,"max_side",1024))
     if training.seeds & validation.seeds:
         raise ValueError('Training and validation contain overlapping recipe seeds')
     sampler = SizeBatchSampler(training.sizes, args.batch_size, seed=args.seed)
@@ -97,7 +104,7 @@ def train(args):
     model = initialize_model(args.base_channels, initial, device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     config = {key: str(value) if isinstance(value, Path) else value for key, value in vars(args).items()}
-    config.update(base_channels=model.base_channels,
+    config.update(max_side=getattr(args,"max_side",1024),base_channels=model.base_channels,
                   init_checkpoint=str(initial.resolve()) if initial is not None else None,
                   init_checkpoint_sha256=hashlib.sha256(initial.read_bytes()).hexdigest() if initial is not None else None,
                   device=device, parameters=sum(p.numel() for p in model.parameters()),
@@ -111,8 +118,8 @@ def train(args):
     with (args.output/'metrics.jsonl').open('w') as log:
         for epoch in range(1, args.epochs+1):
             sampler.epoch = epoch-1
-            train_metrics = run_epoch(model, train_loader, device, optimizer=optimizer, max_batches=args.max_train_batches)
-            validation_metrics = run_epoch(model, validation_loader, device, max_batches=args.max_validation_batches)
+            train_metrics = run_epoch(model, train_loader, device, optimizer=optimizer, max_batches=args.max_train_batches, text_penalty_weight=text_weight)
+            validation_metrics = run_epoch(model, validation_loader, device, max_batches=args.max_validation_batches, text_penalty_weight=text_weight)
             record = dict(epoch=epoch, train=train_metrics, validation=validation_metrics)
             log.write(json.dumps(record)+'\n')
             log.flush()
@@ -132,6 +139,7 @@ def main():
     parser.add_argument('--train', type=Path, required=True)
     parser.add_argument('--validation', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--max-side',type=int,default=1024,help='Shrink-only longest input side limit (default: 1024)')
     parser.add_argument('--font-dir', type=Path)
     parser.add_argument('--device', choices=['auto', 'cpu', 'cuda', 'mps'], default='auto')
     parser.add_argument('--epochs', type=int, default=20)
@@ -139,6 +147,7 @@ def main():
     parser.add_argument('--base-channels', type=int, help='Default: checkpoint architecture, or 32 for a new model')
     parser.add_argument('--init-checkpoint', type=Path, help='Initialize weights only; optimizer and epoch count start fresh')
     parser.add_argument('--lr', type=float, default=3e-4)
+    parser.add_argument('--text-penalty-weight', type=float, default=0, help='Extra zero-target BCE on text regions away from boundaries')
     parser.add_argument('--workers', type=int, default=0)
     parser.add_argument('--threads', type=int, default=4)
     parser.add_argument('--seed', type=int, default=20261003)
